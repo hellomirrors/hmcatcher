@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import { Geist } from "next/font/google";
+import { Outfit } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { Providers } from "./providers";
 
-const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
+const outfit = Outfit({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
   title: "hmcatcher",
@@ -19,7 +19,7 @@ export default function RootLayout({
 }) {
   return (
     <html
-      className={cn("font-sans", geist.variable)}
+      className={cn("font-sans", outfit.variable)}
       lang="de"
       suppressHydrationWarning
     >

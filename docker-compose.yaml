@@ -1,0 +1,7 @@
+services:
+  hmcatcher:
+    build: .
+    expose:
+      - "3000"
+    environment:
+      - NODE_ENV=production

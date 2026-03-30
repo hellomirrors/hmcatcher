@@ -1,4 +1,4 @@
-FROM node:22-alpine AS base
+FROM node:22-slim AS base
 WORKDIR /app
 
 # --- Install dependencies ---
@@ -14,7 +14,8 @@ ENV NODE_ENV=production
 RUN npx next build
 
 # --- Production ---
-FROM base AS runner
+FROM node:22-alpine AS runner
+WORKDIR /app
 ENV NODE_ENV=production
 
 RUN adduser --system --uid 1001 nextjs

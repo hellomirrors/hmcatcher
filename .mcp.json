@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "shadcn": {
+      "command": "bunx",
+      "args": ["shadcn@latest", "mcp"]
+    },
+    "next-devtools": {
+      "command": "bunx",
+      "args": ["-y", "next-devtools-mcp@latest"]
+    },
+    "ultracite": {
+      "command": "bunx",
+      "args": ["-y", "mcp-remote", "https://docs.ultracite.ai/mcp"]
+    }
+  }
+}

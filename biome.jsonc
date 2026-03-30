@@ -1,0 +1,32 @@
+{
+  "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
+  "extends": [
+    "ultracite/biome/core",
+    "ultracite/biome/react",
+    "ultracite/biome/next",
+    "ultracite/biome/vitest"
+  ],
+  "linter": {
+    "rules": {
+      "correctness": {
+        // TanStack Form uses render-prop pattern: <form.Field children={(field) => ...} />
+        "noChildrenProp": "off"
+      }
+    }
+  },
+  "overrides": [
+    {
+      // shadcn/ui components — keep in default state, do not lint or format
+      "includes": ["src/components/ui/**"],
+      "formatter": {
+        "enabled": false
+      },
+      "linter": {
+        "enabled": false
+      },
+      "assist": {
+        "enabled": false
+      }
+    }
+  ]
+}

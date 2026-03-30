@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(1:*)",
+      "Bash(git branch:*)",
+      "Bash(gh repo:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
+    ]
+  },
+  "enabledMcpjsonServers": ["shadcn", "next-devtools", "ultracite"]
+}

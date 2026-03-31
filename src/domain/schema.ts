@@ -12,7 +12,7 @@ export const contactDataSchema = z.object({
   firstName: z.string().min(1, "Vorname ist erforderlich"),
   lastName: z.string().min(1, "Nachname ist erforderlich"),
   email: z.email("Bitte eine gültige E-Mail-Adresse eingeben"),
-  phone: z.string().optional(),
+  mobile: z.string().min(1, "Mobilnummer ist erforderlich"),
   message: z.string().optional(),
 });
 

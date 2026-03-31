@@ -8,7 +8,9 @@
       "Bash(git commit:*)",
       "Bash(git push:*)",
       "WebFetch(domain:www.hellomirrors.com)",
-      "Bash(find /c/project/hellomirrors/next/hmcatcher/node_modules/next/dist/docs -name *action* -o -name *useActionState*)"
+      "Bash(find /c/project/hellomirrors/next/hmcatcher/node_modules/next/dist/docs -name *action* -o -name *useActionState*)",
+      "Bash(find C:projecthellomirrorsnexthmcatchernode_modulesnextdistdocs -type f -name *output* -o -name *standalone*)",
+      "Bash(openssl rand:*)"
     ]
   },
   "enabledMcpjsonServers": ["shadcn", "next-devtools", "ultracite"]

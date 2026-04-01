@@ -1,40 +1,17 @@
 import { z } from "zod/v4";
+import {
+  type ConversationConfig,
+  STAR_TO_RELEVANCE,
+} from "@/domain/configuration/configuration-schema";
+import { readConfigurationSync } from "@/domain/configuration/configuration-service";
 import { deleteSession, getSession, setSession } from "./session-store";
-import type {
-  ConversationResponse,
-  ConversationSession,
-  ConversationStep,
-} from "./types";
+import type { ConversationResponse, ConversationSession } from "./types";
 
-const emailSchema = z.email("Bitte eine gültige E-Mail-Adresse eingeben.");
+const emailSchema = z.email("Ungültige E-Mail-Adresse.");
 
-const POSITIONS = [
-  { id: "pos_pdl", title: "Pflegedienstleitung" },
-  { id: "pos_wbl", title: "Wohnbereichsleitung" },
-  { id: "pos_el", title: "Einrichtungsleitung" },
-  { id: "pos_pfk", title: "Pflegefachkraft" },
-  { id: "pos_pa", title: "Pflegeassistenz" },
-  { id: "pos_bt", title: "Betreuungskraft" },
-  { id: "pos_vw", title: "Verwaltung" },
-  { id: "pos_qm", title: "Qualitätsmanagement" },
-  { id: "pos_it", title: "IT / Digitalisierung" },
-  { id: "pos_gl", title: "Geschäftsleitung" },
-  { id: "pos_other", title: "Andere (bitte eintippen)" },
-];
-
-const POSITION_MAP = new Map(POSITIONS.map((p) => [p.id, p.title]));
-
-const MESSAGES: Record<ConversationStep, string> = {
-  welcome:
-    "Willkommen bei Hellomirror! 👋\nIch helfe dir, deine Kontaktdaten zu erfassen.\n\nWie ist dein Vorname?",
-  ask_first_name: "Wie ist dein Vorname?",
-  ask_last_name: "Danke! Und dein Nachname?",
-  ask_position: "Was ist deine Position / Berufsbezeichnung?",
-  ask_email: "Wie lautet deine E-Mail-Adresse? 📧",
-  ask_consent:
-    "Ich möchte deine Daten speichern und dir deinen persönlichen QR-Code senden. Bist du damit einverstanden?",
-  complete: "Vielen Dank! Hier ist dein persönlicher QR-Code! 🎉",
-};
+function getConfig(): ConversationConfig {
+  return readConfigurationSync();
+}
 
 function createNewSession(): ConversationSession {
   const now = new Date();
@@ -57,48 +34,81 @@ function isStartCommand(text: string): boolean {
   );
 }
 
-function buildPositionResponse(): ConversationResponse {
+function buildPositionResponse(
+  config: ConversationConfig
+): ConversationResponse {
   return {
-    text: MESSAGES.ask_position,
+    text: config.messages.ask_position,
     list: {
-      title: "Position auswählen",
-      body: "Wähle deine Position aus der Liste oder tippe sie ein.",
-      buttonText: "Position wählen",
-      sections: [{ title: "Positionen", rows: POSITIONS }],
+      title: config.ui.position_list_title,
+      body: config.ui.position_list_body,
+      buttonText: config.ui.position_list_button,
+      sections: [{ title: "Positionen", rows: config.roles }],
     },
   };
 }
 
-function buildConsentResponse(): ConversationResponse {
+function buildConsentResponse(
+  config: ConversationConfig
+): ConversationResponse {
   return {
-    text: MESSAGES.ask_consent,
+    text: config.messages.ask_consent,
     buttons: [
-      { id: "consent_yes", title: "Ja ✅" },
-      { id: "consent_no", title: "Nein ❌" },
+      { id: "consent_yes", title: config.ui.consent_yes_label },
+      { id: "consent_no", title: config.ui.consent_no_label },
     ],
   };
 }
 
-function isConsentYes(text: string): boolean {
+function isConsentYes(text: string, config: ConversationConfig): boolean {
   const normalized = text.trim().toLowerCase();
+  const yesLabel = config.ui.consent_yes_label.toLowerCase();
   return (
     normalized === "ja" ||
     normalized === "yes" ||
     normalized === "j" ||
-    normalized === "ja ✅" ||
+    normalized === yesLabel ||
     normalized === "consent_yes"
   );
 }
 
-function isConsentNo(text: string): boolean {
+function isConsentNo(text: string, config: ConversationConfig): boolean {
   const normalized = text.trim().toLowerCase();
+  const noLabel = config.ui.consent_no_label.toLowerCase();
   return (
     normalized === "nein" ||
     normalized === "no" ||
     normalized === "n" ||
-    normalized === "nein ❌" ||
+    normalized === noLabel ||
     normalized === "consent_no"
   );
+}
+
+function getRelevanceForPosition(
+  positionId: string | undefined,
+  customPosition: string | undefined,
+  config: ConversationConfig
+): string {
+  if (positionId && positionId !== "pos_other") {
+    const role = config.roles.find((r) => r.id === positionId);
+    if (role) {
+      return STAR_TO_RELEVANCE[role.stars] ?? "HM8201";
+    }
+  }
+
+  if (customPosition) {
+    const lower = customPosition.toLowerCase();
+    const keywords = config.customPositionKeywords;
+    const isHighRelevance = keywords.highRelevance.some((kw) =>
+      lower.includes(kw.toLowerCase())
+    );
+    if (isHighRelevance) {
+      return STAR_TO_RELEVANCE[keywords.highRelevanceStars] ?? "HM4201";
+    }
+    return STAR_TO_RELEVANCE[keywords.defaultStars] ?? "HM8201";
+  }
+
+  return "HM8201";
 }
 
 export function handleInboundMessage(
@@ -106,13 +116,14 @@ export function handleInboundMessage(
   userId: string,
   text: string
 ): ConversationResponse {
+  const config = getConfig();
   let session = getSession(provider, userId);
 
   if (!session || isStartCommand(text)) {
     session = createNewSession();
     session.step = "ask_first_name";
     setSession(provider, userId, session);
-    return { text: MESSAGES.welcome };
+    return { text: config.messages.welcome };
   }
 
   const trimmed = text.trim();
@@ -120,91 +131,100 @@ export function handleInboundMessage(
   switch (session.step) {
     case "ask_first_name": {
       if (trimmed.length === 0) {
-        return { text: "Bitte gib deinen Vornamen ein." };
+        return { text: config.messages.empty_first_name };
       }
       session.data.firstName = trimmed;
       session.step = "ask_last_name";
       setSession(provider, userId, session);
-      return { text: MESSAGES.ask_last_name };
+      return { text: config.messages.ask_last_name };
     }
 
     case "ask_last_name": {
       if (trimmed.length === 0) {
-        return { text: "Bitte gib deinen Nachnamen ein." };
+        return { text: config.messages.empty_last_name };
       }
       session.data.lastName = trimmed;
       session.step = "ask_position";
       setSession(provider, userId, session);
-      return buildPositionResponse();
+      return buildPositionResponse(config);
     }
 
     case "ask_position": {
       if (trimmed.length === 0) {
-        return buildPositionResponse();
+        return buildPositionResponse(config);
       }
-      const mapped = POSITION_MAP.get(trimmed);
-      if (mapped && trimmed !== "pos_other") {
-        session.data.position = mapped;
+      const role = config.roles.find((r) => r.id === trimmed);
+      if (role && trimmed !== "pos_other") {
+        session.data.position = role.title;
+        session.data.positionId = role.id;
       } else if (trimmed === "pos_other") {
-        return { text: "Bitte tippe deine Position ein:" };
+        return { text: config.messages.type_position };
       } else {
         session.data.position = trimmed;
+        session.data.positionId = undefined;
       }
       session.step = "ask_email";
       setSession(provider, userId, session);
-      return { text: MESSAGES.ask_email };
+      return { text: config.messages.ask_email };
     }
 
     case "ask_email": {
       const result = emailSchema.safeParse(trimmed);
       if (!result.success) {
-        return {
-          text: "Das sieht nicht nach einer gültigen E-Mail-Adresse aus. Bitte versuche es erneut.",
-        };
+        return { text: config.messages.invalid_email };
       }
       session.data.email = result.data;
       session.step = "ask_consent";
       setSession(provider, userId, session);
-      return buildConsentResponse();
+      return buildConsentResponse(config);
     }
 
     case "ask_consent": {
-      if (isConsentYes(trimmed)) {
+      if (isConsentYes(trimmed, config)) {
         session.data.consent = true;
         session.step = "complete";
 
+        const relevance = getRelevanceForPosition(
+          session.data.positionId,
+          session.data.position,
+          config
+        );
+
         const qrContent = JSON.stringify({
+          firstName: session.data.firstName,
+          lastName: session.data.lastName,
           name: `${session.data.firstName} ${session.data.lastName}`,
           position: session.data.position,
           email: session.data.email,
+          relevance,
         });
 
+        const caption = config.ui.qr_caption_template.replace(
+          "{firstName}",
+          session.data.firstName ?? ""
+        );
+
         deleteSession(provider, userId);
 
         return {
-          text: MESSAGES.complete,
-          sendQr: {
-            content: qrContent,
-            caption: `Hallo ${session.data.firstName}, hier ist dein persönlicher QR-Code!`,
-          },
+          text: config.messages.complete,
+          sendQr: { content: qrContent, caption },
         };
       }
 
-      if (isConsentNo(trimmed)) {
+      if (isConsentNo(trimmed, config)) {
         deleteSession(provider, userId);
-        return {
-          text: "Kein Problem! Deine Daten wurden nicht gespeichert. Du kannst jederzeit mit /start neu beginnen.",
-        };
+        return { text: config.messages.consent_declined };
       }
 
-      return buildConsentResponse();
+      return buildConsentResponse(config);
     }
 
     default: {
       session = createNewSession();
       session.step = "ask_first_name";
       setSession(provider, userId, session);
-      return { text: MESSAGES.welcome };
+      return { text: config.messages.welcome };
     }
   }
 }

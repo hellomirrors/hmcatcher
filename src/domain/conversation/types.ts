@@ -22,6 +22,7 @@ export interface ConversationData {
   firstName?: string;
   lastName?: string;
   position?: string;
+  positionId?: string;
 }
 
 export interface ConversationResponse {

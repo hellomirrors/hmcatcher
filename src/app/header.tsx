@@ -7,12 +7,20 @@ export function Header() {
         <Link className="font-semibold text-lg" href="/">
           hmcatcher
         </Link>
-        <Link
-          className="text-muted-foreground text-sm hover:text-foreground"
-          href="/settings"
-        >
-          Einstellungen
-        </Link>
+        <div className="flex gap-4">
+          <Link
+            className="text-muted-foreground text-sm hover:text-foreground"
+            href="/configuration"
+          >
+            Konfiguration
+          </Link>
+          <Link
+            className="text-muted-foreground text-sm hover:text-foreground"
+            href="/settings"
+          >
+            Einstellungen
+          </Link>
+        </div>
       </nav>
     </header>
   );

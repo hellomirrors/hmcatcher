@@ -2,10 +2,10 @@ import type { MessagingProvider } from "@/domain/types";
 import { TelegramService } from "./telegram-service";
 import { WhatsappService } from "./whatsapp-service";
 
-export function createMessagingProvider(): MessagingProvider {
-  const provider = process.env.MESSAGING_PROVIDER ?? "whatsapp";
+export function createMessagingProvider(provider?: string): MessagingProvider {
+  const resolved = provider ?? process.env.MESSAGING_PROVIDER ?? "whatsapp";
 
-  if (provider === "telegram") {
+  if (resolved === "telegram") {
     const botToken = process.env.TELEGRAM_BOT_TOKEN;
     if (!botToken) {
       throw new Error("Missing env var: TELEGRAM_BOT_TOKEN");

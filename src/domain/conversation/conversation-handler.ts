@@ -8,7 +8,7 @@ export async function handleConversationMessage(
   text: string
 ): Promise<void> {
   const response = handleInboundMessage(provider, userId, text);
-  const messagingProvider = createMessagingProvider();
+  const messagingProvider = createMessagingProvider(provider);
 
   await messagingProvider.sendText({
     to: userId,

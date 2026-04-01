@@ -1,6 +1,7 @@
 import Image from "next/image";
 
-const TELEGRAM_BOT_USERNAME = process.env.TELEGRAM_BOT_USERNAME ?? "hmcatcher";
+const TELEGRAM_BOT_USERNAME =
+  process.env.TELEGRAM_BOT_USERNAME ?? "hmcatcher_bot";
 const WHATSAPP_PHONE_NUMBER =
   process.env.WHATSAPP_PHONE_NUMBER ?? "4917012345678";
 

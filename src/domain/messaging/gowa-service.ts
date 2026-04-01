@@ -13,8 +13,6 @@ interface GowaConfig {
   username: string;
 }
 
-const JID_PATTERN = /(\d{10,15})@s\.whatsapp\.net/;
-
 function toWhatsAppJid(phone: string): string {
   const digits = phone.replace(/\D/g, "");
   return `${digits}@s.whatsapp.net`;
@@ -33,23 +31,6 @@ export class GowaService implements MessagingProvider {
       `${this.config.username}:${this.config.password}`
     ).toString("base64");
     return `Basic ${encoded}`;
-  }
-
-  async getPhoneNumber(): Promise<string | null> {
-    try {
-      const res = await fetch(`${this.config.baseUrl}/app/devices`, {
-        headers: { Authorization: this.authHeader },
-      });
-      const data = await res.json();
-      const json = JSON.stringify(data);
-      const match = json.match(JID_PATTERN);
-      if (match) {
-        return match[1];
-      }
-      return null;
-    } catch {
-      return null;
-    }
   }
 
   async sendText(message: TextMessage): Promise<SendResult> {

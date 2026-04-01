@@ -33,19 +33,15 @@ export class GowaService implements MessagingProvider {
 
   async getPhoneNumber(): Promise<string | null> {
     try {
-      const res = await fetch(`${this.config.baseUrl}/app/devices`, {
+      const res = await fetch(`${this.config.baseUrl}/app/status`, {
         headers: { Authorization: this.authHeader },
       });
       const data = await res.json();
-      if (!res.ok || data.code !== 200) {
+      const deviceId: string | undefined = data.results?.device_id;
+      if (!deviceId) {
         return null;
       }
-      const devices: string[] = data.results ?? [];
-      const first = devices[0];
-      if (!first) {
-        return null;
-      }
-      return first.replace("@s.whatsapp.net", "");
+      return deviceId.replace("@s.whatsapp.net", "");
     } catch {
       return null;
     }

@@ -1,3 +1,4 @@
+import { handleConversationMessage } from "@/domain/conversation/conversation-handler";
 import {
   whatsappVerifyQuerySchema,
   whatsappWebhookPayloadSchema,
@@ -43,6 +44,18 @@ export async function POST(request: Request): Promise<Response> {
             phoneNumberId: change.value.metadata.phone_number_id,
           })
         );
+
+        if (msg.type === "text" && msg.text?.body) {
+          try {
+            await handleConversationMessage(
+              "whatsapp",
+              msg.from,
+              msg.text.body
+            );
+          } catch (error) {
+            console.error("WhatsApp conversation error:", error);
+          }
+        }
       }
     }
   }

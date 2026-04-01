@@ -1,3 +1,4 @@
+import { handleConversationMessage } from "@/domain/conversation/conversation-handler";
 import { telegramUpdateSchema } from "@/domain/schema";
 
 export async function POST(request: Request): Promise<Response> {
@@ -10,7 +11,9 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   const msg = result.data.message;
-  if (msg) {
+  if (msg?.text) {
+    const chatId = String(msg.chat.id);
+
     console.log(
       JSON.stringify({
         event: "telegram_inbound",
@@ -21,6 +24,12 @@ export async function POST(request: Request): Promise<Response> {
         date: msg.date,
       })
     );
+
+    try {
+      await handleConversationMessage("telegram", chatId, msg.text);
+    } catch (error) {
+      console.error("Telegram conversation error:", error);
+    }
   }
 
   return Response.json({ ok: true }, { status: 200 });

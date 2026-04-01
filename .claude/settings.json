@@ -1,4 +1,18 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash(1:*)",
+      "Bash(git branch:*)",
+      "Bash(gh repo:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "WebFetch(domain:www.hellomirrors.com)",
+      "Bash(openssl rand:*)",
+      "Bash(bun x:*)"
+    ]
+  },
+  "enabledMcpjsonServers": ["shadcn", "next-devtools", "ultracite"],
   "hooks": {
     "PostToolUse": [
       {

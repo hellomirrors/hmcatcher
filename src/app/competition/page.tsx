@@ -57,6 +57,14 @@ export default async function CompetitionPage() {
             <p className="max-w-xs text-center text-muted-foreground text-sm">
               Öffne Telegram und chatte mit unserem Bot
             </p>
+            <a
+              className="break-all text-primary text-xs hover:underline"
+              href={telegramLink}
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              {telegramLink}
+            </a>
           </div>
         )}
 
@@ -75,6 +83,14 @@ export default async function CompetitionPage() {
             <p className="max-w-xs text-center text-muted-foreground text-sm">
               Öffne WhatsApp und starte die Unterhaltung
             </p>
+            <a
+              className="break-all text-primary text-xs hover:underline"
+              href={whatsappLink}
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              {whatsappLink}
+            </a>
           </div>
         )}
 

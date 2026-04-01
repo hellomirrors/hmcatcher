@@ -10,10 +10,26 @@ export async function handleConversationMessage(
   const response = handleInboundMessage(provider, userId, text);
   const messagingProvider = createMessagingProvider(provider);
 
-  await messagingProvider.sendText({
-    to: userId,
-    body: response.text,
-  });
+  if (response.list) {
+    await messagingProvider.sendList({
+      to: userId,
+      title: response.list.title,
+      body: response.list.body,
+      buttonText: response.list.buttonText,
+      sections: response.list.sections,
+    });
+  } else if (response.buttons) {
+    await messagingProvider.sendButtons({
+      to: userId,
+      body: response.text,
+      buttons: response.buttons,
+    });
+  } else {
+    await messagingProvider.sendText({
+      to: userId,
+      body: response.text,
+    });
+  }
 
   if (response.sendQr) {
     const qrBuffer = await generateQrPng(response.sendQr.content);

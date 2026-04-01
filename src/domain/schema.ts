@@ -93,6 +93,20 @@ export const telegramUpdateSchema = z.object({
       text: z.string().optional(),
     })
     .optional(),
+  callback_query: z
+    .object({
+      id: z.string(),
+      from: z.object({
+        id: z.number(),
+        first_name: z.string(),
+        username: z.string().optional(),
+      }),
+      message: z.object({
+        chat: z.object({ id: z.number() }),
+      }),
+      data: z.string().optional(),
+    })
+    .optional(),
 });
 
 export type TelegramUpdate = z.infer<typeof telegramUpdateSchema>;

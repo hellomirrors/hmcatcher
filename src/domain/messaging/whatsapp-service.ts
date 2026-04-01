@@ -1,5 +1,7 @@
 import type {
+  ButtonMessage,
   ImageMessage,
+  ListMessage,
   MessagingProvider,
   SendResult,
   TextMessage,
@@ -27,6 +29,48 @@ export class WhatsappService implements MessagingProvider {
       to: message.to,
       type: "text",
       text: { preview_url: false, body: message.body },
+    });
+    return { messageId, provider: this.name };
+  }
+
+  async sendButtons(message: ButtonMessage): Promise<SendResult> {
+    const messageId = await this.postMessage({
+      messaging_product: "whatsapp",
+      recipient_type: "individual",
+      to: message.to,
+      type: "interactive",
+      interactive: {
+        type: "button",
+        body: { text: message.body },
+        action: {
+          buttons: message.buttons.map((b) => ({
+            type: "reply",
+            reply: { id: b.id, title: b.title },
+          })),
+        },
+      },
+    });
+    return { messageId, provider: this.name };
+  }
+
+  async sendList(message: ListMessage): Promise<SendResult> {
+    const messageId = await this.postMessage({
+      messaging_product: "whatsapp",
+      recipient_type: "individual",
+      to: message.to,
+      type: "interactive",
+      interactive: {
+        type: "list",
+        header: { type: "text", text: message.title },
+        body: { text: message.body },
+        action: {
+          button: message.buttonText,
+          sections: message.sections.map((s) => ({
+            title: s.title,
+            rows: s.rows.map((r) => ({ id: r.id, title: r.title })),
+          })),
+        },
+      },
     });
     return { messageId, provider: this.name };
   }

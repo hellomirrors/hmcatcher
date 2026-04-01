@@ -1,5 +1,7 @@
 import type {
+  ButtonMessage,
   ImageMessage,
+  ListMessage,
   MessagingProvider,
   SendResult,
   TextMessage,
@@ -51,26 +53,24 @@ export class GowaService implements MessagingProvider {
   }
 
   async sendText(message: TextMessage): Promise<SendResult> {
-    const res = await fetch(`${this.config.baseUrl}/send/message`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: this.authHeader,
-      },
-      body: JSON.stringify({
-        phone: toWhatsAppJid(message.to),
-        message: message.body,
-      }),
-    });
+    return await this.postText(message.to, message.body);
+  }
 
-    const data = await res.json();
-    if (!res.ok || data.code !== 200) {
-      throw new Error(`GoWA message failed: ${data.message ?? res.statusText}`);
+  async sendButtons(message: ButtonMessage): Promise<SendResult> {
+    const lines = message.buttons.map((b) => `▸ ${b.title}`);
+    const text = `${message.body}\n\n${lines.join("\n")}`;
+    return await this.postText(message.to, text);
+  }
+
+  async sendList(message: ListMessage): Promise<SendResult> {
+    const lines: string[] = [];
+    for (const section of message.sections) {
+      for (const row of section.rows) {
+        lines.push(`▸ ${row.title}`);
+      }
     }
-    return {
-      messageId: data.results?.message_id ?? "unknown",
-      provider: this.name,
-    };
+    const text = `*${message.title}*\n${message.body}\n\n${lines.join("\n")}`;
+    return await this.postText(message.to, text);
   }
 
   async sendImage(message: ImageMessage): Promise<SendResult> {
@@ -95,6 +95,29 @@ export class GowaService implements MessagingProvider {
     const data = await res.json();
     if (!res.ok || data.code !== 200) {
       throw new Error(`GoWA image failed: ${data.message ?? res.statusText}`);
+    }
+    return {
+      messageId: data.results?.message_id ?? "unknown",
+      provider: this.name,
+    };
+  }
+
+  private async postText(to: string, text: string): Promise<SendResult> {
+    const res = await fetch(`${this.config.baseUrl}/send/message`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: this.authHeader,
+      },
+      body: JSON.stringify({
+        phone: toWhatsAppJid(to),
+        message: text,
+      }),
+    });
+
+    const data = await res.json();
+    if (!res.ok || data.code !== 200) {
+      throw new Error(`GoWA message failed: ${data.message ?? res.statusText}`);
     }
     return {
       messageId: data.results?.message_id ?? "unknown",

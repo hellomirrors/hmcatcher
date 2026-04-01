@@ -1,3 +1,5 @@
+import type { ButtonOption, ListSection } from "@/domain/types";
+
 export type ConversationStep =
   | "welcome"
   | "ask_first_name"
@@ -23,9 +25,16 @@ export interface ConversationData {
 }
 
 export interface ConversationResponse {
+  buttons?: ButtonOption[];
+  list?: {
+    body: string;
+    buttonText: string;
+    sections: ListSection[];
+    title: string;
+  };
   sendQr?: {
-    content: string;
     caption: string;
+    content: string;
   };
   text: string;
 }

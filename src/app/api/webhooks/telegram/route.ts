@@ -13,7 +13,6 @@ export async function POST(request: Request): Promise<Response> {
   const msg = result.data.message;
   if (msg?.text) {
     const chatId = String(msg.chat.id);
-
     console.log(
       JSON.stringify({
         event: "telegram_inbound",
@@ -29,6 +28,25 @@ export async function POST(request: Request): Promise<Response> {
       await handleConversationMessage("telegram", chatId, msg.text);
     } catch (error) {
       console.error("Telegram conversation error:", error);
+    }
+  }
+
+  const cb = result.data.callback_query;
+  if (cb?.data) {
+    const chatId = String(cb.message.chat.id);
+    console.log(
+      JSON.stringify({
+        event: "telegram_callback",
+        from: cb.from.id,
+        chatId: cb.message.chat.id,
+        data: cb.data,
+      })
+    );
+
+    try {
+      await handleConversationMessage("telegram", chatId, cb.data);
+    } catch (error) {
+      console.error("Telegram callback error:", error);
     }
   }
 

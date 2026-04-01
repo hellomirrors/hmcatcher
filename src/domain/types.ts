@@ -10,6 +10,30 @@ export interface ImageMessage {
   to: string;
 }
 
+export interface ButtonOption {
+  id: string;
+  title: string;
+}
+
+export interface ButtonMessage {
+  body: string;
+  buttons: ButtonOption[];
+  to: string;
+}
+
+export interface ListSection {
+  rows: ButtonOption[];
+  title: string;
+}
+
+export interface ListMessage {
+  body: string;
+  buttonText: string;
+  sections: ListSection[];
+  title: string;
+  to: string;
+}
+
 export interface SendResult {
   messageId: string;
   provider: string;
@@ -26,6 +50,8 @@ export interface InboundMessage {
 
 export interface MessagingProvider {
   readonly name: string;
+  sendButtons(message: ButtonMessage): Promise<SendResult>;
   sendImage(message: ImageMessage): Promise<SendResult>;
+  sendList(message: ListMessage): Promise<SendResult>;
   sendText(message: TextMessage): Promise<SendResult>;
 }

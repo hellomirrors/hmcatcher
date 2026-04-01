@@ -8,15 +8,31 @@ import type {
 
 const emailSchema = z.email("Bitte eine gültige E-Mail-Adresse eingeben.");
 
+const POSITIONS = [
+  { id: "pos_pdl", title: "Pflegedienstleitung" },
+  { id: "pos_wbl", title: "Wohnbereichsleitung" },
+  { id: "pos_el", title: "Einrichtungsleitung" },
+  { id: "pos_pfk", title: "Pflegefachkraft" },
+  { id: "pos_pa", title: "Pflegeassistenz" },
+  { id: "pos_bt", title: "Betreuungskraft" },
+  { id: "pos_vw", title: "Verwaltung" },
+  { id: "pos_qm", title: "Qualitätsmanagement" },
+  { id: "pos_it", title: "IT / Digitalisierung" },
+  { id: "pos_gl", title: "Geschäftsleitung" },
+  { id: "pos_other", title: "Andere (bitte eintippen)" },
+];
+
+const POSITION_MAP = new Map(POSITIONS.map((p) => [p.id, p.title]));
+
 const MESSAGES: Record<ConversationStep, string> = {
   welcome:
     "Willkommen bei Hellomirror! 👋\nIch helfe dir, deine Kontaktdaten zu erfassen.\n\nWie ist dein Vorname?",
   ask_first_name: "Wie ist dein Vorname?",
   ask_last_name: "Danke! Und dein Nachname?",
   ask_position: "Was ist deine Position / Berufsbezeichnung?",
-  ask_email: "Wie lautet deine E-Mail-Adresse?",
+  ask_email: "Wie lautet deine E-Mail-Adresse? 📧",
   ask_consent:
-    'Ich möchte deine Daten speichern und dir deinen persönlichen QR-Code senden. Bist du damit einverstanden?\n\nAntworte mit "Ja" oder "Nein".',
+    "Ich möchte deine Daten speichern und dir deinen persönlichen QR-Code senden. Bist du damit einverstanden?",
   complete: "Vielen Dank! Hier ist dein persönlicher QR-Code! 🎉",
 };
 
@@ -41,14 +57,48 @@ function isStartCommand(text: string): boolean {
   );
 }
 
+function buildPositionResponse(): ConversationResponse {
+  return {
+    text: MESSAGES.ask_position,
+    list: {
+      title: "Position auswählen",
+      body: "Wähle deine Position aus der Liste oder tippe sie ein.",
+      buttonText: "Position wählen",
+      sections: [{ title: "Positionen", rows: POSITIONS }],
+    },
+  };
+}
+
+function buildConsentResponse(): ConversationResponse {
+  return {
+    text: MESSAGES.ask_consent,
+    buttons: [
+      { id: "consent_yes", title: "Ja ✅" },
+      { id: "consent_no", title: "Nein ❌" },
+    ],
+  };
+}
+
 function isConsentYes(text: string): boolean {
   const normalized = text.trim().toLowerCase();
-  return normalized === "ja" || normalized === "yes" || normalized === "j";
+  return (
+    normalized === "ja" ||
+    normalized === "yes" ||
+    normalized === "j" ||
+    normalized === "ja ✅" ||
+    normalized === "consent_yes"
+  );
 }
 
 function isConsentNo(text: string): boolean {
   const normalized = text.trim().toLowerCase();
-  return normalized === "nein" || normalized === "no" || normalized === "n";
+  return (
+    normalized === "nein" ||
+    normalized === "no" ||
+    normalized === "n" ||
+    normalized === "nein ❌" ||
+    normalized === "consent_no"
+  );
 }
 
 export function handleInboundMessage(
@@ -85,14 +135,21 @@ export function handleInboundMessage(
       session.data.lastName = trimmed;
       session.step = "ask_position";
       setSession(provider, userId, session);
-      return { text: MESSAGES.ask_position };
+      return buildPositionResponse();
     }
 
     case "ask_position": {
       if (trimmed.length === 0) {
-        return { text: "Bitte gib deine Position ein." };
+        return buildPositionResponse();
       }
-      session.data.position = trimmed;
+      const mapped = POSITION_MAP.get(trimmed);
+      if (mapped && trimmed !== "pos_other") {
+        session.data.position = mapped;
+      } else if (trimmed === "pos_other") {
+        return { text: "Bitte tippe deine Position ein:" };
+      } else {
+        session.data.position = trimmed;
+      }
       session.step = "ask_email";
       setSession(provider, userId, session);
       return { text: MESSAGES.ask_email };
@@ -108,7 +165,7 @@ export function handleInboundMessage(
       session.data.email = result.data;
       session.step = "ask_consent";
       setSession(provider, userId, session);
-      return { text: MESSAGES.ask_consent };
+      return buildConsentResponse();
     }
 
     case "ask_consent": {
@@ -140,9 +197,7 @@ export function handleInboundMessage(
         };
       }
 
-      return {
-        text: 'Bitte antworte mit "Ja" oder "Nein".',
-      };
+      return buildConsentResponse();
     }
 
     default: {

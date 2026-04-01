@@ -1,5 +1,7 @@
 import type {
+  ButtonMessage,
   ImageMessage,
+  ListMessage,
   MessagingProvider,
   SendResult,
   TextMessage,
@@ -20,25 +22,35 @@ export class TelegramService implements MessagingProvider {
   }
 
   async sendText(message: TextMessage): Promise<SendResult> {
-    const res = await fetch(
-      `${API_BASE}/bot${this.config.botToken}/sendMessage`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          chat_id: message.to,
-          text: message.body,
-        }),
-      }
-    );
+    const res = await this.post("sendMessage", {
+      chat_id: message.to,
+      text: message.body,
+    });
+    return { messageId: String(res.result.message_id), provider: this.name };
+  }
 
-    const data = await res.json();
-    if (!data.ok) {
-      throw new Error(
-        `Telegram message failed: ${data.description ?? res.statusText}`
-      );
-    }
-    return { messageId: String(data.result.message_id), provider: this.name };
+  async sendButtons(message: ButtonMessage): Promise<SendResult> {
+    const keyboard = message.buttons.map((b) => [
+      { text: b.title, callback_data: b.id },
+    ]);
+    const res = await this.post("sendMessage", {
+      chat_id: message.to,
+      text: message.body,
+      reply_markup: { inline_keyboard: keyboard },
+    });
+    return { messageId: String(res.result.message_id), provider: this.name };
+  }
+
+  async sendList(message: ListMessage): Promise<SendResult> {
+    const rows = message.sections.flatMap((s) => s.rows);
+    const keyboard = rows.map((r) => [{ text: r.title, callback_data: r.id }]);
+    const res = await this.post("sendMessage", {
+      chat_id: message.to,
+      text: `*${message.title}*\n${message.body}`,
+      parse_mode: "Markdown",
+      reply_markup: { inline_keyboard: keyboard },
+    });
+    return { messageId: String(res.result.message_id), provider: this.name };
   }
 
   async sendImage(message: ImageMessage): Promise<SendResult> {
@@ -66,5 +78,26 @@ export class TelegramService implements MessagingProvider {
       );
     }
     return { messageId: String(data.result.message_id), provider: this.name };
+  }
+
+  private async post(
+    method: string,
+    body: unknown
+  ): Promise<{ result: { message_id: number } }> {
+    const res = await fetch(
+      `${API_BASE}/bot${this.config.botToken}/${method}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      }
+    );
+    const data = await res.json();
+    if (!data.ok) {
+      throw new Error(
+        `Telegram ${method} failed: ${data.description ?? res.statusText}`
+      );
+    }
+    return data;
   }
 }

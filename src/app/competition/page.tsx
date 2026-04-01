@@ -1,19 +1,34 @@
 import Image from "next/image";
+import { readSettings } from "@/domain/settings/settings-service";
+
+export const dynamic = "force-dynamic";
 
 const TELEGRAM_BOT_USERNAME =
   process.env.TELEGRAM_BOT_USERNAME ?? "hmcatcher_bot";
-const WHATSAPP_PHONE_NUMBER =
-  process.env.WHATSAPP_PHONE_NUMBER ?? "4917012345678";
 
-const telegramLink = TELEGRAM_BOT_USERNAME
-  ? `https://t.me/${TELEGRAM_BOT_USERNAME}?start=messe`
-  : "";
+function getWhatsAppPhoneNumber(provider: string): string {
+  if (provider === "gowa") {
+    return (
+      process.env.GOWA_PHONE_NUMBER ??
+      process.env.WHATSAPP_PHONE_NUMBER ??
+      "4917012345678"
+    );
+  }
+  return process.env.WHATSAPP_PHONE_NUMBER ?? "4917012345678";
+}
 
-const whatsappLink = WHATSAPP_PHONE_NUMBER
-  ? `https://wa.me/${WHATSAPP_PHONE_NUMBER}?text=start`
-  : "";
+export default async function CompetitionPage() {
+  const settings = await readSettings();
+  const whatsappPhone = getWhatsAppPhoneNumber(settings.whatsappProvider);
 
-export default function CompetitionPage() {
+  const telegramLink = TELEGRAM_BOT_USERNAME
+    ? `https://t.me/${TELEGRAM_BOT_USERNAME}?start=messe`
+    : "";
+
+  const whatsappLink = whatsappPhone
+    ? `https://wa.me/${whatsappPhone}?text=start`
+    : "";
+
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-12 p-8">
       <h1 className="text-center font-semibold text-3xl">

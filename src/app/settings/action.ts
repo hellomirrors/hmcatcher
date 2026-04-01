@@ -52,6 +52,7 @@ export async function getEnvStatus(): Promise<EnvVarGroup[]> {
         envInfo("GOWA_USERNAME"),
         envInfo("GOWA_PASSWORD"),
         envInfo("GOWA_WEBHOOK_SECRET"),
+        envInfo("GOWA_PHONE_NUMBER"),
       ],
     },
     {

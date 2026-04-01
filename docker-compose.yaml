@@ -1,6 +1,10 @@
 services:
   hmcatcher:
-    build: .
+    build:
+      context: .
+      args:
+        - TELEGRAM_BOT_USERNAME=${TELEGRAM_BOT_USERNAME:-hmcatcher}
+        - WHATSAPP_PHONE_NUMBER=${WHATSAPP_PHONE_NUMBER:-4917012345678}
     expose:
       - "3000"
     environment:
@@ -10,3 +14,5 @@ services:
       - WHATSAPP_PHONE_NUMBER_ID=${WHATSAPP_PHONE_NUMBER_ID}
       - WHATSAPP_WEBHOOK_VERIFY_TOKEN=${WHATSAPP_WEBHOOK_VERIFY_TOKEN}
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - TELEGRAM_BOT_USERNAME=${TELEGRAM_BOT_USERNAME:-hmcatcher}
+      - WHATSAPP_PHONE_NUMBER=${WHATSAPP_PHONE_NUMBER:-4917012345678}

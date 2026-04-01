@@ -96,3 +96,19 @@ export const telegramUpdateSchema = z.object({
 });
 
 export type TelegramUpdate = z.infer<typeof telegramUpdateSchema>;
+
+export const gowaWebhookPayloadSchema = z.object({
+  event: z.string(),
+  device_id: z.string(),
+  payload: z.object({
+    id: z.string(),
+    chat_id: z.string(),
+    from: z.string(),
+    from_name: z.string().optional(),
+    timestamp: z.string(),
+    is_from_me: z.boolean().optional(),
+    body: z.string().optional(),
+  }),
+});
+
+export type GowaWebhookPayload = z.infer<typeof gowaWebhookPayloadSchema>;

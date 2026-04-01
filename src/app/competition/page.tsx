@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { GowaService } from "@/domain/messaging/gowa-service";
 import { readSettings } from "@/domain/settings/settings-service";
 
 export const dynamic = "force-dynamic";
@@ -6,20 +7,25 @@ export const dynamic = "force-dynamic";
 const TELEGRAM_BOT_USERNAME =
   process.env.TELEGRAM_BOT_USERNAME ?? "hmcatcher_bot";
 
-function getWhatsAppPhoneNumber(provider: string): string {
+async function getWhatsAppPhoneNumber(provider: string): Promise<string> {
   if (provider === "gowa") {
-    return (
-      process.env.GOWA_PHONE_NUMBER ??
-      process.env.WHATSAPP_PHONE_NUMBER ??
-      "4917012345678"
-    );
+    const baseUrl = process.env.GOWA_BASE_URL;
+    const username = process.env.GOWA_USERNAME;
+    const password = process.env.GOWA_PASSWORD;
+    if (baseUrl && username && password) {
+      const gowa = new GowaService({ baseUrl, username, password });
+      const phone = await gowa.getPhoneNumber();
+      if (phone) {
+        return phone;
+      }
+    }
   }
   return process.env.WHATSAPP_PHONE_NUMBER ?? "4917012345678";
 }
 
 export default async function CompetitionPage() {
   const settings = await readSettings();
-  const whatsappPhone = getWhatsAppPhoneNumber(settings.whatsappProvider);
+  const whatsappPhone = await getWhatsAppPhoneNumber(settings.whatsappProvider);
 
   const telegramLink = TELEGRAM_BOT_USERNAME
     ? `https://t.me/${TELEGRAM_BOT_USERNAME}?start=messe`

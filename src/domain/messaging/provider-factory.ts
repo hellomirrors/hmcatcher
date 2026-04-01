@@ -1,12 +1,11 @@
+import { readSettings } from "@/domain/settings/settings-service";
 import type { MessagingProvider } from "@/domain/types";
 import { GowaService } from "./gowa-service";
 import { TelegramService } from "./telegram-service";
 import { WhatsappService } from "./whatsapp-service";
 
-export function createMessagingProvider(provider?: string): MessagingProvider {
-  const resolved = provider ?? process.env.MESSAGING_PROVIDER ?? "whatsapp";
-
-  if (resolved === "telegram") {
+export function createMessagingProvider(provider: string): MessagingProvider {
+  if (provider === "telegram") {
     const botToken = process.env.TELEGRAM_BOT_TOKEN;
     if (!botToken) {
       throw new Error("Missing env var: TELEGRAM_BOT_TOKEN");
@@ -14,7 +13,7 @@ export function createMessagingProvider(provider?: string): MessagingProvider {
     return new TelegramService({ botToken });
   }
 
-  if (resolved === "gowa") {
+  if (provider === "gowa") {
     const baseUrl = process.env.GOWA_BASE_URL;
     const username = process.env.GOWA_USERNAME;
     const password = process.env.GOWA_PASSWORD;
@@ -34,4 +33,10 @@ export function createMessagingProvider(provider?: string): MessagingProvider {
     );
   }
   return new WhatsappService({ accessToken, phoneNumberId });
+}
+
+export async function createMessagingProviderFromSettings(): Promise<MessagingProvider> {
+  const settings = await readSettings();
+  const provider = process.env.MESSAGING_PROVIDER ?? settings.whatsappProvider;
+  return createMessagingProvider(provider);
 }

@@ -7,6 +7,12 @@ export function Header() {
         <Link className="font-semibold text-lg" href="/">
           hmcatcher
         </Link>
+        <Link
+          className="text-muted-foreground text-sm hover:text-foreground"
+          href="/settings"
+        >
+          Einstellungen
+        </Link>
       </nav>
     </header>
   );

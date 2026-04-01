@@ -1,6 +1,6 @@
 "use server";
 
-import { createMessagingProvider } from "@/domain/messaging/provider-factory";
+import { createMessagingProviderFromSettings } from "@/domain/messaging/provider-factory";
 import { generateQrPng } from "@/domain/messaging/qr-service";
 import { sendQrInputSchema, sendTextInputSchema } from "@/domain/schema";
 
@@ -38,7 +38,7 @@ export async function sendTextAction(
   }
 
   try {
-    const provider = createMessagingProvider();
+    const provider = await createMessagingProviderFromSettings();
     const sent = await provider.sendText(result.data);
     return { success: true, messageId: sent.messageId };
   } catch (error) {
@@ -64,7 +64,7 @@ export async function sendQrAction(
   }
 
   try {
-    const provider = createMessagingProvider();
+    const provider = await createMessagingProviderFromSettings();
     const qrBuffer = await generateQrPng(result.data.content);
     const sent = await provider.sendImage({
       to: result.data.to,

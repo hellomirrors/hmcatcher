@@ -24,6 +24,7 @@ ENV NODE_ENV=production
 
 RUN adduser --system --uid 1001 nextjs
 RUN mkdir .next && chown nextjs:root .next
+RUN mkdir -p /data && chown nextjs:root /data
 
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:root /app/.next/standalone ./

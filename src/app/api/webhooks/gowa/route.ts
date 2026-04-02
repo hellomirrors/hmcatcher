@@ -12,11 +12,13 @@ export async function POST(request: Request): Promise<Response> {
 
   const { event, payload } = result.data;
 
-  if (event !== "message" || payload.is_from_me || !payload.body) {
+  const from = payload.from.replace("@s.whatsapp.net", "");
+  const ownPhone = process.env.GOWA_PHONE_NUMBER;
+  const isOwnMessage = payload.is_from_me || (ownPhone && from === ownPhone);
+
+  if (event !== "message" || isOwnMessage || !payload.body) {
     return Response.json({ ok: true }, { status: 200 });
   }
-
-  const from = payload.from.replace("@s.whatsapp.net", "");
 
   console.log(
     JSON.stringify({

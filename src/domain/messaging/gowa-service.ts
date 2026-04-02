@@ -83,7 +83,7 @@ export class GowaService implements MessagingProvider {
     });
 
     const data = await res.json();
-    if (!res.ok || data.code !== 200) {
+    if (!res.ok) {
       throw new Error(`GoWA image failed: ${data.message ?? res.statusText}`);
     }
     return {
@@ -107,7 +107,7 @@ export class GowaService implements MessagingProvider {
     });
 
     const data = await res.json();
-    if (!res.ok || data.code !== 200) {
+    if (!res.ok) {
       throw new Error(`GoWA message failed: ${data.message ?? res.statusText}`);
     }
     return {

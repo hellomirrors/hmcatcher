@@ -3,14 +3,16 @@ import { gowaWebhookPayloadSchema } from "@/domain/schema";
 
 export async function POST(request: Request): Promise<Response> {
   const body = await request.json();
+  console.log("[GoWA webhook] raw payload:", JSON.stringify(body));
   const result = gowaWebhookPayloadSchema.safeParse(body);
 
   if (!result.success) {
-    console.error("GoWA webhook: invalid payload", result.error);
+    console.error("[GoWA webhook] invalid payload:", result.error);
     return Response.json({ ok: true }, { status: 200 });
   }
 
   const { event, device_id, payload } = result.data;
+  console.log("[GoWA webhook] parsed device_id:", device_id);
 
   if (event !== "message" || payload.is_from_me || !payload.body) {
     return Response.json({ ok: true }, { status: 200 });
@@ -26,6 +28,7 @@ export async function POST(request: Request): Promise<Response> {
       chatId: payload.chat_id,
       text: payload.body,
       timestamp: payload.timestamp,
+      deviceId: device_id,
     })
   );
 

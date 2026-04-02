@@ -69,7 +69,11 @@ export async function getEnvStatus(): Promise<EnvVarGroup[]> {
     },
     {
       label: "Allgemein",
-      vars: [envInfo("MESSAGING_PROVIDER"), envInfo("SETTINGS_DIR")],
+      vars: [
+        envInfo("MESSAGING_PROVIDER"),
+        envInfo("SETTINGS_DIR"),
+        envInfo("APP_BASE_URL"),
+      ],
     },
   ]);
 }
@@ -80,8 +84,10 @@ export async function updateSettingsAction(
 ): Promise<SettingsActionState> {
   try {
     const whatsappProvider = formData.get("whatsappProvider") as string;
+    const conversationMode = formData.get("conversationMode") as string;
     const settings = await writeSettings({
       whatsappProvider: whatsappProvider as Settings["whatsappProvider"],
+      conversationMode: conversationMode as Settings["conversationMode"],
     });
     revalidatePath("/settings");
     return { success: true, settings };

@@ -11,6 +11,8 @@ export const STAR_TO_RELEVANCE: Record<number, string> = {
 const DEFAULT_MESSAGES = {
   welcome:
     "Willkommen bei Hellomirror! 👋\nIch helfe dir, deine Kontaktdaten zu erfassen.\n\nWie ist dein Vorname?",
+  welcome_webform:
+    "Willkommen bei Hellomirror! 👋\nBitte fülle das kurze Formular aus, um deinen persönlichen QR-Code zu erhalten:\n\n{link}",
   ask_first_name: "Wie ist dein Vorname?",
   ask_last_name: "Danke! Und dein Nachname?",
   ask_position: "Was ist deine Position / Berufsbezeichnung?",
@@ -67,6 +69,7 @@ export const conversationConfigSchema = z.object({
   messages: z
     .object({
       welcome: z.string(),
+      welcome_webform: z.string(),
       ask_first_name: z.string(),
       ask_last_name: z.string(),
       ask_position: z.string(),

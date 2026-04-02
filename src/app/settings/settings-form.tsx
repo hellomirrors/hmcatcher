@@ -116,6 +116,30 @@ export function SettingsForm({
             </p>
           </div>
 
+          <div className="grid gap-1.5">
+            <Label htmlFor="conversationMode">Konversationsmodus</Label>
+            <Select
+              defaultValue={state.settings?.conversationMode ?? "chat"}
+              name="conversationMode"
+            >
+              <SelectTrigger id="conversationMode">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="chat">
+                  Chat (Datenerfassung im Chat)
+                </SelectItem>
+                <SelectItem value="webform">
+                  Webformular (Link zum Formular)
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-muted-foreground text-xs">
+              Sollen Kontaktdaten im Chat oder über ein Webformular erfasst
+              werden?
+            </p>
+          </div>
+
           <Button disabled={pending} size="lg" type="submit">
             {pending ? "Wird gespeichert…" : "Speichern"}
           </Button>

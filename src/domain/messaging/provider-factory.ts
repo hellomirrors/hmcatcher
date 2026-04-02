@@ -4,7 +4,14 @@ import { GowaService } from "./gowa-service";
 import { TelegramService } from "./telegram-service";
 import { WhatsappService } from "./whatsapp-service";
 
-export function createMessagingProvider(provider: string): MessagingProvider {
+interface ProviderOptions {
+  deviceId?: string;
+}
+
+export function createMessagingProvider(
+  provider: string,
+  options?: ProviderOptions
+): MessagingProvider {
   if (provider === "telegram") {
     const botToken = process.env.TELEGRAM_BOT_TOKEN;
     if (!botToken) {
@@ -17,12 +24,13 @@ export function createMessagingProvider(provider: string): MessagingProvider {
     const baseUrl = process.env.GOWA_BASE_URL;
     const username = process.env.GOWA_USERNAME;
     const password = process.env.GOWA_PASSWORD;
-    if (!(baseUrl && username && password)) {
+    const deviceId = options?.deviceId ?? process.env.GOWA_DEVICE_ID;
+    if (!(baseUrl && username && password && deviceId)) {
       throw new Error(
-        "Missing env vars: GOWA_BASE_URL, GOWA_USERNAME, GOWA_PASSWORD"
+        "Missing env vars: GOWA_BASE_URL, GOWA_USERNAME, GOWA_PASSWORD, GOWA_DEVICE_ID"
       );
     }
-    return new GowaService({ baseUrl, username, password });
+    return new GowaService({ baseUrl, username, password, deviceId });
   }
 
   const accessToken = process.env.WHATSAPP_ACCESS_TOKEN;

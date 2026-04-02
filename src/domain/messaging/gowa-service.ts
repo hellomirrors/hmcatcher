@@ -44,20 +44,27 @@ export class GowaService implements MessagingProvider {
   }
 
   async sendButtons(message: ButtonMessage): Promise<SendResult> {
-    const lines = message.buttons.map((b) => `▸ ${b.title}`);
-    const text = `${message.body}\n\n${lines.join("\n")}`;
-    return await this.postText(message.to, text);
+    return await this.postPoll(
+      message.to,
+      message.body,
+      message.buttons.map((b) => b.title),
+      1
+    );
   }
 
   async sendList(message: ListMessage): Promise<SendResult> {
-    const lines: string[] = [];
+    const options: string[] = [];
     for (const section of message.sections) {
       for (const row of section.rows) {
-        lines.push(`▸ ${row.title}`);
+        options.push(row.title);
       }
     }
-    const text = `*${message.title}*\n${message.body}\n\n${lines.join("\n")}`;
-    return await this.postText(message.to, text);
+    return await this.postPoll(
+      message.to,
+      `${message.title}\n${message.body}`,
+      options,
+      1
+    );
   }
 
   async sendImage(message: ImageMessage): Promise<SendResult> {
@@ -85,6 +92,37 @@ export class GowaService implements MessagingProvider {
     const data = await res.json();
     if (!res.ok) {
       throw new Error(`GoWA image failed: ${data.message ?? res.statusText}`);
+    }
+    return {
+      messageId: data.results?.message_id ?? "unknown",
+      provider: this.name,
+    };
+  }
+
+  private async postPoll(
+    to: string,
+    question: string,
+    options: string[],
+    maxAnswer: number
+  ): Promise<SendResult> {
+    const res = await fetch(`${this.config.baseUrl}/send/poll`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: this.authHeader,
+        "X-Device-Id": this.config.deviceId,
+      },
+      body: JSON.stringify({
+        phone: toWhatsAppJid(to),
+        question,
+        options,
+        max_answer: maxAnswer,
+      }),
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(`GoWA poll failed: ${data.message ?? res.statusText}`);
     }
     return {
       messageId: data.results?.message_id ?? "unknown",

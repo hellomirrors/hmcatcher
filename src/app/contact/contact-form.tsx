@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect } from "react";
+import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -46,15 +46,6 @@ export function ContactForm({
     initialState
   );
 
-  useEffect(() => {
-    if (state.success && chatReturnUrl) {
-      const timer = setTimeout(() => {
-        window.location.href = chatReturnUrl;
-      }, 2000);
-      return () => clearTimeout(timer);
-    }
-  }, [state.success, chatReturnUrl]);
-
   if (state.success) {
     return (
       <div className="mx-auto w-full max-w-sm px-4 text-center">
@@ -62,15 +53,12 @@ export function ContactForm({
         <p className="mt-2 text-muted-foreground text-sm">
           Dein persönlicher QR-Code wurde in den Chat gesendet.
         </p>
-        <p className="mt-1 text-muted-foreground text-xs">
-          Du wirst gleich zum Chat weitergeleitet…
-        </p>
         {chatReturnUrl && (
           <a
-            className="mt-4 inline-block text-primary text-sm hover:underline"
+            className="mt-6 inline-flex h-11 w-full items-center justify-center rounded-md bg-primary font-medium text-primary-foreground text-sm hover:bg-primary/90"
             href={chatReturnUrl}
           >
-            Jetzt zum Chat
+            Zurück zum Chat
           </a>
         )}
       </div>

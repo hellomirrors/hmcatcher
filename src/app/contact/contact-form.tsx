@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -34,7 +34,9 @@ export function ContactForm({
   provider,
   userId,
   roles,
+  chatReturnUrl,
 }: {
+  chatReturnUrl: string;
   provider: string;
   roles: Role[];
   userId: string;
@@ -44,29 +46,45 @@ export function ContactForm({
     initialState
   );
 
+  useEffect(() => {
+    if (state.success && chatReturnUrl) {
+      const timer = setTimeout(() => {
+        window.location.href = chatReturnUrl;
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [state.success, chatReturnUrl]);
+
   if (state.success) {
     return (
-      <Card className="mx-auto max-w-lg">
-        <CardHeader>
-          <CardTitle>Vielen Dank!</CardTitle>
-          <CardDescription>
-            Dein persönlicher QR-Code wurde in den Chat gesendet. Du kannst
-            dieses Fenster jetzt schließen.
-          </CardDescription>
-        </CardHeader>
-      </Card>
+      <div className="mx-auto w-full max-w-sm px-4 text-center">
+        <h2 className="font-semibold text-xl">Vielen Dank!</h2>
+        <p className="mt-2 text-muted-foreground text-sm">
+          Dein persönlicher QR-Code wurde in den Chat gesendet.
+        </p>
+        <p className="mt-1 text-muted-foreground text-xs">
+          Du wirst gleich zum Chat weitergeleitet…
+        </p>
+        {chatReturnUrl && (
+          <a
+            className="mt-4 inline-block text-primary text-sm hover:underline"
+            href={chatReturnUrl}
+          >
+            Jetzt zum Chat
+          </a>
+        )}
+      </div>
     );
   }
 
   const selectableRoles = roles.filter((r) => r.id !== "pos_other");
 
   return (
-    <Card className="mx-auto max-w-lg">
+    <Card className="mx-auto w-full max-w-sm">
       <CardHeader>
-        <CardTitle>Kontaktdaten erfassen</CardTitle>
+        <CardTitle>Kontaktdaten</CardTitle>
         <CardDescription>
-          Bitte fülle das Formular aus, um deinen persönlichen QR-Code zu
-          erhalten.
+          Fülle das Formular aus, um deinen QR-Code zu erhalten.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -80,27 +98,26 @@ export function ContactForm({
             </p>
           )}
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="grid gap-1.5">
-              <Label htmlFor="firstName">Vorname</Label>
-              <Input
-                aria-invalid={!!state.errors?.firstName}
-                id="firstName"
-                name="firstName"
-                required
-              />
-              <FieldError errors={state.errors?.firstName} />
-            </div>
-            <div className="grid gap-1.5">
-              <Label htmlFor="lastName">Nachname</Label>
-              <Input
-                aria-invalid={!!state.errors?.lastName}
-                id="lastName"
-                name="lastName"
-                required
-              />
-              <FieldError errors={state.errors?.lastName} />
-            </div>
+          <div className="grid gap-1.5">
+            <Label htmlFor="firstName">Vorname</Label>
+            <Input
+              aria-invalid={!!state.errors?.firstName}
+              id="firstName"
+              name="firstName"
+              required
+            />
+            <FieldError errors={state.errors?.firstName} />
+          </div>
+
+          <div className="grid gap-1.5">
+            <Label htmlFor="lastName">Nachname</Label>
+            <Input
+              aria-invalid={!!state.errors?.lastName}
+              id="lastName"
+              name="lastName"
+              required
+            />
+            <FieldError errors={state.errors?.lastName} />
           </div>
 
           <div className="grid gap-1.5">
@@ -134,7 +151,7 @@ export function ContactForm({
 
           <p className="text-muted-foreground text-xs">
             Mit dem Absenden stimmst du der Speicherung deiner Daten und dem
-            Versand deines persönlichen QR-Codes zu.
+            Versand deines QR-Codes zu.
           </p>
 
           <Button disabled={pending} size="lg" type="submit">

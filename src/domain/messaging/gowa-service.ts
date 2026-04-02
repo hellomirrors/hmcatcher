@@ -14,6 +14,8 @@ interface GowaConfig {
   username: string;
 }
 
+const TRAILING_SLASHES = /\/+$/;
+
 function toWhatsAppJid(phone: string): string {
   const digits = phone.replace(/\D/g, "");
   return `${digits}@s.whatsapp.net`;
@@ -24,7 +26,10 @@ export class GowaService implements MessagingProvider {
   private readonly config: GowaConfig;
 
   constructor(config: GowaConfig) {
-    this.config = config;
+    this.config = {
+      ...config,
+      baseUrl: config.baseUrl.replace(TRAILING_SLASHES, ""),
+    };
   }
 
   private get authHeader(): string {
@@ -88,12 +93,7 @@ export class GowaService implements MessagingProvider {
   }
 
   private async postText(to: string, text: string): Promise<SendResult> {
-    const url = `${this.config.baseUrl}/send/message`;
-    console.log("[GoWA postText] url:", url);
-    console.log("[GoWA postText] deviceId:", this.config.deviceId);
-    console.log("[GoWA postText] to:", to, "→ JID:", toWhatsAppJid(to));
-
-    const res = await fetch(url, {
+    const res = await fetch(`${this.config.baseUrl}/send/message`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -107,7 +107,6 @@ export class GowaService implements MessagingProvider {
     });
 
     const data = await res.json();
-    console.log("[GoWA postText] response:", res.status, JSON.stringify(data));
     if (!res.ok || data.code !== 200) {
       throw new Error(`GoWA message failed: ${data.message ?? res.statusText}`);
     }

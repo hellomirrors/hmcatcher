@@ -88,7 +88,12 @@ export class GowaService implements MessagingProvider {
   }
 
   private async postText(to: string, text: string): Promise<SendResult> {
-    const res = await fetch(`${this.config.baseUrl}/send/message`, {
+    const url = `${this.config.baseUrl}/send/message`;
+    console.log("[GoWA postText] url:", url);
+    console.log("[GoWA postText] deviceId:", this.config.deviceId);
+    console.log("[GoWA postText] to:", to, "→ JID:", toWhatsAppJid(to));
+
+    const res = await fetch(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -102,6 +107,7 @@ export class GowaService implements MessagingProvider {
     });
 
     const data = await res.json();
+    console.log("[GoWA postText] response:", res.status, JSON.stringify(data));
     if (!res.ok || data.code !== 200) {
       throw new Error(`GoWA message failed: ${data.message ?? res.statusText}`);
     }

@@ -25,6 +25,13 @@ export function createMessagingProvider(
     const username = process.env.GOWA_USERNAME;
     const password = process.env.GOWA_PASSWORD;
     const deviceId = options?.deviceId ?? process.env.GOWA_DEVICE_ID;
+    console.log("[provider-factory] gowa options.deviceId:", options?.deviceId);
+    console.log(
+      "[provider-factory] gowa env GOWA_DEVICE_ID:",
+      process.env.GOWA_DEVICE_ID
+    );
+    console.log("[provider-factory] gowa resolved deviceId:", deviceId);
+    console.log("[provider-factory] gowa baseUrl:", baseUrl);
     if (!(baseUrl && username && password && deviceId)) {
       throw new Error(
         "Missing env vars: GOWA_BASE_URL, GOWA_USERNAME, GOWA_PASSWORD, GOWA_DEVICE_ID"

@@ -9,6 +9,7 @@ import type {
 
 interface GowaConfig {
   baseUrl: string;
+  deviceId: string;
   password: string;
   username: string;
 }
@@ -69,7 +70,10 @@ export class GowaService implements MessagingProvider {
 
     const res = await fetch(`${this.config.baseUrl}/send/image`, {
       method: "POST",
-      headers: { Authorization: this.authHeader },
+      headers: {
+        Authorization: this.authHeader,
+        "X-Device-Id": this.config.deviceId,
+      },
       body: formData,
     });
 
@@ -89,6 +93,7 @@ export class GowaService implements MessagingProvider {
       headers: {
         "Content-Type": "application/json",
         Authorization: this.authHeader,
+        "X-Device-Id": this.config.deviceId,
       },
       body: JSON.stringify({
         phone: toWhatsAppJid(to),

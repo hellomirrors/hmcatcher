@@ -2,13 +2,20 @@ import { createMessagingProvider } from "@/domain/messaging/provider-factory";
 import { generateQrPng } from "@/domain/messaging/qr-service";
 import { handleInboundMessage } from "./conversation-engine";
 
+interface ConversationOptions {
+  deviceId?: string;
+}
+
 export async function handleConversationMessage(
   provider: string,
   userId: string,
-  text: string
+  text: string,
+  options?: ConversationOptions
 ): Promise<void> {
   const response = handleInboundMessage(provider, userId, text);
-  const messagingProvider = createMessagingProvider(provider);
+  const messagingProvider = createMessagingProvider(provider, {
+    deviceId: options?.deviceId,
+  });
 
   if (response.list) {
     await messagingProvider.sendList({

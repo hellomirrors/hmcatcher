@@ -3,6 +3,7 @@ import { createMessagingProvider } from "@/domain/messaging/provider-factory";
 import { generateQrPng } from "@/domain/messaging/qr-service";
 import { readSettings } from "@/domain/settings/settings-service";
 import { handleInboundMessage } from "./conversation-engine";
+import { createContactToken } from "./token-store";
 
 const TRAILING_SLASHES = /\/+$/;
 
@@ -11,7 +12,8 @@ function buildContactLink(provider: string, userId: string): string {
     TRAILING_SLASHES,
     ""
   );
-  return `${baseUrl}/contact?p=${encodeURIComponent(provider)}&u=${encodeURIComponent(userId)}`;
+  const token = createContactToken(provider, userId);
+  return `${baseUrl}/c/${token}`;
 }
 
 async function handleWebformMessage(

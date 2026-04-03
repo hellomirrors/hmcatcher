@@ -1,10 +1,11 @@
 FROM node:22-slim AS base
+RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 
 # --- Install dependencies ---
 FROM base AS deps
 COPY package.json ./
-RUN npm install --ignore-scripts
+RUN npm install
 
 # --- Build ---
 FROM base AS builder
@@ -18,17 +19,20 @@ ENV WHATSAPP_PHONE_NUMBER=${WHATSAPP_PHONE_NUMBER}
 RUN npx next build
 
 # --- Production ---
-FROM node:22-alpine AS runner
+FROM node:22-slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 
-RUN adduser --system --uid 1001 nextjs
+RUN adduser --system --uid 1001 --no-create-home nextjs
 RUN mkdir .next && chown nextjs:root .next
 RUN mkdir -p /data && chown nextjs:root /data
 
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:root /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:root /app/.next/static ./.next/static
+COPY --from=builder /app/node_modules/better-sqlite3 ./node_modules/better-sqlite3
+COPY --from=builder /app/node_modules/bindings ./node_modules/bindings
+COPY --from=builder /app/node_modules/file-uri-to-path ./node_modules/file-uri-to-path
 
 USER nextjs
 EXPOSE 3000/tcp

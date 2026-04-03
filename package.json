@@ -13,7 +13,11 @@
     "check": "ultracite check",
     "fix": "ultracite fix",
     "prepare": "lefthook install",
-    "outdated": "bun outdated"
+    "outdated": "bun outdated",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
     "@base-ui/react": "^1.3.0",
@@ -21,8 +25,10 @@
     "@hugeicons/react": "^1.1.6",
     "@tanstack/react-form": "^1.28.6",
     "@tanstack/react-query": "^5.96.1",
+    "better-sqlite3": "^12.8.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "drizzle-orm": "^0.45.2",
     "lucide-react": "^1.7.0",
     "next": "16.2.2",
     "next-themes": "^0.4.6",
@@ -39,10 +45,12 @@
   "devDependencies": {
     "@biomejs/biome": "2.4.10",
     "@tailwindcss/postcss": "^4.2.2",
+    "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^25.5.1",
     "@types/qrcode": "^1.5.6",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
+    "drizzle-kit": "^0.31.10",
     "lefthook": "^2.1.4",
     "tailwindcss": "^4.2.2",
     "typescript": "^6.0.2",
@@ -54,6 +62,8 @@
     "unrs-resolver"
   ],
   "trustedDependencies": [
+    "better-sqlite3",
+    "esbuild",
     "sharp",
     "unrs-resolver"
   ]

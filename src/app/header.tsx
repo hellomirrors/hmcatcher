@@ -10,6 +10,12 @@ export function Header() {
         <div className="flex gap-4">
           <Link
             className="text-muted-foreground text-sm hover:text-foreground"
+            href="/status"
+          >
+            Status
+          </Link>
+          <Link
+            className="text-muted-foreground text-sm hover:text-foreground"
             href="/configuration"
           >
             Konfiguration

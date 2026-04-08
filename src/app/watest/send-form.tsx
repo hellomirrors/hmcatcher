@@ -1,7 +1,6 @@
 "use client";
 
 import { useActionState } from "react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -14,7 +13,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { sendQrAction, sendTextAction, type WatestActionState } from "./action";
+import {
+  sendGowaQrAction,
+  sendGowaTextAction,
+  sendWhatsappQrAction,
+  sendWhatsappTemplateAction,
+  sendWhatsappTextAction,
+  type WatestActionState,
+} from "./action";
+
+type TextAction = typeof sendGowaTextAction;
+type QrAction = typeof sendGowaQrAction;
+type TemplateAction = typeof sendWhatsappTemplateAction;
 
 const initial: WatestActionState = { success: false };
 
@@ -43,19 +53,24 @@ function ResultBanner({ state }: { state: WatestActionState }) {
   return null;
 }
 
-function TextForm({ provider }: { provider: string }) {
-  const [state, formAction, pending] = useActionState(sendTextAction, initial);
-  const placeholder =
-    provider === "telegram" ? "Chat-ID (z.B. 123456789)" : "+491701234567";
-
+function TextForm({
+  action,
+  idPrefix,
+  placeholder,
+}: {
+  action: TextAction;
+  idPrefix: string;
+  placeholder: string;
+}) {
+  const [state, formAction, pending] = useActionState(action, initial);
   return (
     <form action={formAction} className="grid gap-4">
       <ResultBanner state={state} />
       <div className="grid gap-1.5">
-        <Label htmlFor="text-to">Empfänger</Label>
+        <Label htmlFor={`${idPrefix}-to`}>Empfänger</Label>
         <Input
           aria-invalid={!!state.errors?.to}
-          id="text-to"
+          id={`${idPrefix}-to`}
           name="to"
           placeholder={placeholder}
           required
@@ -63,10 +78,10 @@ function TextForm({ provider }: { provider: string }) {
         <FieldError errors={state.errors?.to} />
       </div>
       <div className="grid gap-1.5">
-        <Label htmlFor="text-body">Nachricht</Label>
+        <Label htmlFor={`${idPrefix}-body`}>Nachricht</Label>
         <Textarea
           aria-invalid={!!state.errors?.body}
-          id="text-body"
+          id={`${idPrefix}-body`}
           name="body"
           required
         />
@@ -79,19 +94,24 @@ function TextForm({ provider }: { provider: string }) {
   );
 }
 
-function QrForm({ provider }: { provider: string }) {
-  const [state, formAction, pending] = useActionState(sendQrAction, initial);
-  const placeholder =
-    provider === "telegram" ? "Chat-ID (z.B. 123456789)" : "+491701234567";
-
+function QrForm({
+  action,
+  idPrefix,
+  placeholder,
+}: {
+  action: QrAction;
+  idPrefix: string;
+  placeholder: string;
+}) {
+  const [state, formAction, pending] = useActionState(action, initial);
   return (
     <form action={formAction} className="grid gap-4">
       <ResultBanner state={state} />
       <div className="grid gap-1.5">
-        <Label htmlFor="qr-to">Empfänger</Label>
+        <Label htmlFor={`${idPrefix}-to`}>Empfänger</Label>
         <Input
           aria-invalid={!!state.errors?.to}
-          id="qr-to"
+          id={`${idPrefix}-to`}
           name="to"
           placeholder={placeholder}
           required
@@ -99,10 +119,10 @@ function QrForm({ provider }: { provider: string }) {
         <FieldError errors={state.errors?.to} />
       </div>
       <div className="grid gap-1.5">
-        <Label htmlFor="qr-content">QR-Code Inhalt</Label>
+        <Label htmlFor={`${idPrefix}-content`}>QR-Code Inhalt</Label>
         <Input
           aria-invalid={!!state.errors?.content}
-          id="qr-content"
+          id={`${idPrefix}-content`}
           name="content"
           placeholder="https://example.com"
           required
@@ -110,8 +130,10 @@ function QrForm({ provider }: { provider: string }) {
         <FieldError errors={state.errors?.content} />
       </div>
       <div className="grid gap-1.5">
-        <Label htmlFor="qr-caption">Bildunterschrift (optional)</Label>
-        <Input id="qr-caption" name="caption" />
+        <Label htmlFor={`${idPrefix}-caption`}>
+          Bildunterschrift (optional)
+        </Label>
+        <Input id={`${idPrefix}-caption`} name="caption" />
       </div>
       <Button disabled={pending} size="lg" type="submit">
         {pending ? "Wird gesendet…" : "QR-Code senden"}
@@ -120,29 +142,129 @@ function QrForm({ provider }: { provider: string }) {
   );
 }
 
-export function SendForm({ provider }: { provider: string }) {
+function TemplateForm({
+  action,
+  idPrefix,
+}: {
+  action: TemplateAction;
+  idPrefix: string;
+}) {
+  const [state, formAction, pending] = useActionState(action, initial);
+  return (
+    <form action={formAction} className="grid gap-4">
+      <ResultBanner state={state} />
+      <div className="grid gap-1.5">
+        <Label htmlFor={`${idPrefix}-to`}>Empfänger</Label>
+        <Input
+          aria-invalid={!!state.errors?.to}
+          id={`${idPrefix}-to`}
+          name="to"
+          placeholder="491701234567"
+          required
+        />
+        <FieldError errors={state.errors?.to} />
+      </div>
+      <div className="grid gap-1.5">
+        <Label htmlFor={`${idPrefix}-name`}>Template-Name</Label>
+        <Input
+          aria-invalid={!!state.errors?.templateName}
+          defaultValue="hello_world"
+          id={`${idPrefix}-name`}
+          name="templateName"
+          required
+        />
+        <FieldError errors={state.errors?.templateName} />
+      </div>
+      <div className="grid gap-1.5">
+        <Label htmlFor={`${idPrefix}-lang`}>Sprach-Code</Label>
+        <Input
+          defaultValue="en_US"
+          id={`${idPrefix}-lang`}
+          name="languageCode"
+          required
+        />
+      </div>
+      <Button disabled={pending} size="lg" type="submit">
+        {pending ? "Wird gesendet…" : "Template senden"}
+      </Button>
+    </form>
+  );
+}
+
+function GowaPanel() {
+  return (
+    <Tabs defaultValue="text">
+      <TabsList className="mb-4 w-full">
+        <TabsTrigger value="text">Textnachricht</TabsTrigger>
+        <TabsTrigger value="qr">QR-Code</TabsTrigger>
+      </TabsList>
+      <TabsContent value="text">
+        <TextForm
+          action={sendGowaTextAction}
+          idPrefix="gowa-text"
+          placeholder="+491701234567"
+        />
+      </TabsContent>
+      <TabsContent value="qr">
+        <QrForm
+          action={sendGowaQrAction}
+          idPrefix="gowa-qr"
+          placeholder="+491701234567"
+        />
+      </TabsContent>
+    </Tabs>
+  );
+}
+
+function WhatsappPanel() {
+  return (
+    <Tabs defaultValue="template">
+      <TabsList className="mb-4 w-full">
+        <TabsTrigger value="template">Template</TabsTrigger>
+        <TabsTrigger value="text">Text</TabsTrigger>
+        <TabsTrigger value="qr">Text + QR</TabsTrigger>
+      </TabsList>
+      <TabsContent value="template">
+        <TemplateForm action={sendWhatsappTemplateAction} idPrefix="wa-tpl" />
+      </TabsContent>
+      <TabsContent value="text">
+        <TextForm
+          action={sendWhatsappTextAction}
+          idPrefix="wa-text"
+          placeholder="491701234567"
+        />
+      </TabsContent>
+      <TabsContent value="qr">
+        <QrForm
+          action={sendWhatsappQrAction}
+          idPrefix="wa-qr"
+          placeholder="491701234567"
+        />
+      </TabsContent>
+    </Tabs>
+  );
+}
+
+export function SendForm() {
   return (
     <Card className="mx-auto w-full max-w-lg">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          Messaging Test
-          <Badge variant="outline">{provider}</Badge>
-        </CardTitle>
+        <CardTitle>Messaging Test</CardTitle>
         <CardDescription>
-          Testnachrichten und QR-Codes versenden.
+          Nachrichten via GoWA oder WhatsApp Business API versenden.
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <Tabs defaultValue="text">
+        <Tabs defaultValue="gowa">
           <TabsList className="mb-4 w-full">
-            <TabsTrigger value="text">Textnachricht</TabsTrigger>
-            <TabsTrigger value="qr">QR-Code</TabsTrigger>
+            <TabsTrigger value="gowa">GoWA</TabsTrigger>
+            <TabsTrigger value="whatsapp">WhatsApp Business API</TabsTrigger>
           </TabsList>
-          <TabsContent value="text">
-            <TextForm provider={provider} />
+          <TabsContent value="gowa">
+            <GowaPanel />
           </TabsContent>
-          <TabsContent value="qr">
-            <QrForm provider={provider} />
+          <TabsContent value="whatsapp">
+            <WhatsappPanel />
           </TabsContent>
         </Tabs>
       </CardContent>

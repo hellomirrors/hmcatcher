@@ -1,7 +1,8 @@
 "use server";
 
-import { createMessagingProviderFromSettings } from "@/domain/messaging/provider-factory";
+import { createMessagingProvider } from "@/domain/messaging/provider-factory";
 import { generateQrPng } from "@/domain/messaging/qr-service";
+import { WhatsappService } from "@/domain/messaging/whatsapp-service";
 import { sendQrInputSchema, sendTextInputSchema } from "@/domain/schema";
 
 export interface WatestActionState {
@@ -24,33 +25,28 @@ function extractErrors(
   return errors;
 }
 
-export async function sendTextAction(
-  _prev: WatestActionState,
+async function runText(
+  providerName: "gowa" | "whatsapp",
   formData: FormData
 ): Promise<WatestActionState> {
   const result = sendTextInputSchema.safeParse({
     to: formData.get("to"),
     body: formData.get("body"),
   });
-
   if (!result.success) {
     return { success: false, errors: extractErrors(result.error.issues) };
   }
-
   try {
-    const provider = await createMessagingProviderFromSettings();
+    const provider = createMessagingProvider(providerName);
     const sent = await provider.sendText(result.data);
     return { success: true, messageId: sent.messageId };
   } catch (error) {
-    return {
-      success: false,
-      errors: { _form: [(error as Error).message] },
-    };
+    return { success: false, errors: { _form: [(error as Error).message] } };
   }
 }
 
-export async function sendQrAction(
-  _prev: WatestActionState,
+async function runQr(
+  providerName: "gowa" | "whatsapp",
   formData: FormData
 ): Promise<WatestActionState> {
   const result = sendQrInputSchema.safeParse({
@@ -58,13 +54,11 @@ export async function sendQrAction(
     content: formData.get("content"),
     caption: formData.get("caption") || undefined,
   });
-
   if (!result.success) {
     return { success: false, errors: extractErrors(result.error.issues) };
   }
-
   try {
-    const provider = await createMessagingProviderFromSettings();
+    const provider = createMessagingProvider(providerName);
     const qrBuffer = await generateQrPng(result.data.content);
     const sent = await provider.sendImage({
       to: result.data.to,
@@ -74,9 +68,68 @@ export async function sendQrAction(
     });
     return { success: true, messageId: sent.messageId };
   } catch (error) {
-    return {
-      success: false,
-      errors: { _form: [(error as Error).message] },
-    };
+    return { success: false, errors: { _form: [(error as Error).message] } };
+  }
+}
+
+// GoWA actions
+export function sendGowaTextAction(
+  _prev: WatestActionState,
+  formData: FormData
+): Promise<WatestActionState> {
+  return runText("gowa", formData);
+}
+
+export function sendGowaQrAction(
+  _prev: WatestActionState,
+  formData: FormData
+): Promise<WatestActionState> {
+  return runQr("gowa", formData);
+}
+
+// WhatsApp Business API actions
+export function sendWhatsappTextAction(
+  _prev: WatestActionState,
+  formData: FormData
+): Promise<WatestActionState> {
+  return runText("whatsapp", formData);
+}
+
+export function sendWhatsappQrAction(
+  _prev: WatestActionState,
+  formData: FormData
+): Promise<WatestActionState> {
+  return runQr("whatsapp", formData);
+}
+
+export async function sendWhatsappTemplateAction(
+  _prev: WatestActionState,
+  formData: FormData
+): Promise<WatestActionState> {
+  const to = String(formData.get("to") ?? "").trim();
+  const templateName = String(formData.get("templateName") ?? "").trim();
+  const languageCode =
+    String(formData.get("languageCode") ?? "").trim() || "en_US";
+
+  const errors: Record<string, string[]> = {};
+  if (!to) {
+    errors.to = ["Empfänger ist erforderlich"];
+  }
+  if (!templateName) {
+    errors.templateName = ["Template-Name ist erforderlich"];
+  }
+  if (Object.keys(errors).length > 0) {
+    return { success: false, errors };
+  }
+
+  try {
+    const provider = createMessagingProvider("whatsapp");
+    if (!(provider instanceof WhatsappService)) {
+      throw new Error("Template senden nur via WhatsApp Business API");
+    }
+    const sent = await provider.sendTemplate(to, templateName, languageCode);
+    return { success: true, messageId: sent.messageId };
+  } catch (error) {
+    return { success: false, errors: { _form: [(error as Error).message] } };
   }
 }

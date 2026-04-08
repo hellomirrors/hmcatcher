@@ -75,6 +75,23 @@ export class WhatsappService implements MessagingProvider {
     return { messageId, provider: this.name };
   }
 
+  async sendTemplate(
+    to: string,
+    templateName: string,
+    languageCode: string
+  ): Promise<SendResult> {
+    const messageId = await this.postMessage({
+      messaging_product: "whatsapp",
+      to,
+      type: "template",
+      template: {
+        name: templateName,
+        language: { code: languageCode },
+      },
+    });
+    return { messageId, provider: this.name };
+  }
+
   async sendImage(message: ImageMessage): Promise<SendResult> {
     const mediaId = await this.uploadMedia(
       message.imageBuffer,

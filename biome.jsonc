@@ -6,6 +6,9 @@
     "ultracite/biome/next",
     "ultracite/biome/vitest"
   ],
+  "files": {
+    "includes": ["!.agents", "!**/.agents"]
+  },
   "linter": {
     "rules": {
       "correctness": {

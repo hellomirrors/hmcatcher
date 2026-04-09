@@ -1,5 +1,6 @@
 "use server";
 
+import { logMessage } from "@/domain/messaging/message-log";
 import { createMessagingProvider } from "@/domain/messaging/provider-factory";
 import { generateQrPng } from "@/domain/messaging/qr-service";
 import { WhatsappService } from "@/domain/messaging/whatsapp-service";
@@ -39,6 +40,14 @@ async function runText(
   try {
     const provider = createMessagingProvider(providerName);
     const sent = await provider.sendText(result.data);
+    logMessage({
+      provider: providerName,
+      direction: "out",
+      contact: result.data.to,
+      kind: "text",
+      body: result.data.body,
+      externalId: sent.messageId,
+    });
     return { success: true, messageId: sent.messageId };
   } catch (error) {
     return { success: false, errors: { _form: [(error as Error).message] } };
@@ -65,6 +74,15 @@ async function runQr(
       imageBuffer: qrBuffer,
       mimeType: "image/png",
       caption: result.data.caption,
+    });
+    logMessage({
+      provider: providerName,
+      direction: "out",
+      contact: result.data.to,
+      kind: "image",
+      body: result.data.content,
+      caption: result.data.caption,
+      externalId: sent.messageId,
     });
     return { success: true, messageId: sent.messageId };
   } catch (error) {
@@ -128,6 +146,14 @@ export async function sendWhatsappTemplateAction(
       throw new Error("Template senden nur via WhatsApp Business API");
     }
     const sent = await provider.sendTemplate(to, templateName, languageCode);
+    logMessage({
+      provider: "whatsapp",
+      direction: "out",
+      contact: to,
+      kind: "template",
+      templateName: `${templateName} (${languageCode})`,
+      externalId: sent.messageId,
+    });
     return { success: true, messageId: sent.messageId };
   } catch (error) {
     return { success: false, errors: { _form: [(error as Error).message] } };

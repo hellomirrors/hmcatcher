@@ -1,4 +1,5 @@
 import { handleConversationMessage } from "@/domain/conversation/conversation-handler";
+import { logMessage } from "@/domain/messaging/message-log";
 import { telegramUpdateSchema } from "@/domain/schema";
 
 export async function POST(request: Request): Promise<Response> {
@@ -24,6 +25,14 @@ export async function POST(request: Request): Promise<Response> {
       })
     );
 
+    logMessage({
+      provider: "telegram",
+      direction: "in",
+      contact: chatId,
+      kind: "text",
+      body: msg.text,
+    });
+
     try {
       await handleConversationMessage("telegram", chatId, msg.text);
     } catch (error) {
@@ -42,6 +51,14 @@ export async function POST(request: Request): Promise<Response> {
         data: cb.data,
       })
     );
+
+    logMessage({
+      provider: "telegram",
+      direction: "in",
+      contact: chatId,
+      kind: "text",
+      body: cb.data,
+    });
 
     try {
       await handleConversationMessage("telegram", chatId, cb.data);

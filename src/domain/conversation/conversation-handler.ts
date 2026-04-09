@@ -1,4 +1,5 @@
 import { readConfigurationSync } from "@/domain/configuration/configuration-service";
+import { logMessage } from "@/domain/messaging/message-log";
 import { createMessagingProvider } from "@/domain/messaging/provider-factory";
 import { generateQrPng } from "@/domain/messaging/qr-service";
 import { readSettings } from "@/domain/settings/settings-service";
@@ -25,7 +26,15 @@ async function handleWebformMessage(
   const link = buildContactLink(provider, userId);
   const text = config.messages.welcome_webform.replace("{link}", link);
 
-  await messagingProvider.sendText({ to: userId, body: text });
+  const sent = await messagingProvider.sendText({ to: userId, body: text });
+  logMessage({
+    provider,
+    direction: "out",
+    contact: userId,
+    kind: "text",
+    body: text,
+    externalId: sent.messageId,
+  });
 }
 
 export async function handleConversationMessage(
@@ -43,8 +52,9 @@ export async function handleConversationMessage(
   const response = handleInboundMessage(provider, userId, text);
   const messagingProvider = createMessagingProvider(provider);
 
+  let sent: Awaited<ReturnType<typeof messagingProvider.sendText>>;
   if (response.list) {
-    await messagingProvider.sendList({
+    sent = await messagingProvider.sendList({
       to: userId,
       title: response.list.title,
       body: response.list.body,
@@ -52,25 +62,42 @@ export async function handleConversationMessage(
       sections: response.list.sections,
     });
   } else if (response.buttons) {
-    await messagingProvider.sendButtons({
+    sent = await messagingProvider.sendButtons({
       to: userId,
       body: response.text,
       buttons: response.buttons,
     });
   } else {
-    await messagingProvider.sendText({
+    sent = await messagingProvider.sendText({
       to: userId,
       body: response.text,
     });
   }
+  logMessage({
+    provider,
+    direction: "out",
+    contact: userId,
+    kind: "text",
+    body: response.text,
+    externalId: sent.messageId,
+  });
 
   if (response.sendQr) {
     const qrBuffer = await generateQrPng(response.sendQr.content);
-    await messagingProvider.sendImage({
+    const qrSent = await messagingProvider.sendImage({
       to: userId,
       imageBuffer: qrBuffer,
       mimeType: "image/png",
       caption: response.sendQr.caption,
+    });
+    logMessage({
+      provider,
+      direction: "out",
+      contact: userId,
+      kind: "image",
+      body: response.sendQr.content,
+      caption: response.sendQr.caption,
+      externalId: qrSent.messageId,
     });
   }
 }

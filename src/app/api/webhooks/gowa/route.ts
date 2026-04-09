@@ -1,4 +1,5 @@
 import { handleConversationMessage } from "@/domain/conversation/conversation-handler";
+import { logMessage } from "@/domain/messaging/message-log";
 import { gowaWebhookPayloadSchema } from "@/domain/schema";
 
 export async function POST(request: Request): Promise<Response> {
@@ -30,6 +31,14 @@ export async function POST(request: Request): Promise<Response> {
       timestamp: payload.timestamp,
     })
   );
+
+  logMessage({
+    provider: "gowa",
+    direction: "in",
+    contact: from,
+    kind: "text",
+    body: payload.body,
+  });
 
   try {
     await handleConversationMessage("gowa", from, payload.body);

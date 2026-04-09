@@ -2,7 +2,8 @@ import { existsSync, mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
-import { leads } from "./schema";
+import { migrate } from "drizzle-orm/better-sqlite3/migrator";
+import { leads, messages } from "./schema";
 
 function getDbPath(): string {
   if (process.env.NODE_ENV === "production") {
@@ -26,4 +27,14 @@ const sqlite = new Database(dbPath);
 sqlite.pragma("journal_mode = WAL");
 sqlite.pragma("foreign_keys = ON");
 
-export const db = drizzle(sqlite, { schema: { leads } });
+export const db = drizzle(sqlite, { schema: { leads, messages } });
+
+const migrationsFolder =
+  process.env.DRIZZLE_MIGRATIONS_DIR ?? join(process.cwd(), "drizzle");
+if (existsSync(migrationsFolder)) {
+  try {
+    migrate(db, { migrationsFolder });
+  } catch (error) {
+    console.error("Failed to apply migrations:", error);
+  }
+}

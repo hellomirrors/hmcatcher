@@ -1,4 +1,5 @@
 import { handleConversationMessage } from "@/domain/conversation/conversation-handler";
+import { logMessage } from "@/domain/messaging/message-log";
 import {
   whatsappVerifyQuerySchema,
   whatsappWebhookPayloadSchema,
@@ -46,6 +47,14 @@ export async function POST(request: Request): Promise<Response> {
         );
 
         if (msg.type === "text" && msg.text?.body) {
+          logMessage({
+            provider: "whatsapp",
+            direction: "in",
+            contact: msg.from,
+            kind: "text",
+            body: msg.text.body,
+            externalId: msg.id,
+          });
           try {
             await handleConversationMessage(
               "whatsapp",

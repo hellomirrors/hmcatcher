@@ -25,7 +25,7 @@ async function handleWebformMessage(
   userId: string
 ): Promise<void> {
   const config = readConfigurationSync();
-  const messagingProvider = createMessagingProvider(provider);
+  const messagingProvider = await createMessagingProvider(provider);
   const link = buildContactLink(provider, userId);
   const text = config.messages.welcome_webform.replace("{link}", link);
 
@@ -63,7 +63,7 @@ export async function handleConversationMessage(
     hasList: !!response.list,
     hasQr: !!response.sendQr,
   });
-  const messagingProvider = createMessagingProvider(provider);
+  const messagingProvider = await createMessagingProvider(provider);
 
   let sent: Awaited<ReturnType<typeof messagingProvider.sendText>>;
   if (response.list) {

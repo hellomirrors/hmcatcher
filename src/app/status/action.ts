@@ -26,7 +26,7 @@ export async function sendTestMessage(
 
   try {
     log.info("Sending test message", { provider: providerId, to: phoneNumber });
-    const provider = createMessagingProvider(providerId);
+    const provider = await createMessagingProvider(providerId);
     const result = await provider.sendText({
       to: phoneNumber.replace(/\s+/g, ""),
       body: `Testnachricht von hmcatcher via ${provider.name}`,

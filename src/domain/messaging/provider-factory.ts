@@ -1,10 +1,31 @@
 import { readSettings } from "@/domain/settings/settings-service";
 import type { MessagingProvider } from "@/domain/types";
+import { createLogger } from "@/lib/logger";
 import { GowaService } from "./gowa-service";
 import { TelegramService } from "./telegram-service";
 import { WhatsappService } from "./whatsapp-service";
 
-export function createMessagingProvider(provider: string): MessagingProvider {
+const log = createLogger("provider-factory");
+
+function resolveWhatsappPhoneNumberId(mode: "live" | "test"): string {
+  if (mode === "test") {
+    const testId = process.env.WHATSAPP_TEST_PHONE_NUMBER_ID;
+    if (testId) {
+      log.info("Using test phone number ID", { phoneNumberId: testId });
+      return testId;
+    }
+    log.warn("WHATSAPP_TEST_PHONE_NUMBER_ID not set, falling back to live");
+  }
+  const liveId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+  if (!liveId) {
+    throw new Error("Missing env var: WHATSAPP_PHONE_NUMBER_ID");
+  }
+  return liveId;
+}
+
+export async function createMessagingProvider(
+  provider: string
+): Promise<MessagingProvider> {
   if (provider === "telegram") {
     const botToken = process.env.TELEGRAM_BOT_TOKEN;
     if (!botToken) {
@@ -27,12 +48,13 @@ export function createMessagingProvider(provider: string): MessagingProvider {
   }
 
   const accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
-  const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
-  if (!(accessToken && phoneNumberId)) {
-    throw new Error(
-      "Missing env vars: WHATSAPP_ACCESS_TOKEN, WHATSAPP_PHONE_NUMBER_ID"
-    );
+  if (!accessToken) {
+    throw new Error("Missing env var: WHATSAPP_ACCESS_TOKEN");
   }
+  const settings = await readSettings();
+  const phoneNumberId = resolveWhatsappPhoneNumberId(
+    settings.whatsappPhoneMode
+  );
   return new WhatsappService({ accessToken, phoneNumberId });
 }
 

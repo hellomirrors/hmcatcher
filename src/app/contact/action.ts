@@ -100,7 +100,7 @@ export async function submitContactForm(
       firstName
     );
 
-    const messagingProvider = createMessagingProvider(provider);
+    const messagingProvider = await createMessagingProvider(provider);
 
     await messagingProvider.sendText({
       to: userId,

@@ -21,14 +21,21 @@ export interface ButtonMessage {
   to: string;
 }
 
+export interface ListRow {
+  description?: string;
+  id: string;
+  title: string;
+}
+
 export interface ListSection {
-  rows: ButtonOption[];
+  rows: ListRow[];
   title: string;
 }
 
 export interface ListMessage {
   body: string;
   buttonText: string;
+  footer?: string;
   sections: ListSection[];
   title: string;
   to: string;

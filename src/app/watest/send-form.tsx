@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useCallback, useId, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -16,6 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   sendGowaQrAction,
   sendGowaTextAction,
+  sendWhatsappListAction,
   sendWhatsappQrAction,
   sendWhatsappTemplateAction,
   sendWhatsappTextAction,
@@ -191,6 +192,154 @@ function TemplateForm({
   );
 }
 
+interface RowEntry {
+  description: string;
+  key: string;
+  title: string;
+}
+
+function ListForm() {
+  const id = useId();
+  const [state, formAction, pending] = useActionState(
+    sendWhatsappListAction,
+    initial
+  );
+  const [rows, setRows] = useState<RowEntry[]>([
+    { key: crypto.randomUUID(), title: "", description: "" },
+  ]);
+
+  const addRow = useCallback(() => {
+    setRows((prev) => [
+      ...prev,
+      { key: crypto.randomUUID(), title: "", description: "" },
+    ]);
+  }, []);
+
+  const removeRow = useCallback((key: string) => {
+    setRows((prev) => prev.filter((r) => r.key !== key));
+  }, []);
+
+  const updateRow = useCallback(
+    (key: string, field: "title" | "description", value: string) => {
+      setRows((prev) =>
+        prev.map((r) => (r.key === key ? { ...r, [field]: value } : r))
+      );
+    },
+    []
+  );
+
+  return (
+    <form
+      action={(formData) => {
+        const serialized = rows
+          .filter((r) => r.title.trim())
+          .map((r, i) => ({
+            id: `row_${i}`,
+            title: r.title.trim(),
+            description: r.description.trim() || undefined,
+          }));
+        formData.set("rows", JSON.stringify(serialized));
+        formAction(formData);
+      }}
+      className="grid gap-4"
+    >
+      <ResultBanner state={state} />
+      <div className="grid gap-1.5">
+        <Label htmlFor={`${id}-to`}>Empfänger</Label>
+        <Input
+          aria-invalid={!!state.errors?.to}
+          id={`${id}-to`}
+          name="to"
+          placeholder="491701234567"
+          required
+        />
+        <FieldError errors={state.errors?.to} />
+      </div>
+      <div className="grid gap-1.5">
+        <Label htmlFor={`${id}-header`}>Header (optional)</Label>
+        <Input id={`${id}-header`} name="headerText" />
+      </div>
+      <div className="grid gap-1.5">
+        <Label htmlFor={`${id}-body`}>Nachrichtentext</Label>
+        <Textarea
+          aria-invalid={!!state.errors?.bodyText}
+          id={`${id}-body`}
+          name="bodyText"
+          required
+        />
+        <FieldError errors={state.errors?.bodyText} />
+      </div>
+      <div className="grid gap-1.5">
+        <Label htmlFor={`${id}-footer`}>Footer (optional)</Label>
+        <Input id={`${id}-footer`} name="footerText" />
+      </div>
+      <div className="grid gap-1.5">
+        <Label htmlFor={`${id}-button`}>Button-Text</Label>
+        <Input
+          aria-invalid={!!state.errors?.buttonText}
+          defaultValue="Optionen anzeigen"
+          id={`${id}-button`}
+          name="buttonText"
+          required
+        />
+        <FieldError errors={state.errors?.buttonText} />
+      </div>
+      <div className="grid gap-1.5">
+        <Label htmlFor={`${id}-section`}>Abschnittsname (optional)</Label>
+        <Input
+          defaultValue="Optionen"
+          id={`${id}-section`}
+          name="sectionTitle"
+        />
+      </div>
+
+      <div className="grid gap-2">
+        <div className="flex items-center justify-between">
+          <Label>Zeilen</Label>
+          <Button onClick={addRow} size="sm" type="button" variant="outline">
+            + Zeile
+          </Button>
+        </div>
+        <FieldError errors={state.errors?.rows} />
+        {rows.map((row) => (
+          <div className="flex gap-2" key={row.key}>
+            <Input
+              className="flex-1"
+              onChange={(e) => updateRow(row.key, "title", e.target.value)}
+              placeholder="Titel"
+              required
+              value={row.title}
+            />
+            <Input
+              className="flex-1"
+              onChange={(e) =>
+                updateRow(row.key, "description", e.target.value)
+              }
+              placeholder="Beschreibung (opt.)"
+              value={row.description}
+            />
+            {rows.length > 1 && (
+              <Button
+                className="shrink-0"
+                onClick={() => removeRow(row.key)}
+                size="icon"
+                type="button"
+                variant="ghost"
+              >
+                x
+              </Button>
+            )}
+          </div>
+        ))}
+      </div>
+
+      <Button disabled={pending} size="lg" type="submit">
+        {pending ? "Wird gesendet…" : "Liste senden"}
+      </Button>
+    </form>
+  );
+}
+
 function GowaPanel() {
   return (
     <Tabs defaultValue="text">
@@ -223,6 +372,7 @@ function WhatsappPanel() {
         <TabsTrigger value="template">Template</TabsTrigger>
         <TabsTrigger value="text">Text</TabsTrigger>
         <TabsTrigger value="qr">Text + QR</TabsTrigger>
+        <TabsTrigger value="list">Liste</TabsTrigger>
       </TabsList>
       <TabsContent value="template">
         <TemplateForm action={sendWhatsappTemplateAction} idPrefix="wa-tpl" />
@@ -240,6 +390,9 @@ function WhatsappPanel() {
           idPrefix="wa-qr"
           placeholder="491701234567"
         />
+      </TabsContent>
+      <TabsContent value="list">
+        <ListForm />
       </TabsContent>
     </Tabs>
   );

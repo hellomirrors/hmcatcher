@@ -117,6 +117,26 @@ export function SettingsForm({
           </div>
 
           <div className="grid gap-1.5">
+            <Label htmlFor="whatsappPhoneMode">WhatsApp Telefonnummer</Label>
+            <Select
+              defaultValue={state.settings?.whatsappPhoneMode ?? "live"}
+              name="whatsappPhoneMode"
+            >
+              <SelectTrigger id="whatsappPhoneMode">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="live">Live-Nummer</SelectItem>
+                <SelectItem value="test">Test-Nummer</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-muted-foreground text-xs">
+              Soll die Live- oder Test-Telefonnummer der WhatsApp Business API
+              verwendet werden?
+            </p>
+          </div>
+
+          <div className="grid gap-1.5">
             <Label htmlFor="conversationMode">Konversationsmodus</Label>
             <Select
               defaultValue={state.settings?.conversationMode ?? "chat"}

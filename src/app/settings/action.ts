@@ -60,6 +60,7 @@ export async function getEnvStatus(): Promise<EnvVarGroup[]> {
       vars: [
         envInfo("WHATSAPP_ACCESS_TOKEN"),
         envInfo("WHATSAPP_PHONE_NUMBER_ID"),
+        envInfo("WHATSAPP_TEST_PHONE_NUMBER_ID"),
         envInfo("WHATSAPP_WEBHOOK_VERIFY_TOKEN"),
       ],
     },
@@ -84,9 +85,11 @@ export async function updateSettingsAction(
 ): Promise<SettingsActionState> {
   try {
     const whatsappProvider = formData.get("whatsappProvider") as string;
+    const whatsappPhoneMode = formData.get("whatsappPhoneMode") as string;
     const conversationMode = formData.get("conversationMode") as string;
     const settings = await writeSettings({
       whatsappProvider: whatsappProvider as Settings["whatsappProvider"],
+      whatsappPhoneMode: whatsappPhoneMode as Settings["whatsappPhoneMode"],
       conversationMode: conversationMode as Settings["conversationMode"],
     });
     revalidatePath("/settings");

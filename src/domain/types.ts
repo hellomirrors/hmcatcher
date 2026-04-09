@@ -18,6 +18,8 @@ export interface ButtonOption {
 export interface ButtonMessage {
   body: string;
   buttons: ButtonOption[];
+  footer?: string;
+  header?: string;
   to: string;
 }
 

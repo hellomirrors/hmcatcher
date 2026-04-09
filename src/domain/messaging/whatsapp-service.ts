@@ -36,21 +36,28 @@ export class WhatsappService implements MessagingProvider {
   }
 
   async sendButtons(message: ButtonMessage): Promise<SendResult> {
+    const interactive: Record<string, unknown> = {
+      type: "button",
+      body: { text: message.body },
+      action: {
+        buttons: message.buttons.map((b) => ({
+          type: "reply",
+          reply: { id: b.id, title: b.title },
+        })),
+      },
+    };
+    if (message.header) {
+      interactive.header = { type: "text", text: message.header };
+    }
+    if (message.footer) {
+      interactive.footer = { text: message.footer };
+    }
     const messageId = await this.postMessage({
       messaging_product: "whatsapp",
       recipient_type: "individual",
       to: message.to,
       type: "interactive",
-      interactive: {
-        type: "button",
-        body: { text: message.body },
-        action: {
-          buttons: message.buttons.map((b) => ({
-            type: "reply",
-            reply: { id: b.id, title: b.title },
-          })),
-        },
-      },
+      interactive,
     });
     return { messageId, provider: this.name };
   }

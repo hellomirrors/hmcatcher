@@ -16,6 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   sendGowaQrAction,
   sendGowaTextAction,
+  sendWhatsappButtonsAction,
   sendWhatsappListAction,
   sendWhatsappQrAction,
   sendWhatsappTemplateAction,
@@ -187,6 +188,127 @@ function TemplateForm({
       </div>
       <Button disabled={pending} size="lg" type="submit">
         {pending ? "Wird gesendet…" : "Template senden"}
+      </Button>
+    </form>
+  );
+}
+
+interface ButtonEntry {
+  key: string;
+  title: string;
+}
+
+function ButtonsForm() {
+  const id = useId();
+  const [state, formAction, pending] = useActionState(
+    sendWhatsappButtonsAction,
+    initial
+  );
+  const [buttons, setButtons] = useState<ButtonEntry[]>([
+    { key: crypto.randomUUID(), title: "" },
+  ]);
+
+  const addButton = useCallback(() => {
+    if (buttons.length >= 3) {
+      return;
+    }
+    setButtons((prev) => [...prev, { key: crypto.randomUUID(), title: "" }]);
+  }, [buttons.length]);
+
+  const removeButton = useCallback((key: string) => {
+    setButtons((prev) => prev.filter((b) => b.key !== key));
+  }, []);
+
+  const updateButton = useCallback((key: string, title: string) => {
+    setButtons((prev) =>
+      prev.map((b) => (b.key === key ? { ...b, title } : b))
+    );
+  }, []);
+
+  return (
+    <form
+      action={(formData) => {
+        const serialized = buttons
+          .filter((b) => b.title.trim())
+          .map((b, i) => ({ id: `btn_${i}`, title: b.title.trim() }));
+        formData.set("buttons", JSON.stringify(serialized));
+        formAction(formData);
+      }}
+      className="grid gap-4"
+    >
+      <ResultBanner state={state} />
+      <div className="grid gap-1.5">
+        <Label htmlFor={`${id}-to`}>Empfänger</Label>
+        <Input
+          aria-invalid={!!state.errors?.to}
+          id={`${id}-to`}
+          name="to"
+          placeholder="491701234567"
+          required
+        />
+        <FieldError errors={state.errors?.to} />
+      </div>
+      <div className="grid gap-1.5">
+        <Label htmlFor={`${id}-header`}>Header (optional)</Label>
+        <Input id={`${id}-header`} name="headerText" />
+      </div>
+      <div className="grid gap-1.5">
+        <Label htmlFor={`${id}-body`}>Nachrichtentext</Label>
+        <Textarea
+          aria-invalid={!!state.errors?.bodyText}
+          id={`${id}-body`}
+          name="bodyText"
+          required
+        />
+        <FieldError errors={state.errors?.bodyText} />
+      </div>
+      <div className="grid gap-1.5">
+        <Label htmlFor={`${id}-footer`}>Footer (optional)</Label>
+        <Input id={`${id}-footer`} name="footerText" />
+      </div>
+
+      <div className="grid gap-2">
+        <div className="flex items-center justify-between">
+          <Label>Buttons (max. 3)</Label>
+          {buttons.length < 3 && (
+            <Button
+              onClick={addButton}
+              size="sm"
+              type="button"
+              variant="outline"
+            >
+              + Button
+            </Button>
+          )}
+        </div>
+        <FieldError errors={state.errors?.buttons} />
+        {buttons.map((btn) => (
+          <div className="flex gap-2" key={btn.key}>
+            <Input
+              className="flex-1"
+              maxLength={20}
+              onChange={(e) => updateButton(btn.key, e.target.value)}
+              placeholder="Button-Titel (max. 20 Zeichen)"
+              required
+              value={btn.title}
+            />
+            {buttons.length > 1 && (
+              <Button
+                className="shrink-0"
+                onClick={() => removeButton(btn.key)}
+                size="icon"
+                type="button"
+                variant="ghost"
+              >
+                x
+              </Button>
+            )}
+          </div>
+        ))}
+      </div>
+
+      <Button disabled={pending} size="lg" type="submit">
+        {pending ? "Wird gesendet…" : "Buttons senden"}
       </Button>
     </form>
   );
@@ -372,6 +494,7 @@ function WhatsappPanel() {
         <TabsTrigger value="template">Template</TabsTrigger>
         <TabsTrigger value="text">Text</TabsTrigger>
         <TabsTrigger value="qr">Text + QR</TabsTrigger>
+        <TabsTrigger value="buttons">Buttons</TabsTrigger>
         <TabsTrigger value="list">Liste</TabsTrigger>
       </TabsList>
       <TabsContent value="template">
@@ -390,6 +513,9 @@ function WhatsappPanel() {
           idPrefix="wa-qr"
           placeholder="491701234567"
         />
+      </TabsContent>
+      <TabsContent value="buttons">
+        <ButtonsForm />
       </TabsContent>
       <TabsContent value="list">
         <ListForm />

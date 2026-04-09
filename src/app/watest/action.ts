@@ -5,7 +5,7 @@ import { createMessagingProvider } from "@/domain/messaging/provider-factory";
 import { generateQrPng } from "@/domain/messaging/qr-service";
 import { WhatsappService } from "@/domain/messaging/whatsapp-service";
 import { sendQrInputSchema, sendTextInputSchema } from "@/domain/schema";
-import type { ListRow } from "@/domain/types";
+import type { ButtonOption, ListRow } from "@/domain/types";
 import { createLogger } from "@/lib/logger";
 
 const log = createLogger("action:watest");
@@ -259,6 +259,76 @@ export async function sendWhatsappListAction(
     return { success: true, messageId: sent.messageId };
   } catch (error) {
     log.error("Send list failed", error, { to });
+    return { success: false, errors: { _form: [(error as Error).message] } };
+  }
+}
+
+export async function sendWhatsappButtonsAction(
+  _prev: WatestActionState,
+  formData: FormData
+): Promise<WatestActionState> {
+  const to = String(formData.get("to") ?? "").trim();
+  const headerText = String(formData.get("headerText") ?? "").trim();
+  const bodyText = String(formData.get("bodyText") ?? "").trim();
+  const footerText = String(formData.get("footerText") ?? "").trim();
+  const buttonsJson = String(formData.get("buttons") ?? "[]");
+
+  const errors: Record<string, string[]> = {};
+  if (!to) {
+    errors.to = ["Empfänger ist erforderlich"];
+  }
+  if (!bodyText) {
+    errors.bodyText = ["Nachrichtentext ist erforderlich"];
+  }
+
+  let buttons: ButtonOption[];
+  try {
+    buttons = JSON.parse(buttonsJson) as ButtonOption[];
+  } catch {
+    errors.buttons = ["Ungültige Button-Daten"];
+    return { success: false, errors };
+  }
+
+  if (buttons.length === 0) {
+    errors.buttons = ["Mindestens ein Button ist erforderlich"];
+  }
+  if (buttons.length > 3) {
+    errors.buttons = ["Maximal 3 Buttons erlaubt"];
+  }
+
+  if (Object.keys(errors).length > 0) {
+    return { success: false, errors };
+  }
+
+  const provider = await createMessagingProvider("whatsapp");
+  if (!(provider instanceof WhatsappService)) {
+    return {
+      success: false,
+      errors: { _form: ["Buttons senden nur via WhatsApp Business API"] },
+    };
+  }
+
+  try {
+    log.info("Sending buttons", { to, buttonCount: buttons.length });
+    const sent = await provider.sendButtons({
+      to,
+      header: headerText || undefined,
+      body: bodyText,
+      footer: footerText || undefined,
+      buttons,
+    });
+    logMessage({
+      provider: "whatsapp",
+      direction: "out",
+      contact: to,
+      kind: "text",
+      body: `[Buttons] ${bodyText}`,
+      externalId: sent.messageId,
+    });
+    log.info("Buttons sent", { messageId: sent.messageId });
+    return { success: true, messageId: sent.messageId };
+  } catch (error) {
+    log.error("Send buttons failed", error, { to });
     return { success: false, errors: { _form: [(error as Error).message] } };
   }
 }

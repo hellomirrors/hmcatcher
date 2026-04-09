@@ -2,6 +2,9 @@
 
 import { processContactData } from "@/domain/contact-data-service";
 import { contactDataSchema } from "@/domain/schema";
+import { createLogger } from "@/lib/logger";
+
+const log = createLogger("action:slotmachine");
 
 export interface ContactFormState {
   error?: string;
@@ -34,9 +37,14 @@ export async function submitContactData(
   }
 
   try {
+    log.info("Processing contact data", { email: result.data.email });
     await processContactData(result.data);
+    log.info("Contact data processed", { email: result.data.email });
     return { success: true };
   } catch (error) {
+    log.error("Contact data processing failed", error, {
+      email: result.data.email,
+    });
     return { success: false, error: (error as Error).message };
   }
 }

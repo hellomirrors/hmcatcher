@@ -6,8 +6,10 @@ import type {
   SendResult,
   TextMessage,
 } from "@/domain/types";
+import { createLogger } from "@/lib/logger";
 
 const API_BASE = "https://graph.facebook.com/v21.0";
+const log = createLogger("whatsapp-api");
 
 interface WhatsappConfig {
   accessToken: string;
@@ -108,19 +110,22 @@ export class WhatsappService implements MessagingProvider {
   }
 
   private async uploadMedia(buffer: Buffer, mimeType: string): Promise<string> {
+    const url = `${API_BASE}/${this.config.phoneNumberId}/media`;
+    log.info("Uploading media", { url, mimeType, size: buffer.length });
+
     const formData = new FormData();
     const uint8 = new Uint8Array(buffer);
     formData.append("file", new Blob([uint8], { type: mimeType }), "qr.png");
     formData.append("type", mimeType);
     formData.append("messaging_product", "whatsapp");
 
-    const res = await fetch(`${API_BASE}/${this.config.phoneNumberId}/media`, {
+    const res = await fetch(url, {
       method: "POST",
       headers: { Authorization: `Bearer ${this.config.accessToken}` },
       body: formData,
     });
 
-    const data = await res.json();
+    const data = await this.parseResponse(res, "media upload");
     if (!res.ok || data.error) {
       throw new Error(
         `WhatsApp media upload failed: ${data.error?.message ?? res.statusText}`
@@ -130,24 +135,47 @@ export class WhatsappService implements MessagingProvider {
   }
 
   private async postMessage(body: unknown): Promise<string> {
-    const res = await fetch(
-      `${API_BASE}/${this.config.phoneNumberId}/messages`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${this.config.accessToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(body),
-      }
-    );
+    const url = `${API_BASE}/${this.config.phoneNumberId}/messages`;
+    log.info("Sending message", {
+      url,
+      phoneNumberId: this.config.phoneNumberId,
+    });
 
-    const data = await res.json();
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${this.config.accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+    });
+
+    const data = await this.parseResponse(res, "send message");
     if (!res.ok || data.error) {
       throw new Error(
         `WhatsApp message failed: ${data.error?.message ?? res.statusText}`
       );
     }
     return data.messages[0].id;
+  }
+
+  // biome-ignore lint/suspicious/noExplicitAny: API response shape varies
+  private async parseResponse(res: Response, operation: string): Promise<any> {
+    const text = await res.text();
+    try {
+      return JSON.parse(text);
+    } catch {
+      log.error(
+        `Non-JSON response from WhatsApp API (${operation})`,
+        undefined,
+        {
+          status: res.status,
+          body: text.slice(0, 500),
+        }
+      );
+      throw new Error(
+        `WhatsApp API returned non-JSON (status ${res.status}): ${text.slice(0, 200)}`
+      );
+    }
   }
 }

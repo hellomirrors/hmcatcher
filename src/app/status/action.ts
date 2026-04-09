@@ -1,6 +1,9 @@
 "use server";
 
 import { createMessagingProvider } from "@/domain/messaging/provider-factory";
+import { createLogger } from "@/lib/logger";
+
+const log = createLogger("action:status");
 
 export interface TestResult {
   error?: string;
@@ -22,10 +25,15 @@ export async function sendTestMessage(
   }
 
   try {
+    log.info("Sending test message", { provider: providerId, to: phoneNumber });
     const provider = createMessagingProvider(providerId);
     const result = await provider.sendText({
       to: phoneNumber.replace(/\s+/g, ""),
       body: `Testnachricht von hmcatcher via ${provider.name}`,
+    });
+    log.info("Test message sent", {
+      provider: providerId,
+      messageId: result.messageId,
     });
     return {
       provider: providerId,
@@ -33,6 +41,10 @@ export async function sendTestMessage(
       messageId: result.messageId,
     };
   } catch (error) {
+    log.error("Test message failed", error, {
+      provider: providerId,
+      to: phoneNumber,
+    });
     return {
       provider: providerId,
       success: false,

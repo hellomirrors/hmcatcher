@@ -3,8 +3,11 @@ import { logMessage } from "@/domain/messaging/message-log";
 import { createMessagingProvider } from "@/domain/messaging/provider-factory";
 import { generateQrPng } from "@/domain/messaging/qr-service";
 import { readSettings } from "@/domain/settings/settings-service";
+import { createLogger } from "@/lib/logger";
 import { handleInboundMessage } from "./conversation-engine";
 import { createContactToken } from "./token-store";
+
+const log = createLogger("conversation");
 
 const TRAILING_SLASHES = /\/+$/;
 
@@ -42,14 +45,24 @@ export async function handleConversationMessage(
   userId: string,
   text: string
 ): Promise<void> {
+  log.info("Handling message", { provider, userId, text });
   const settings = await readSettings();
 
   if (settings.conversationMode === "webform") {
+    log.info("Webform mode — sending link", { provider, userId });
     await handleWebformMessage(provider, userId);
     return;
   }
 
   const response = handleInboundMessage(provider, userId, text);
+  log.info("Engine response", {
+    provider,
+    userId,
+    responseText: response.text,
+    hasButtons: !!response.buttons,
+    hasList: !!response.list,
+    hasQr: !!response.sendQr,
+  });
   const messagingProvider = createMessagingProvider(provider);
 
   let sent: Awaited<ReturnType<typeof messagingProvider.sendText>>;

@@ -8,6 +8,9 @@ import {
 import { readConfiguration } from "@/domain/configuration/configuration-service";
 import { createMessagingProvider } from "@/domain/messaging/provider-factory";
 import { generateQrPng } from "@/domain/messaging/qr-service";
+import { createLogger } from "@/lib/logger";
+
+const log = createLogger("action:contact");
 
 const contactFormSchema = z.object({
   provider: z.string().min(1),
@@ -72,6 +75,14 @@ export async function submitContactForm(
     result.data;
 
   try {
+    log.info("Submitting contact form", {
+      provider,
+      userId,
+      firstName,
+      lastName,
+      position,
+      email,
+    });
     const config = await readConfiguration();
     const relevance = getRelevance(position, config);
 
@@ -104,8 +115,10 @@ export async function submitContactForm(
       caption,
     });
 
+    log.info("Contact form submitted", { provider, userId, relevance });
     return { success: true };
   } catch (error) {
+    log.error("Contact form failed", error, { provider, userId });
     return { success: false, error: (error as Error).message };
   }
 }

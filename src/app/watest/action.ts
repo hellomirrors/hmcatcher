@@ -5,6 +5,9 @@ import { createMessagingProvider } from "@/domain/messaging/provider-factory";
 import { generateQrPng } from "@/domain/messaging/qr-service";
 import { WhatsappService } from "@/domain/messaging/whatsapp-service";
 import { sendQrInputSchema, sendTextInputSchema } from "@/domain/schema";
+import { createLogger } from "@/lib/logger";
+
+const log = createLogger("action:watest");
 
 export interface WatestActionState {
   errors?: Record<string, string[]>;
@@ -38,6 +41,7 @@ async function runText(
     return { success: false, errors: extractErrors(result.error.issues) };
   }
   try {
+    log.info("Sending text", { provider: providerName, to: result.data.to });
     const provider = createMessagingProvider(providerName);
     const sent = await provider.sendText(result.data);
     logMessage({
@@ -48,8 +52,16 @@ async function runText(
       body: result.data.body,
       externalId: sent.messageId,
     });
+    log.info("Text sent", {
+      provider: providerName,
+      messageId: sent.messageId,
+    });
     return { success: true, messageId: sent.messageId };
   } catch (error) {
+    log.error("Send text failed", error, {
+      provider: providerName,
+      to: result.data.to,
+    });
     return { success: false, errors: { _form: [(error as Error).message] } };
   }
 }
@@ -67,6 +79,7 @@ async function runQr(
     return { success: false, errors: extractErrors(result.error.issues) };
   }
   try {
+    log.info("Sending QR", { provider: providerName, to: result.data.to });
     const provider = createMessagingProvider(providerName);
     const qrBuffer = await generateQrPng(result.data.content);
     const sent = await provider.sendImage({
@@ -84,8 +97,13 @@ async function runQr(
       caption: result.data.caption,
       externalId: sent.messageId,
     });
+    log.info("QR sent", { provider: providerName, messageId: sent.messageId });
     return { success: true, messageId: sent.messageId };
   } catch (error) {
+    log.error("Send QR failed", error, {
+      provider: providerName,
+      to: result.data.to,
+    });
     return { success: false, errors: { _form: [(error as Error).message] } };
   }
 }
@@ -149,6 +167,7 @@ export async function sendWhatsappTemplateAction(
   }
 
   try {
+    log.info("Sending template", { to, templateName, languageCode });
     const sent = await provider.sendTemplate(to, templateName, languageCode);
     logMessage({
       provider: "whatsapp",
@@ -158,8 +177,14 @@ export async function sendWhatsappTemplateAction(
       templateName: `${templateName} (${languageCode})`,
       externalId: sent.messageId,
     });
+    log.info("Template sent", { messageId: sent.messageId });
     return { success: true, messageId: sent.messageId };
   } catch (error) {
+    log.error("Send template failed", error, {
+      to,
+      templateName,
+      languageCode,
+    });
     return { success: false, errors: { _form: [(error as Error).message] } };
   }
 }

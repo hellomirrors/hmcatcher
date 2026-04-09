@@ -1,9 +1,17 @@
 import { createMessagingProviderFromSettings } from "@/domain/messaging/provider-factory";
 import { generateQrPng } from "@/domain/messaging/qr-service";
+import { createLogger } from "@/lib/logger";
 import type { ContactData } from "./schema";
 
+const log = createLogger("contact-data");
+
 export async function processContactData(data: ContactData): Promise<void> {
-  console.log(JSON.stringify(data, null, 2));
+  log.info("Processing contact", {
+    firstName: data.firstName,
+    lastName: data.lastName,
+    email: data.email,
+    mobile: data.mobile,
+  });
 
   const provider = await createMessagingProviderFromSettings();
   const recipient = provider.name === "telegram" ? "701470758" : data.mobile;

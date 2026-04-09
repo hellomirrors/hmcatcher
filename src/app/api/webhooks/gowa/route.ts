@@ -1,13 +1,18 @@
 import { handleConversationMessage } from "@/domain/conversation/conversation-handler";
 import { logMessage } from "@/domain/messaging/message-log";
 import { gowaWebhookPayloadSchema } from "@/domain/schema";
+import { createLogger } from "@/lib/logger";
+
+const log = createLogger("webhook:gowa");
 
 export async function POST(request: Request): Promise<Response> {
   const body = await request.json();
   const result = gowaWebhookPayloadSchema.safeParse(body);
 
   if (!result.success) {
-    console.error("GoWA webhook: invalid payload", result.error);
+    log.error("Invalid payload", result.error, {
+      body: JSON.stringify(body).slice(0, 500),
+    });
     return Response.json({ ok: true }, { status: 200 });
   }
 
@@ -18,19 +23,22 @@ export async function POST(request: Request): Promise<Response> {
   const isOwnMessage = payload.is_from_me || (ownPhone && from === ownPhone);
 
   if (event !== "message" || isOwnMessage || !payload.body) {
+    log.info("Skipped message", {
+      event,
+      from,
+      isOwnMessage,
+      hasBody: !!payload.body,
+    });
     return Response.json({ ok: true }, { status: 200 });
   }
 
-  console.log(
-    JSON.stringify({
-      event: "gowa_inbound",
-      from,
-      fromName: payload.from_name,
-      chatId: payload.chat_id,
-      text: payload.body,
-      timestamp: payload.timestamp,
-    })
-  );
+  log.info("Inbound message", {
+    from,
+    fromName: payload.from_name,
+    chatId: payload.chat_id,
+    text: payload.body,
+    timestamp: payload.timestamp,
+  });
 
   logMessage({
     provider: "gowa",
@@ -42,8 +50,9 @@ export async function POST(request: Request): Promise<Response> {
 
   try {
     await handleConversationMessage("gowa", from, payload.body);
+    log.info("Conversation handled", { from });
   } catch (error) {
-    console.error("GoWA conversation error:", error);
+    log.error("Conversation failed", error, { from, text: payload.body });
   }
 
   return Response.json({ ok: true }, { status: 200 });

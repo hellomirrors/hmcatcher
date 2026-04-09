@@ -1,5 +1,8 @@
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
+import { createLogger } from "@/lib/logger";
 import { leads, messages } from "./schema";
+
+const log = createLogger("db");
 
 interface Schema extends Record<string, unknown> {
   leads: typeof leads;
@@ -55,7 +58,7 @@ function initDb(): BetterSQLite3Database<Schema> {
     try {
       migrate(_db, { migrationsFolder });
     } catch (error) {
-      console.error("Failed to apply migrations:", error);
+      log.error("Failed to apply migrations", error, { migrationsFolder });
     }
   }
 

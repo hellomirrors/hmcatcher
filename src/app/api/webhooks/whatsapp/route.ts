@@ -4,6 +4,9 @@ import {
   whatsappVerifyQuerySchema,
   whatsappWebhookPayloadSchema,
 } from "@/domain/schema";
+import { createLogger } from "@/lib/logger";
+
+const log = createLogger("webhook:whatsapp");
 
 export function GET(request: Request): Response {
   const url = new URL(request.url);
@@ -11,14 +14,17 @@ export function GET(request: Request): Response {
 
   const result = whatsappVerifyQuerySchema.safeParse(params);
   if (!result.success) {
+    log.warn("Verify: invalid request", { params });
     return new Response("Invalid request", { status: 400 });
   }
 
   const verifyToken = process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN;
   if (result.data["hub.verify_token"] !== verifyToken) {
+    log.warn("Verify: token mismatch");
     return new Response("Forbidden", { status: 403 });
   }
 
+  log.info("Verify: success");
   return new Response(result.data["hub.challenge"], { status: 200 });
 }
 
@@ -27,7 +33,9 @@ export async function POST(request: Request): Promise<Response> {
   const result = whatsappWebhookPayloadSchema.safeParse(body);
 
   if (!result.success) {
-    console.error("WhatsApp webhook: invalid payload", result.error);
+    log.error("Invalid payload", result.error, {
+      body: JSON.stringify(body).slice(0, 500),
+    });
     return Response.json({ status: "ok" }, { status: 200 });
   }
 
@@ -35,16 +43,13 @@ export async function POST(request: Request): Promise<Response> {
     for (const change of entry.changes) {
       const messages = change.value.messages ?? [];
       for (const msg of messages) {
-        console.log(
-          JSON.stringify({
-            event: "whatsapp_inbound",
-            from: msg.from,
-            type: msg.type,
-            text: msg.text?.body,
-            timestamp: msg.timestamp,
-            phoneNumberId: change.value.metadata.phone_number_id,
-          })
-        );
+        log.info("Inbound message", {
+          from: msg.from,
+          type: msg.type,
+          text: msg.text?.body,
+          timestamp: msg.timestamp,
+          phoneNumberId: change.value.metadata.phone_number_id,
+        });
 
         if (msg.type === "text" && msg.text?.body) {
           logMessage({
@@ -61,8 +66,12 @@ export async function POST(request: Request): Promise<Response> {
               msg.from,
               msg.text.body
             );
+            log.info("Conversation handled", { from: msg.from });
           } catch (error) {
-            console.error("WhatsApp conversation error:", error);
+            log.error("Conversation failed", error, {
+              from: msg.from,
+              text: msg.text.body,
+            });
           }
         }
       }

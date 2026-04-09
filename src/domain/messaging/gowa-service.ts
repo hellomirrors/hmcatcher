@@ -6,6 +6,9 @@ import type {
   SendResult,
   TextMessage,
 } from "@/domain/types";
+import { createLogger } from "@/lib/logger";
+
+const log = createLogger("gowa-api");
 
 interface GowaConfig {
   baseUrl: string;
@@ -73,7 +76,10 @@ export class GowaService implements MessagingProvider {
       formData.append("caption", message.caption);
     }
 
-    const res = await fetch(`${this.config.baseUrl}/send/image`, {
+    const url = `${this.config.baseUrl}/send/image`;
+    log.info("Sending image", { url, to: message.to });
+
+    const res = await fetch(url, {
       method: "POST",
       headers: {
         Authorization: this.authHeader,
@@ -82,7 +88,7 @@ export class GowaService implements MessagingProvider {
       body: formData,
     });
 
-    const data = await res.json();
+    const data = await this.parseResponse(res, "send image");
     if (!res.ok) {
       throw new Error(`GoWA image failed: ${data.message ?? res.statusText}`);
     }
@@ -93,7 +99,10 @@ export class GowaService implements MessagingProvider {
   }
 
   private async postText(to: string, text: string): Promise<SendResult> {
-    const res = await fetch(`${this.config.baseUrl}/send/message`, {
+    const url = `${this.config.baseUrl}/send/message`;
+    log.info("Sending text", { url, to });
+
+    const res = await fetch(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -106,7 +115,7 @@ export class GowaService implements MessagingProvider {
       }),
     });
 
-    const data = await res.json();
+    const data = await this.parseResponse(res, "send message");
     if (!res.ok) {
       throw new Error(`GoWA message failed: ${data.message ?? res.statusText}`);
     }
@@ -114,5 +123,21 @@ export class GowaService implements MessagingProvider {
       messageId: data.results?.message_id ?? "unknown",
       provider: this.name,
     };
+  }
+
+  // biome-ignore lint/suspicious/noExplicitAny: API response shape varies
+  private async parseResponse(res: Response, operation: string): Promise<any> {
+    const text = await res.text();
+    try {
+      return JSON.parse(text);
+    } catch {
+      log.error(`Non-JSON response from GoWA API (${operation})`, undefined, {
+        status: res.status,
+        body: text.slice(0, 500),
+      });
+      throw new Error(
+        `GoWA API returned non-JSON (status ${res.status}): ${text.slice(0, 200)}`
+      );
+    }
   }
 }

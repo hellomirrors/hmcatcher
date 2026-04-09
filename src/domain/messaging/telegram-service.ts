@@ -6,8 +6,10 @@ import type {
   SendResult,
   TextMessage,
 } from "@/domain/types";
+import { createLogger } from "@/lib/logger";
 
 const API_BASE = "https://api.telegram.org";
+const log = createLogger("telegram-api");
 
 interface TelegramConfig {
   botToken: string;
@@ -66,12 +68,12 @@ export class TelegramService implements MessagingProvider {
       formData.append("caption", message.caption);
     }
 
-    const res = await fetch(
-      `${API_BASE}/bot${this.config.botToken}/sendPhoto`,
-      { method: "POST", body: formData }
-    );
+    const url = `${API_BASE}/bot${this.config.botToken}/sendPhoto`;
+    log.info("Sending photo", { chatId: message.to });
 
-    const data = await res.json();
+    const res = await fetch(url, { method: "POST", body: formData });
+
+    const data = await this.parseResponse(res, "sendPhoto");
     if (!data.ok) {
       throw new Error(
         `Telegram photo failed: ${data.description ?? res.statusText}`
@@ -84,6 +86,8 @@ export class TelegramService implements MessagingProvider {
     method: string,
     body: unknown
   ): Promise<{ result: { message_id: number } }> {
+    log.info(`Calling ${method}`, { method });
+
     const res = await fetch(
       `${API_BASE}/bot${this.config.botToken}/${method}`,
       {
@@ -92,12 +96,32 @@ export class TelegramService implements MessagingProvider {
         body: JSON.stringify(body),
       }
     );
-    const data = await res.json();
+    const data = await this.parseResponse(res, method);
     if (!data.ok) {
       throw new Error(
         `Telegram ${method} failed: ${data.description ?? res.statusText}`
       );
     }
     return data;
+  }
+
+  // biome-ignore lint/suspicious/noExplicitAny: API response shape varies
+  private async parseResponse(res: Response, operation: string): Promise<any> {
+    const text = await res.text();
+    try {
+      return JSON.parse(text);
+    } catch {
+      log.error(
+        `Non-JSON response from Telegram API (${operation})`,
+        undefined,
+        {
+          status: res.status,
+          body: text.slice(0, 500),
+        }
+      );
+      throw new Error(
+        `Telegram API returned non-JSON (status ${res.status}): ${text.slice(0, 200)}`
+      );
+    }
   }
 }

@@ -1,6 +1,9 @@
 import { and, eq, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { messages } from "@/lib/db/schema";
+import { createLogger } from "@/lib/logger";
+
+const log = createLogger("message-log");
 
 export type MessageDirection = "in" | "out";
 export type MessageKind = "text" | "image" | "template";
@@ -32,7 +35,11 @@ export function logMessage(input: LogMessageInput): void {
       })
       .run();
   } catch (error) {
-    console.error("Failed to log message:", error);
+    log.error("Failed to log message", error, {
+      provider: input.provider,
+      contact: input.contact,
+      kind: input.kind,
+    });
   }
 }
 

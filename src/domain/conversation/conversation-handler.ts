@@ -1,4 +1,5 @@
 import { readConfigurationSync } from "@/domain/configuration/configuration-service";
+import { handleDialogConversation } from "@/domain/dialog/dialog-handler";
 import { logMessage } from "@/domain/messaging/message-log";
 import { createMessagingProvider } from "@/domain/messaging/provider-factory";
 import { generateQrPng } from "@/domain/messaging/qr-service";
@@ -47,6 +48,12 @@ export async function handleConversationMessage(
 ): Promise<void> {
   log.info("Handling message", { provider, userId, text });
   const settings = await readSettings();
+
+  if (settings.conversationMode === "dialog") {
+    log.info("Dialog mode", { provider, userId });
+    await handleDialogConversation(provider, userId, text);
+    return;
+  }
 
   if (settings.conversationMode === "webform") {
     log.info("Webform mode — sending link", { provider, userId });

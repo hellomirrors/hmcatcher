@@ -152,6 +152,9 @@ export function SettingsForm({
                 <SelectItem value="webform">
                   Webformular (Link zum Formular)
                 </SelectItem>
+                <SelectItem value="dialog">
+                  Dialog (Konfigurierbare Flows)
+                </SelectItem>
               </SelectContent>
             </Select>
             <p className="text-muted-foreground text-xs">

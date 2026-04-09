@@ -15,6 +15,13 @@
       "when": 1775677555507,
       "tag": "0001_yellow_wild_pack",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1775761533603,
+      "tag": "0002_normal_proemial_gods",
+      "breakpoints": true
     }
   ]
 }

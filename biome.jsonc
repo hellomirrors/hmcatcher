@@ -7,7 +7,7 @@
     "ultracite/biome/vitest"
   ],
   "files": {
-    "includes": ["!.agents", "!**/.agents"]
+    "includes": ["!.agents", "!**/.agents", "!**/*.html", "!drizzle/meta"]
   },
   "linter": {
     "rules": {
@@ -18,6 +18,17 @@
     }
   },
   "overrides": [
+    {
+      // Dialog editor components use array index keys for dynamic lists without stable IDs
+      "includes": ["src/app/dialogs/**"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noArrayIndexKey": "off"
+          }
+        }
+      }
+    },
     {
       // shadcn/ui components — keep in default state, do not lint or format
       "includes": ["src/components/ui/**"],

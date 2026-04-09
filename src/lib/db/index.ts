@@ -1,10 +1,19 @@
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import { createLogger } from "@/lib/logger";
-import { leads, messages } from "./schema";
+import {
+  dialogAnswers,
+  dialogSessions,
+  dialogs,
+  leads,
+  messages,
+} from "./schema";
 
 const log = createLogger("db");
 
 interface Schema extends Record<string, unknown> {
+  dialogAnswers: typeof dialogAnswers;
+  dialogSessions: typeof dialogSessions;
+  dialogs: typeof dialogs;
   leads: typeof leads;
   messages: typeof messages;
 }
@@ -49,7 +58,9 @@ function initDb(): BetterSQLite3Database<Schema> {
   sqlite.pragma("journal_mode = WAL");
   sqlite.pragma("foreign_keys = ON");
 
-  _db = drizzle(sqlite, { schema: { leads, messages } });
+  _db = drizzle(sqlite, {
+    schema: { dialogs, dialogAnswers, dialogSessions, leads, messages },
+  });
 
   const migrationsFolder =
     process.env.DRIZZLE_MIGRATIONS_DIR ??

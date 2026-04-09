@@ -1,7 +1,7 @@
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import { leads, messages } from "./schema";
 
-interface Schema {
+interface Schema extends Record<string, unknown> {
   leads: typeof leads;
   messages: typeof messages;
 }

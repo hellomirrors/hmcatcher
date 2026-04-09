@@ -91,33 +91,33 @@ async function runQr(
 }
 
 // GoWA actions
-export function sendGowaTextAction(
+export async function sendGowaTextAction(
   _prev: WatestActionState,
   formData: FormData
 ): Promise<WatestActionState> {
-  return runText("gowa", formData);
+  return await runText("gowa", formData);
 }
 
-export function sendGowaQrAction(
+export async function sendGowaQrAction(
   _prev: WatestActionState,
   formData: FormData
 ): Promise<WatestActionState> {
-  return runQr("gowa", formData);
+  return await runQr("gowa", formData);
 }
 
 // WhatsApp Business API actions
-export function sendWhatsappTextAction(
+export async function sendWhatsappTextAction(
   _prev: WatestActionState,
   formData: FormData
 ): Promise<WatestActionState> {
-  return runText("whatsapp", formData);
+  return await runText("whatsapp", formData);
 }
 
-export function sendWhatsappQrAction(
+export async function sendWhatsappQrAction(
   _prev: WatestActionState,
   formData: FormData
 ): Promise<WatestActionState> {
-  return runQr("whatsapp", formData);
+  return await runQr("whatsapp", formData);
 }
 
 export async function sendWhatsappTemplateAction(
@@ -140,11 +140,15 @@ export async function sendWhatsappTemplateAction(
     return { success: false, errors };
   }
 
+  const provider = createMessagingProvider("whatsapp");
+  if (!(provider instanceof WhatsappService)) {
+    return {
+      success: false,
+      errors: { _form: ["Template senden nur via WhatsApp Business API"] },
+    };
+  }
+
   try {
-    const provider = createMessagingProvider("whatsapp");
-    if (!(provider instanceof WhatsappService)) {
-      throw new Error("Template senden nur via WhatsApp Business API");
-    }
     const sent = await provider.sendTemplate(to, templateName, languageCode);
     logMessage({
       provider: "whatsapp",

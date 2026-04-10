@@ -22,7 +22,8 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import type { Settings } from "@/domain/settings/settings-schema";
-import { type EnvFallbackInfo, updateSettingsAction } from "./action";
+import { updateSettingsAction } from "./action";
+import type { EnvFallbackInfo } from "./constants";
 
 interface FieldProps {
   envFallbacks: Map<string, EnvFallbackInfo>;

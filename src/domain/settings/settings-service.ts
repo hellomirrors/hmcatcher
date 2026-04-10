@@ -42,7 +42,7 @@ export async function writeSettings(
   return validated;
 }
 
-const ENV_DEFAULTS: Record<string, string | undefined> = {
+const ENV_DEFAULTS: Record<string, string> = {
   telegramBotToken: "TELEGRAM_BOT_TOKEN",
   telegramBotUsername: "TELEGRAM_BOT_USERNAME",
   whatsappAccessToken: "WHATSAPP_ACCESS_TOKEN",
@@ -58,35 +58,55 @@ const ENV_DEFAULTS: Record<string, string | undefined> = {
   appBaseUrl: "APP_BASE_URL",
 };
 
-function resolve(settings: Settings, key: keyof typeof ENV_DEFAULTS): string {
-  const stored = settings[key as keyof Settings];
-  if (typeof stored === "string" && stored.length > 0) {
-    return stored;
+/**
+ * Seeds empty settings fields from environment variables and persists them.
+ * Returns the (potentially updated) settings.
+ */
+async function seedFromEnv(settings: Settings): Promise<Settings> {
+  const patch: Partial<Settings> = {};
+  let dirty = false;
+
+  for (const [key, envName] of Object.entries(ENV_DEFAULTS)) {
+    const stored = settings[key as keyof Settings];
+    if (typeof stored === "string" && stored.length > 0) {
+      continue;
+    }
+    const envValue = process.env[envName];
+    if (envValue) {
+      (patch as Record<string, string>)[key] = envValue;
+      dirty = true;
+    }
   }
-  const envName = ENV_DEFAULTS[key];
-  return envName ? (process.env[envName] ?? "") : "";
+
+  if (!dirty) {
+    return settings;
+  }
+
+  return await writeSettings({ ...settings, ...patch });
 }
 
-/** Returns settings with all env-var defaults resolved to concrete values. */
+/** Returns settings with env defaults seeded into the store. */
 export async function resolveSettings(): Promise<ResolvedSettings> {
-  const s = await readSettings();
+  const raw = await readSettings();
+  const s = await seedFromEnv(raw);
+
   return {
     whatsappProvider: s.whatsappProvider,
     whatsappPhoneMode: s.whatsappPhoneMode,
     conversationMode: s.conversationMode,
     showTelegramQr: s.showTelegramQr,
-    telegramBotToken: resolve(s, "telegramBotToken"),
-    telegramBotUsername: resolve(s, "telegramBotUsername") || "hmcatcher_bot",
-    whatsappAccessToken: resolve(s, "whatsappAccessToken"),
-    whatsappPhoneNumberId: resolve(s, "whatsappPhoneNumberId"),
-    whatsappTestPhoneNumberId: resolve(s, "whatsappTestPhoneNumberId"),
-    whatsappWebhookVerifyToken: resolve(s, "whatsappWebhookVerifyToken"),
-    whatsappPhoneNumber: resolve(s, "whatsappPhoneNumber"),
-    gowaBaseUrl: resolve(s, "gowaBaseUrl"),
-    gowaUsername: resolve(s, "gowaUsername"),
-    gowaPassword: resolve(s, "gowaPassword"),
-    gowaDeviceId: resolve(s, "gowaDeviceId"),
-    gowaPhoneNumber: resolve(s, "gowaPhoneNumber"),
-    appBaseUrl: resolve(s, "appBaseUrl"),
+    telegramBotToken: s.telegramBotToken ?? "",
+    telegramBotUsername: s.telegramBotUsername || "hmcatcher_bot",
+    whatsappAccessToken: s.whatsappAccessToken ?? "",
+    whatsappPhoneNumberId: s.whatsappPhoneNumberId ?? "",
+    whatsappTestPhoneNumberId: s.whatsappTestPhoneNumberId ?? "",
+    whatsappWebhookVerifyToken: s.whatsappWebhookVerifyToken ?? "",
+    whatsappPhoneNumber: s.whatsappPhoneNumber ?? "",
+    gowaBaseUrl: s.gowaBaseUrl ?? "",
+    gowaUsername: s.gowaUsername ?? "",
+    gowaPassword: s.gowaPassword ?? "",
+    gowaDeviceId: s.gowaDeviceId ?? "",
+    gowaPhoneNumber: s.gowaPhoneNumber ?? "",
+    appBaseUrl: s.appBaseUrl ?? "",
   };
 }

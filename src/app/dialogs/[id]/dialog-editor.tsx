@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type {
   DialogDefinition,
   DialogStep,
@@ -151,10 +152,13 @@ export const DialogEditor = ({ dialog }: DialogEditorProps) => {
         </div>
       </div>
 
-      <div className="flex gap-6">
-        {/* Left column */}
-        <div className="flex w-1/2 flex-col gap-6">
-          {/* General settings */}
+      <Tabs defaultValue="steps">
+        <TabsList>
+          <TabsTrigger value="general">Allgemein</TabsTrigger>
+          <TabsTrigger value="steps">Schritte</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="general">
           <Card>
             <CardHeader>
               <CardTitle>Allgemein</CardTitle>
@@ -217,39 +221,41 @@ export const DialogEditor = ({ dialog }: DialogEditorProps) => {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
 
-          {/* Step list */}
-          <Card>
-            <CardContent className="pt-6">
-              <StepList
-                onAddStep={handleAddStep}
-                onDeleteStep={handleDeleteStep}
-                onMoveStep={handleMoveStep}
-                onSelectStep={setSelectedStepId}
-                selectedStepId={selectedStepId}
-                steps={definition.steps}
-              />
-            </CardContent>
-          </Card>
+        <TabsContent value="steps">
+          <div className="flex gap-6">
+            {/* Left column — Step list */}
+            <div className="w-1/2">
+              <Card>
+                <CardContent className="pt-6">
+                  <StepList
+                    onAddStep={handleAddStep}
+                    onDeleteStep={handleDeleteStep}
+                    onMoveStep={handleMoveStep}
+                    onSelectStep={setSelectedStepId}
+                    selectedStepId={selectedStepId}
+                    steps={definition.steps}
+                  />
+                </CardContent>
+              </Card>
+            </div>
 
-          {/* Step form */}
-          {selectedStep && (
-            <StepForm
-              allStepIds={allStepIds}
-              allVariableNames={allVariableNames}
-              onChange={handleStepChange}
-              step={selectedStep}
-            />
-          )}
-        </div>
-
-        {/* Right column */}
-        <div className="w-1/2">
-          <div className="sticky top-4 grid gap-4">
-            <WhatsappPreview step={selectedStep} />
+            {/* Right column — Preview + Step form */}
+            <div className="flex w-1/2 flex-col gap-6">
+              <WhatsappPreview step={selectedStep} />
+              {selectedStep && (
+                <StepForm
+                  allStepIds={allStepIds}
+                  allVariableNames={allVariableNames}
+                  onChange={handleStepChange}
+                  step={selectedStep}
+                />
+              )}
+            </div>
           </div>
-        </div>
-      </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

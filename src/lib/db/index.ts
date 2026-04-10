@@ -54,11 +54,20 @@ function initDb(): BetterSQLite3Database<Schema> {
     mkdirSync(dir, { recursive: true });
   }
 
-  const sqlite = new Database(dbPath);
+  log.info(`Opening database at ${dbPath}`);
+
+  let sqlite: InstanceType<typeof Database>;
+  try {
+    sqlite = new Database(dbPath);
+  } catch (error) {
+    log.error("Failed to open database", { path: dbPath, error });
+    throw error;
+  }
+
   sqlite.pragma("journal_mode = WAL");
   sqlite.pragma("foreign_keys = ON");
 
-  _db = drizzle(sqlite, {
+  const instance = drizzle(sqlite, {
     schema: { dialogs, dialogAnswers, dialogSessions, leads, messages },
   });
 
@@ -67,12 +76,14 @@ function initDb(): BetterSQLite3Database<Schema> {
     join(/*turbopackIgnore: true*/ process.cwd(), "drizzle");
   if (existsSync(migrationsFolder)) {
     try {
-      migrate(_db, { migrationsFolder });
+      migrate(instance, { migrationsFolder });
     } catch (error) {
-      log.error("Failed to apply migrations", error, { migrationsFolder });
+      log.error("Database migration failed", { migrationsFolder, error });
+      throw error;
     }
   }
 
+  _db = instance;
   return _db;
 }
 

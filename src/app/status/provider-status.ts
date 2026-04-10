@@ -1,3 +1,5 @@
+import type { ResolvedSettings } from "@/domain/settings/settings-schema";
+
 export interface ProviderStatus {
   configured: boolean;
   id: string;
@@ -5,42 +7,36 @@ export interface ProviderStatus {
   missingVars: string[];
 }
 
-export function getProviderStatuses(): ProviderStatus[] {
+export function getProviderStatuses(cfg: ResolvedSettings): ProviderStatus[] {
   return [
     {
       id: "telegram",
       label: "Telegram",
-      configured: !!process.env.TELEGRAM_BOT_TOKEN,
-      missingVars: [
-        ...(process.env.TELEGRAM_BOT_TOKEN ? [] : ["TELEGRAM_BOT_TOKEN"]),
-      ],
+      configured: !!cfg.telegramBotToken,
+      missingVars: [...(cfg.telegramBotToken ? [] : ["telegramBotToken"])],
     },
     {
       id: "whatsapp",
       label: "WhatsApp (Meta Cloud API)",
-      configured:
-        !!process.env.WHATSAPP_ACCESS_TOKEN &&
-        !!process.env.WHATSAPP_PHONE_NUMBER_ID,
+      configured: !!cfg.whatsappAccessToken && !!cfg.whatsappPhoneNumberId,
       missingVars: [
-        ...(process.env.WHATSAPP_ACCESS_TOKEN ? [] : ["WHATSAPP_ACCESS_TOKEN"]),
-        ...(process.env.WHATSAPP_PHONE_NUMBER_ID
-          ? []
-          : ["WHATSAPP_PHONE_NUMBER_ID"]),
+        ...(cfg.whatsappAccessToken ? [] : ["whatsappAccessToken"]),
+        ...(cfg.whatsappPhoneNumberId ? [] : ["whatsappPhoneNumberId"]),
       ],
     },
     {
       id: "gowa",
       label: "GoWA (go-whatsapp-web)",
       configured:
-        !!process.env.GOWA_BASE_URL &&
-        !!process.env.GOWA_USERNAME &&
-        !!process.env.GOWA_PASSWORD &&
-        !!process.env.GOWA_DEVICE_ID,
+        !!cfg.gowaBaseUrl &&
+        !!cfg.gowaUsername &&
+        !!cfg.gowaPassword &&
+        !!cfg.gowaDeviceId,
       missingVars: [
-        ...(process.env.GOWA_BASE_URL ? [] : ["GOWA_BASE_URL"]),
-        ...(process.env.GOWA_USERNAME ? [] : ["GOWA_USERNAME"]),
-        ...(process.env.GOWA_PASSWORD ? [] : ["GOWA_PASSWORD"]),
-        ...(process.env.GOWA_DEVICE_ID ? [] : ["GOWA_DEVICE_ID"]),
+        ...(cfg.gowaBaseUrl ? [] : ["gowaBaseUrl"]),
+        ...(cfg.gowaUsername ? [] : ["gowaUsername"]),
+        ...(cfg.gowaPassword ? [] : ["gowaPassword"]),
+        ...(cfg.gowaDeviceId ? [] : ["gowaDeviceId"]),
       ],
     },
   ];

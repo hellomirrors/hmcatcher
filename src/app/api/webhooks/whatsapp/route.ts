@@ -4,11 +4,12 @@ import {
   whatsappVerifyQuerySchema,
   whatsappWebhookPayloadSchema,
 } from "@/domain/schema";
+import { resolveSettings } from "@/domain/settings/settings-service";
 import { createLogger } from "@/lib/logger";
 
 const log = createLogger("webhook:whatsapp");
 
-export function GET(request: Request): Response {
+export async function GET(request: Request): Promise<Response> {
   const url = new URL(request.url);
   const params = Object.fromEntries(url.searchParams);
 
@@ -18,8 +19,8 @@ export function GET(request: Request): Response {
     return new Response("Invalid request", { status: 400 });
   }
 
-  const verifyToken = process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN;
-  if (result.data["hub.verify_token"] !== verifyToken) {
+  const cfg = await resolveSettings();
+  if (result.data["hub.verify_token"] !== cfg.whatsappWebhookVerifyToken) {
     log.warn("Verify: token mismatch");
     return new Response("Forbidden", { status: 403 });
   }

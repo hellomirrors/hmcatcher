@@ -3,7 +3,7 @@ import { handleDialogConversation } from "@/domain/dialog/dialog-handler";
 import { logMessage } from "@/domain/messaging/message-log";
 import { createMessagingProvider } from "@/domain/messaging/provider-factory";
 import { generateQrPng } from "@/domain/messaging/qr-service";
-import { readSettings } from "@/domain/settings/settings-service";
+import { resolveSettings } from "@/domain/settings/settings-service";
 import { createLogger } from "@/lib/logger";
 import { handleInboundMessage } from "./conversation-engine";
 import { createContactToken } from "./token-store";
@@ -12,11 +12,12 @@ const log = createLogger("conversation");
 
 const TRAILING_SLASHES = /\/+$/;
 
-function buildContactLink(provider: string, userId: string): string {
-  const baseUrl = (process.env.APP_BASE_URL ?? "").replace(
-    TRAILING_SLASHES,
-    ""
-  );
+async function buildContactLink(
+  provider: string,
+  userId: string
+): Promise<string> {
+  const cfg = await resolveSettings();
+  const baseUrl = cfg.appBaseUrl.replace(TRAILING_SLASHES, "");
   const token = createContactToken(provider, userId);
   return `${baseUrl}/c/${token}`;
 }
@@ -27,7 +28,7 @@ async function handleWebformMessage(
 ): Promise<void> {
   const config = readConfigurationSync();
   const messagingProvider = await createMessagingProvider(provider);
-  const link = buildContactLink(provider, userId);
+  const link = await buildContactLink(provider, userId);
   const text = config.messages.welcome_webform.replace("{link}", link);
 
   const sent = await messagingProvider.sendText({ to: userId, body: text });
@@ -47,7 +48,7 @@ export async function handleConversationMessage(
   text: string
 ): Promise<void> {
   log.info("Handling message", { provider, userId, text });
-  const settings = await readSettings();
+  const settings = await resolveSettings();
 
   if (settings.conversationMode === "dialog") {
     log.info("Dialog mode", { provider, userId });

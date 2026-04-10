@@ -1,4 +1,5 @@
-import { readSettings } from "@/domain/settings/settings-service";
+import type { ResolvedSettings } from "@/domain/settings/settings-schema";
+import { resolveSettings } from "@/domain/settings/settings-service";
 import type { MessagingProvider } from "@/domain/types";
 import { createLogger } from "@/lib/logger";
 import { GowaService } from "./gowa-service";
@@ -7,18 +8,21 @@ import { WhatsappService } from "./whatsapp-service";
 
 const log = createLogger("provider-factory");
 
-function resolveWhatsappPhoneNumberId(mode: "live" | "test"): string {
+function resolveWhatsappPhoneNumberId(
+  mode: "live" | "test",
+  cfg: ResolvedSettings
+): string {
   if (mode === "test") {
-    const testId = process.env.WHATSAPP_TEST_PHONE_NUMBER_ID;
+    const testId = cfg.whatsappTestPhoneNumberId;
     if (testId) {
       log.info("Using test phone number ID", { phoneNumberId: testId });
       return testId;
     }
-    log.warn("WHATSAPP_TEST_PHONE_NUMBER_ID not set, falling back to live");
+    log.warn("whatsappTestPhoneNumberId not set, falling back to live");
   }
-  const liveId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+  const liveId = cfg.whatsappPhoneNumberId;
   if (!liveId) {
-    throw new Error("Missing env var: WHATSAPP_PHONE_NUMBER_ID");
+    throw new Error("Missing setting: whatsappPhoneNumberId");
   }
   return liveId;
 }
@@ -26,40 +30,50 @@ function resolveWhatsappPhoneNumberId(mode: "live" | "test"): string {
 export async function createMessagingProvider(
   provider: string
 ): Promise<MessagingProvider> {
+  const cfg = await resolveSettings();
+
   if (provider === "telegram") {
-    const botToken = process.env.TELEGRAM_BOT_TOKEN;
-    if (!botToken) {
-      throw new Error("Missing env var: TELEGRAM_BOT_TOKEN");
+    if (!cfg.telegramBotToken) {
+      throw new Error("Missing setting: telegramBotToken");
     }
-    return new TelegramService({ botToken });
+    return new TelegramService({ botToken: cfg.telegramBotToken });
   }
 
   if (provider === "gowa") {
-    const baseUrl = process.env.GOWA_BASE_URL;
-    const username = process.env.GOWA_USERNAME;
-    const password = process.env.GOWA_PASSWORD;
-    const deviceId = process.env.GOWA_DEVICE_ID;
-    if (!(baseUrl && username && password && deviceId)) {
+    if (
+      !(
+        cfg.gowaBaseUrl &&
+        cfg.gowaUsername &&
+        cfg.gowaPassword &&
+        cfg.gowaDeviceId
+      )
+    ) {
       throw new Error(
-        "Missing env vars: GOWA_BASE_URL, GOWA_USERNAME, GOWA_PASSWORD, GOWA_DEVICE_ID"
+        "Missing settings: gowaBaseUrl, gowaUsername, gowaPassword, gowaDeviceId"
       );
     }
-    return new GowaService({ baseUrl, username, password, deviceId });
+    return new GowaService({
+      baseUrl: cfg.gowaBaseUrl,
+      username: cfg.gowaUsername,
+      password: cfg.gowaPassword,
+      deviceId: cfg.gowaDeviceId,
+    });
   }
 
-  const accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
-  if (!accessToken) {
-    throw new Error("Missing env var: WHATSAPP_ACCESS_TOKEN");
+  if (!cfg.whatsappAccessToken) {
+    throw new Error("Missing setting: whatsappAccessToken");
   }
-  const settings = await readSettings();
   const phoneNumberId = resolveWhatsappPhoneNumberId(
-    settings.whatsappPhoneMode
+    cfg.whatsappPhoneMode,
+    cfg
   );
-  return new WhatsappService({ accessToken, phoneNumberId });
+  return new WhatsappService({
+    accessToken: cfg.whatsappAccessToken,
+    phoneNumberId,
+  });
 }
 
 export async function createMessagingProviderFromSettings(): Promise<MessagingProvider> {
-  const settings = await readSettings();
-  const provider = process.env.MESSAGING_PROVIDER ?? settings.whatsappProvider;
-  return createMessagingProvider(provider);
+  const cfg = await resolveSettings();
+  return createMessagingProvider(cfg.whatsappProvider);
 }

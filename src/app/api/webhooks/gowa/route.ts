@@ -1,6 +1,7 @@
 import { handleConversationMessage } from "@/domain/conversation/conversation-handler";
 import { logMessage } from "@/domain/messaging/message-log";
 import { gowaWebhookPayloadSchema } from "@/domain/schema";
+import { resolveSettings } from "@/domain/settings/settings-service";
 import { createLogger } from "@/lib/logger";
 
 const log = createLogger("webhook:gowa");
@@ -17,9 +18,10 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   const { event, payload } = result.data;
+  const cfg = await resolveSettings();
 
   const from = payload.from.replace("@s.whatsapp.net", "");
-  const ownPhone = process.env.GOWA_PHONE_NUMBER;
+  const ownPhone = cfg.gowaPhoneNumber;
   const isOwnMessage = payload.is_from_me || (ownPhone && from === ownPhone);
 
   if (event !== "message" || isOwnMessage || !payload.body) {

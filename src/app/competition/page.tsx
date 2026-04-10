@@ -1,27 +1,20 @@
 import Image from "next/image";
-import { readSettings } from "@/domain/settings/settings-service";
+import { resolveSettings } from "@/domain/settings/settings-service";
 
 export const dynamic = "force-dynamic";
 
-const TELEGRAM_BOT_USERNAME =
-  process.env.TELEGRAM_BOT_USERNAME ?? "hmcatcher_bot";
-
-function getWhatsAppPhoneNumber(provider: string): string {
-  if (provider === "gowa") {
-    return (
-      process.env.GOWA_PHONE_NUMBER ?? process.env.WHATSAPP_PHONE_NUMBER ?? ""
-    );
-  }
-  return process.env.WHATSAPP_PHONE_NUMBER ?? "";
-}
-
 export default async function CompetitionPage() {
-  const settings = await readSettings();
-  const whatsappPhone = getWhatsAppPhoneNumber(settings.whatsappProvider);
+  const cfg = await resolveSettings();
 
-  const telegramLink = TELEGRAM_BOT_USERNAME
-    ? `https://t.me/${TELEGRAM_BOT_USERNAME}?start=messe`
-    : "";
+  const whatsappPhone =
+    cfg.whatsappProvider === "gowa"
+      ? cfg.gowaPhoneNumber || cfg.whatsappPhoneNumber
+      : cfg.whatsappPhoneNumber;
+
+  const telegramLink =
+    cfg.showTelegramQr && cfg.telegramBotUsername
+      ? `https://t.me/${cfg.telegramBotUsername}?start=messe`
+      : "";
 
   const whatsappLink = whatsappPhone
     ? `https://wa.me/${whatsappPhone}?text=start`
@@ -88,8 +81,7 @@ export default async function CompetitionPage() {
 
         {!(telegramLink || whatsappLink) && (
           <p className="text-muted-foreground">
-            Bitte konfiguriere TELEGRAM_BOT_USERNAME oder WHATSAPP_PHONE_NUMBER
-            in den Umgebungsvariablen.
+            Bitte konfiguriere die Telegram- oder WhatsApp-Einstellungen.
           </p>
         )}
       </div>

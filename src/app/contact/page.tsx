@@ -1,15 +1,22 @@
 import { readConfiguration } from "@/domain/configuration/configuration-service";
+import { resolveSettings } from "@/domain/settings/settings-service";
 import { ContactForm } from "./contact-form";
 
-function getChatReturnUrl(provider: string): string {
+function getChatReturnUrl(
+  provider: string,
+  cfg: {
+    gowaPhoneNumber: string;
+    telegramBotUsername: string;
+    whatsappPhoneNumber: string;
+  }
+): string {
   if (provider === "telegram") {
-    const username = process.env.TELEGRAM_BOT_USERNAME ?? "hmcatcher_bot";
-    return `https://t.me/${username}`;
+    return `https://t.me/${cfg.telegramBotUsername}`;
   }
   const phone =
     provider === "gowa"
-      ? (process.env.GOWA_PHONE_NUMBER ?? process.env.WHATSAPP_PHONE_NUMBER)
-      : process.env.WHATSAPP_PHONE_NUMBER;
+      ? cfg.gowaPhoneNumber || cfg.whatsappPhoneNumber
+      : cfg.whatsappPhoneNumber;
   return phone ? `https://wa.me/${phone}` : "";
 }
 
@@ -32,8 +39,11 @@ export default async function ContactPage({
     );
   }
 
-  const config = await readConfiguration();
-  const chatReturnUrl = getChatReturnUrl(provider);
+  const [config, cfg] = await Promise.all([
+    readConfiguration(),
+    resolveSettings(),
+  ]);
+  const chatReturnUrl = getChatReturnUrl(provider, cfg);
 
   return (
     <div className="flex flex-1 items-center justify-center p-4">

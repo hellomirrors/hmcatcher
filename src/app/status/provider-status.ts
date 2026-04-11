@@ -18,10 +18,14 @@ export function getProviderStatuses(cfg: ResolvedSettings): ProviderStatus[] {
     {
       id: "whatsapp",
       label: "WhatsApp (Meta Cloud API)",
-      configured: !!cfg.whatsappAccessToken && !!cfg.whatsappPhoneNumberId,
+      configured:
+        !!cfg.whatsappAccessToken &&
+        !!cfg.whatsappPhoneNumberId &&
+        !!cfg.whatsappPhoneNumber,
       missingVars: [
         ...(cfg.whatsappAccessToken ? [] : ["whatsappAccessToken"]),
         ...(cfg.whatsappPhoneNumberId ? [] : ["whatsappPhoneNumberId"]),
+        ...(cfg.whatsappPhoneNumber ? [] : ["whatsappPhoneNumber"]),
       ],
     },
     {
@@ -31,12 +35,16 @@ export function getProviderStatuses(cfg: ResolvedSettings): ProviderStatus[] {
         !!cfg.gowaBaseUrl &&
         !!cfg.gowaUsername &&
         !!cfg.gowaPassword &&
-        !!cfg.gowaDeviceId,
+        !!cfg.gowaDeviceId &&
+        !!(cfg.gowaPhoneNumber || cfg.whatsappPhoneNumber),
       missingVars: [
         ...(cfg.gowaBaseUrl ? [] : ["gowaBaseUrl"]),
         ...(cfg.gowaUsername ? [] : ["gowaUsername"]),
         ...(cfg.gowaPassword ? [] : ["gowaPassword"]),
         ...(cfg.gowaDeviceId ? [] : ["gowaDeviceId"]),
+        ...(cfg.gowaPhoneNumber || cfg.whatsappPhoneNumber
+          ? []
+          : ["gowaPhoneNumber"]),
       ],
     },
   ];

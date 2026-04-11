@@ -12,10 +12,6 @@ FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ENV NODE_ENV=production
-ARG TELEGRAM_BOT_USERNAME=hmcatcher_bot
-ARG WHATSAPP_PHONE_NUMBER=4917012345678
-ENV TELEGRAM_BOT_USERNAME=${TELEGRAM_BOT_USERNAME}
-ENV WHATSAPP_PHONE_NUMBER=${WHATSAPP_PHONE_NUMBER}
 RUN bun run build
 
 # --- Production ---

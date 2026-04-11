@@ -2,9 +2,6 @@ services:
   hmcatcher:
     build:
       context: .
-      args:
-        - TELEGRAM_BOT_USERNAME=${TELEGRAM_BOT_USERNAME:-hmcatcher_bot}
-        - WHATSAPP_PHONE_NUMBER=${WHATSAPP_PHONE_NUMBER:-4917012345678}
     expose:
       - "3000"
     volumes:
@@ -25,7 +22,7 @@ services:
       - GOWA_WEBHOOK_SECRET=${GOWA_WEBHOOK_SECRET:-secret}
       - GOWA_PHONE_NUMBER=${GOWA_PHONE_NUMBER}
       - TELEGRAM_BOT_USERNAME=${TELEGRAM_BOT_USERNAME:-hmcatcher_bot}
-      - WHATSAPP_PHONE_NUMBER=${WHATSAPP_PHONE_NUMBER:-4917012345678}
+      - WHATSAPP_PHONE_NUMBER=${WHATSAPP_PHONE_NUMBER}
       - APP_BASE_URL=${APP_BASE_URL}
 
 volumes:

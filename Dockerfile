@@ -15,7 +15,9 @@ ENV NODE_ENV=production
 RUN bun run build
 
 # --- Production ---
-FROM node:22-slim AS runner
+# Must match builder's GLIBC (oven/bun:1 is trixie-based → GLIBC 2.38).
+# better-sqlite3 is copied as a prebuilt native binary from the builder.
+FROM node:22-trixie-slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 

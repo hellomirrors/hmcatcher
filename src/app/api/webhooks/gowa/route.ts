@@ -20,6 +20,13 @@ export async function POST(request: Request): Promise<Response> {
   const { event, payload } = result.data;
   const cfg = await resolveSettings();
 
+  if (cfg.whatsappProvider !== "gowa") {
+    log.info("Ignored inbound: active WhatsApp provider is not gowa", {
+      active: cfg.whatsappProvider,
+    });
+    return Response.json({ ok: true }, { status: 200 });
+  }
+
   const from = payload.from.replace("@s.whatsapp.net", "");
   const ownPhone = cfg.gowaPhoneNumber;
   const isOwnMessage = payload.is_from_me || (ownPhone && from === ownPhone);

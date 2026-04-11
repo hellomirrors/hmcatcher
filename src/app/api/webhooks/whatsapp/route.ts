@@ -40,6 +40,14 @@ export async function POST(request: Request): Promise<Response> {
     return Response.json({ status: "ok" }, { status: 200 });
   }
 
+  const cfg = await resolveSettings();
+  if (cfg.whatsappProvider !== "whatsapp") {
+    log.info("Ignored inbound: active WhatsApp provider is not whatsapp", {
+      active: cfg.whatsappProvider,
+    });
+    return Response.json({ status: "ok" }, { status: 200 });
+  }
+
   for (const entry of result.data.entry) {
     for (const change of entry.changes) {
       const messages = change.value.messages ?? [];

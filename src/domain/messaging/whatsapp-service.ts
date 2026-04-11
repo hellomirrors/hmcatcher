@@ -193,7 +193,6 @@ export class WhatsappService implements MessagingProvider {
 
     const interactive: Record<string, unknown> = {
       type: "list",
-      header: { type: "text", text: message.title },
       body: { text: message.body },
       action: {
         button: message.buttonText,
@@ -209,6 +208,11 @@ export class WhatsappService implements MessagingProvider {
         })),
       },
     };
+    // Header is optional in Meta's list payload. Sending an empty string
+    // has triggered #131009 in the past — only attach it when populated.
+    if (message.title?.trim()) {
+      interactive.header = { type: "text", text: message.title };
+    }
     if (message.footer) {
       interactive.footer = { text: message.footer };
     }

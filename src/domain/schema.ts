@@ -60,6 +60,21 @@ export const whatsappWebhookPayloadSchema = z.object({
                   timestamp: z.string(),
                   type: z.string(),
                   text: z.object({ body: z.string() }).optional(),
+                  interactive: z
+                    .object({
+                      type: z.string(),
+                      button_reply: z
+                        .object({ id: z.string(), title: z.string() })
+                        .optional(),
+                      list_reply: z
+                        .object({
+                          id: z.string(),
+                          title: z.string(),
+                          description: z.string().optional(),
+                        })
+                        .optional(),
+                    })
+                    .optional(),
                 })
               )
               .optional(),

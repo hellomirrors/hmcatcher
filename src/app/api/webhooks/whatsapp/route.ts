@@ -1,6 +1,7 @@
 import { handleConversationMessage } from "@/domain/conversation/conversation-handler";
 import { logMessage } from "@/domain/messaging/message-log";
 import {
+  type WhatsappWebhookPayload,
   whatsappVerifyQuerySchema,
   whatsappWebhookPayloadSchema,
 } from "@/domain/schema";
@@ -8,6 +9,54 @@ import { resolveSettings } from "@/domain/settings/settings-service";
 import { createLogger } from "@/lib/logger";
 
 const log = createLogger("webhook:whatsapp");
+
+type WhatsappMessage = NonNullable<
+  WhatsappWebhookPayload["entry"][number]["changes"][number]["value"]["messages"]
+>[number];
+
+/**
+ * Extract the effective inbound text from a WhatsApp message regardless
+ * of whether the user typed it or tapped a reply button / list row.
+ *
+ * For interactive replies we forward the button/row *title* (not the id)
+ * so that downstream label-based matching stays consistent with Telegram
+ * and GoWA, where the user's visible choice is what reaches the engine.
+ * The engine still accepts ids as a fallback.
+ */
+function extractInboundText(msg: WhatsappMessage): string | undefined {
+  if (msg.type === "text" && msg.text?.body) {
+    return msg.text.body;
+  }
+  if (msg.type === "interactive" && msg.interactive) {
+    return (
+      msg.interactive.button_reply?.title ?? msg.interactive.list_reply?.title
+    );
+  }
+  return undefined;
+}
+
+async function processInboundMessage(msg: WhatsappMessage): Promise<void> {
+  const text = extractInboundText(msg);
+  if (!text) {
+    return;
+  }
+
+  logMessage({
+    provider: "whatsapp",
+    direction: "in",
+    contact: msg.from,
+    kind: "text",
+    body: text,
+    externalId: msg.id,
+  });
+
+  try {
+    await handleConversationMessage("whatsapp", msg.from, text);
+    log.info("Conversation handled", { from: msg.from });
+  } catch (error) {
+    log.error("Conversation failed", error, { from: msg.from, text });
+  }
+}
 
 export async function GET(request: Request): Promise<Response> {
   const url = new URL(request.url);
@@ -56,33 +105,11 @@ export async function POST(request: Request): Promise<Response> {
           from: msg.from,
           type: msg.type,
           text: msg.text?.body,
+          interactiveType: msg.interactive?.type,
           timestamp: msg.timestamp,
           phoneNumberId: change.value.metadata.phone_number_id,
         });
-
-        if (msg.type === "text" && msg.text?.body) {
-          logMessage({
-            provider: "whatsapp",
-            direction: "in",
-            contact: msg.from,
-            kind: "text",
-            body: msg.text.body,
-            externalId: msg.id,
-          });
-          try {
-            await handleConversationMessage(
-              "whatsapp",
-              msg.from,
-              msg.text.body
-            );
-            log.info("Conversation handled", { from: msg.from });
-          } catch (error) {
-            log.error("Conversation failed", error, {
-              from: msg.from,
-              text: msg.text.body,
-            });
-          }
-        }
+        await processInboundMessage(msg);
       }
     }
   }

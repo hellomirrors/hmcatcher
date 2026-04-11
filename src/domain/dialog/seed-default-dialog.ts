@@ -3,10 +3,16 @@ import {
   createDialog,
   listDialogs,
   setActiveDialog,
+  updateDialog,
 } from "./dialog-repository";
 import type { DialogDefinition, DialogStep } from "./dialog-schema";
 
 const log = createLogger("dialog-seed");
+
+const DIALOG_SLUG = "altenpflege-essen-2026";
+const DIALOG_NAME = "Felix Gewinnspiel — Altenpflege Essen 2026";
+const DIALOG_DESCRIPTION =
+  "Interaktives Gewinnspiel für den Hello Mirrors Stand auf der Altenpflege Messe Essen 2026";
 
 const defaultDefinition: DialogDefinition = {
   version: 1,
@@ -28,7 +34,7 @@ const defaultDefinition: DialogDefinition = {
       phase: "Onboarding",
       message:
         "Willkommen beim Felix Gewinnspiel!\n\nWenn du mitmachen möchtest, bestätige mit 'Ja' und nimm automatisch an unserem Gewinnspiel teil.\n\nMit deiner Teilnahme akzeptierst du unsere Teilnahmebedingungen und Datenschutzhinweise:\nhellomirrors.com/essen",
-      options: [{ id: "welcome-ja", label: "Ja, ich möchte teilnehmen" }],
+      options: [{ id: "welcome-ja", label: "Ja, teilnehmen" }],
       transitions: [{ targetStepId: "vorname" }],
     },
     {
@@ -53,45 +59,34 @@ const defaultDefinition: DialogDefinition = {
     },
     {
       id: "arbeitsbereich",
-      type: "buttons",
+      type: "list",
       phase: "Qualifizierung",
       message: "In welchem Bereich arbeitest du?",
       variableName: "arbeitsbereich",
+      listButtonText: "Auswählen",
       options: [
         { id: "ab-stationaer", label: "Stationäre Pflege" },
         { id: "ab-ambulant", label: "Ambulante Pflege" },
         { id: "ab-bildung", label: "Bildungseinrichtung" },
-        { id: "ab-medizinisch", label: "Medizinische Einrichtung" },
+        { id: "ab-medizinisch", label: "Medizinisch" },
         { id: "ab-sonstiges", label: "Sonstiges" },
       ],
       transitions: [
         {
           conditions: [
-            {
-              field: "arbeitsbereich",
-              operator: "eq",
-              value: "Stationäre Pflege",
-            },
+            { field: "arbeitsbereich", operator: "eq", value: "ab-stationaer" },
           ],
           targetStepId: "rolle-stationaer",
         },
         {
           conditions: [
-            {
-              field: "arbeitsbereich",
-              operator: "eq",
-              value: "Ambulante Pflege",
-            },
+            { field: "arbeitsbereich", operator: "eq", value: "ab-ambulant" },
           ],
           targetStepId: "rolle-ambulant",
         },
         {
           conditions: [
-            {
-              field: "arbeitsbereich",
-              operator: "eq",
-              value: "Bildungseinrichtung",
-            },
+            { field: "arbeitsbereich", operator: "eq", value: "ab-bildung" },
           ],
           targetStepId: "rolle-bildung",
         },
@@ -100,14 +95,14 @@ const defaultDefinition: DialogDefinition = {
             {
               field: "arbeitsbereich",
               operator: "eq",
-              value: "Medizinische Einrichtung",
+              value: "ab-medizinisch",
             },
           ],
           targetStepId: "rolle-medizinisch",
         },
         {
           conditions: [
-            { field: "arbeitsbereich", operator: "eq", value: "Sonstiges" },
+            { field: "arbeitsbereich", operator: "eq", value: "ab-sonstiges" },
           ],
           targetStepId: "typ-sonstiges",
         },
@@ -118,25 +113,22 @@ const defaultDefinition: DialogDefinition = {
 
     {
       id: "rolle-stationaer",
-      type: "buttons",
+      type: "list",
       phase: "Qualifizierung",
       message: "Welche Rolle hast du in deiner Einrichtung?",
       variableName: "rolle",
+      listButtonText: "Auswählen",
       options: [
-        { id: "rs-el", label: "Einrichtungsleitung / Heimleitung", score: 50 },
-        { id: "rs-stel", label: "Stellv. Einrichtungsleitung", score: 50 },
-        { id: "rs-pdl", label: "Pflegedienstleitung (PDL)", score: 50 },
-        { id: "rs-wbl", label: "Wohnbereichsleitung (WBL)", score: 30 },
-        { id: "rs-lsb", label: "Leitung Soziale Betreuung", score: 50 },
-        { id: "rs-qm", label: "Qualitätsbeauftragte/r (QM)", score: 50 },
+        { id: "rs-el", label: "Einrichtungsleitung", score: 50 },
+        { id: "rs-stel", label: "Stellv. Leitung", score: 50 },
+        { id: "rs-pdl", label: "PDL", score: 50 },
+        { id: "rs-lsb", label: "Soziale Betreuung", score: 50 },
+        { id: "rs-qm", label: "Qualitätsmanagement", score: 50 },
+        { id: "rs-wbl", label: "Wohnbereichsleitung", score: 30 },
         { id: "rs-vl", label: "Verwaltungsleitung", score: 30 },
-        { id: "rs-pfk", label: "Pflegefachkraft (examiniert)", score: 10 },
+        { id: "rs-pfk", label: "Pflegefachkraft", score: 10 },
         { id: "rs-phk", label: "Pflegehilfskraft", score: 10 },
-        { id: "rs-43b", label: "Betreuungskraft (43b SGB XI)", score: 10 },
-        { id: "rs-thera", label: "Therapeut/in (Physio/Ergo/Logo)", score: 10 },
-        { id: "rs-hw", label: "Hauswirtschaft / Haustechnik", score: 10 },
-        { id: "rs-azubi", label: "Azubi / FSJ / BFD", score: 10 },
-        { id: "rs-sonst", label: "Sonstige", score: 10 },
+        { id: "rs-43b", label: "Betreuungskraft §43b", score: 10 },
       ],
       transitions: [{ targetStepId: "einrichtung-stationaer" }],
     },
@@ -172,8 +164,8 @@ const defaultDefinition: DialogDefinition = {
       variableName: "traegerschaft",
       options: [
         { id: "ts-priv", label: "Privat" },
-        { id: "ts-oeff", label: "Öffentlich / Kommunal" },
-        { id: "ts-frei", label: "Freigemeinnützig / Kirchlich" },
+        { id: "ts-oeff", label: "Öffentlich" },
+        { id: "ts-frei", label: "Freigemeinnützig" },
       ],
       transitions: [{ targetStepId: "plz-stationaer" }],
     },
@@ -192,16 +184,17 @@ const defaultDefinition: DialogDefinition = {
 
     {
       id: "rolle-ambulant",
-      type: "buttons",
+      type: "list",
       phase: "Qualifizierung",
       message: "Welche Rolle hast du in deinem Pflegedienst?",
       variableName: "rolle",
+      listButtonText: "Auswählen",
       options: [
-        { id: "ra-gf", label: "Geschäftsführung / Inhaber" },
-        { id: "ra-pdl", label: "Pflegedienstleitung (PDL)" },
+        { id: "ra-gf", label: "Geschäftsführung" },
+        { id: "ra-pdl", label: "PDL" },
         { id: "ra-spdl", label: "Stellv. PDL" },
         { id: "ra-qm", label: "Qualitätsmanagement" },
-        { id: "ra-tl", label: "Teamleitung / Einsatzleitung" },
+        { id: "ra-tl", label: "Teamleitung" },
         { id: "ra-pfk", label: "Pflegefachkraft" },
         { id: "ra-bk", label: "Betreuungskraft" },
         { id: "ra-verw", label: "Verwaltung / Büro" },
@@ -233,34 +226,36 @@ const defaultDefinition: DialogDefinition = {
 
     {
       id: "rolle-bildung",
-      type: "buttons",
+      type: "list",
       phase: "Qualifizierung",
       message: "Welche Rolle hast du an deiner Bildungseinrichtung?",
       variableName: "rolle",
+      listButtonText: "Auswählen",
       options: [
-        { id: "rb-sl", label: "Schulleitung / Akademieleitung" },
+        { id: "rb-sl", label: "Schulleitung" },
         { id: "rb-doz", label: "Dozent / Lehrkraft" },
-        { id: "rb-pa", label: "Praxisanleiter / Praxiskoordinator" },
+        { id: "rb-pa", label: "Praxisanleitung" },
         { id: "rb-pp", label: "Pflegepädagoge" },
-        { id: "rb-kl", label: "Kursleitung / Seminarleitung" },
-        { id: "rb-verw", label: "Verwaltung / Organisation" },
-        { id: "rb-stud", label: "Student / Auszubildender" },
+        { id: "rb-kl", label: "Kursleitung" },
+        { id: "rb-verw", label: "Verwaltung" },
+        { id: "rb-stud", label: "Student / Azubi" },
       ],
       transitions: [{ targetStepId: "typ-bildung" }],
     },
     {
       id: "typ-bildung",
-      type: "buttons",
+      type: "list",
       phase: "Qualifizierung",
       message: "Was für eine Einrichtung ist das?",
       variableName: "einrichtungstyp",
+      listButtonText: "Auswählen",
       options: [
-        { id: "tb-ps", label: "Pflegeschule / Altenpflegeschule" },
-        { id: "tb-bfs", label: "Berufsfachschule Pflege" },
-        { id: "tb-hs", label: "Hochschule / Universität" },
-        { id: "tb-fwb", label: "Fort- und Weiterbildungsinstitut" },
-        { id: "tb-vhs", label: "Volkshochschule / Erwachsenenbildung" },
-        { id: "tb-sonst", label: "Sonstige Bildungseinrichtung" },
+        { id: "tb-ps", label: "Pflegeschule" },
+        { id: "tb-bfs", label: "Berufsfachschule" },
+        { id: "tb-hs", label: "Hochschule / Uni" },
+        { id: "tb-fwb", label: "Weiterbildung" },
+        { id: "tb-vhs", label: "VHS / Erwachsene" },
+        { id: "tb-sonst", label: "Sonstige" },
       ],
       transitions: [{ targetStepId: "name-bildung" }],
     },
@@ -279,36 +274,38 @@ const defaultDefinition: DialogDefinition = {
 
     {
       id: "rolle-medizinisch",
-      type: "buttons",
+      type: "list",
       phase: "Qualifizierung",
       message: "Welche Rolle hast du in deiner Einrichtung?",
       variableName: "rolle",
+      listButtonText: "Auswählen",
       options: [
-        { id: "rm-kl", label: "Klinikleitung / Geschäftsführung" },
+        { id: "rm-kl", label: "Klinikleitung" },
         { id: "rm-al", label: "Ärztliche Leitung" },
         { id: "rm-pdl", label: "Pflegedienstleitung" },
         { id: "rm-stl", label: "Stationsleitung" },
-        { id: "rm-thl", label: "Therapeutische Leitung" },
+        { id: "rm-thl", label: "Therapie-Leitung" },
         { id: "rm-sd", label: "Sozialdienst" },
-        { id: "rm-fk", label: "Fachkraft (Pflege/Therapie)" },
+        { id: "rm-fk", label: "Fachkraft" },
         { id: "rm-verw", label: "Verwaltung" },
       ],
       transitions: [{ targetStepId: "typ-medizinisch" }],
     },
     {
       id: "typ-medizinisch",
-      type: "buttons",
+      type: "list",
       phase: "Qualifizierung",
       message: "Was für eine Einrichtung ist das?",
       variableName: "einrichtungstyp",
+      listButtonText: "Auswählen",
       options: [
         { id: "tm-kh", label: "Krankenhaus / Klinik" },
-        { id: "tm-reha", label: "Rehabilitationsklinik" },
+        { id: "tm-reha", label: "Rehaklinik" },
         { id: "tm-ger", label: "Geriatrische Klinik" },
         { id: "tm-tk", label: "Tagesklinik" },
-        { id: "tm-mvz", label: "MVZ (Med. Versorgungszentrum)" },
-        { id: "tm-hos", label: "Hospiz / Palliativstation" },
-        { id: "tm-sonst", label: "Sonstige med. Einrichtung" },
+        { id: "tm-mvz", label: "MVZ" },
+        { id: "tm-hos", label: "Hospiz / Palliativ" },
+        { id: "tm-sonst", label: "Sonstige" },
       ],
       transitions: [{ targetStepId: "name-medizinisch" }],
     },
@@ -327,20 +324,21 @@ const defaultDefinition: DialogDefinition = {
 
     {
       id: "typ-sonstiges",
-      type: "buttons",
+      type: "list",
       phase: "Qualifizierung",
       message: "Was beschreibt dich am besten?",
       variableName: "typ",
+      listButtonText: "Auswählen",
       options: [
-        { id: "so-aus", label: "Aussteller / Anbieter" },
+        { id: "so-aus", label: "Aussteller" },
         { id: "so-ber", label: "Berater / Consultant" },
-        { id: "so-ver", label: "Verband / Interessenvertretung" },
+        { id: "so-ver", label: "Verband" },
         { id: "so-pol", label: "Politik / Behörde" },
-        { id: "so-wiss", label: "Wissenschaft / Forschung" },
+        { id: "so-wiss", label: "Wissenschaft" },
         { id: "so-press", label: "Presse / Medien" },
         { id: "so-inv", label: "Investor / Partner" },
-        { id: "so-stud", label: "Student / Auszubildender" },
-        { id: "so-priv", label: "Privatperson / Angehöriger" },
+        { id: "so-stud", label: "Student / Azubi" },
+        { id: "so-priv", label: "Privat" },
       ],
       transitions: [{ targetStepId: "qr-code" }],
     },
@@ -393,13 +391,13 @@ const defaultDefinition: DialogDefinition = {
       transitions: [
         {
           conditions: [
-            { field: "bestandsgeraet", operator: "eq", value: "Ja" },
+            { field: "bestandsgeraet", operator: "eq", value: "bg-ja" },
           ],
           targetStepId: "wettbewerber",
         },
         {
           conditions: [
-            { field: "bestandsgeraet", operator: "eq", value: "Nein" },
+            { field: "bestandsgeraet", operator: "eq", value: "bg-nein" },
           ],
           targetStepId: "werbe-opt-in",
         },
@@ -407,14 +405,15 @@ const defaultDefinition: DialogDefinition = {
     },
     {
       id: "wettbewerber",
-      type: "buttons",
+      type: "list",
       phase: "Wettbewerbs Intel",
       message: "Welchen Anbieter nutzt ihr bereits?",
       variableName: "wettbewerber",
+      listButtonText: "Auswählen",
       options: [
-        { id: "wb-hm", label: "Hello Mirrors / Felix" },
+        { id: "wb-hm", label: "Hello Mirrors" },
         { id: "wb-ct", label: "CareTable" },
-        { id: "wb-bl", label: "BikeLabz TV / Aktivtisch" },
+        { id: "wb-bl", label: "BikeLabz" },
         { id: "wb-mb", label: "Mainboard" },
         { id: "wb-tt", label: "Tovertafel" },
         { id: "wb-sf", label: "SilverFit" },
@@ -427,7 +426,7 @@ const defaultDefinition: DialogDefinition = {
       type: "text",
       phase: "Wettbewerbs Intel",
       message:
-        "Danke! Ihr nutzt also {{wettbewerber}}.\n\nFalls ihr Felix mal testen wollt, sprecht uns gerne am Stand an!",
+        "Danke! Ihr nutzt also {{wettbewerber_label}}.\n\nFalls ihr Felix mal testen wollt, sprecht uns gerne am Stand an!",
       transitions: [{ targetStepId: "werbe-opt-in" }],
     },
     {
@@ -467,26 +466,40 @@ const defaultDefinition: DialogDefinition = {
   ] satisfies DialogStep[],
 };
 
+/**
+ * Seeds or upserts the default trade-fair dialog by slug.
+ *
+ * Every startup reconciles the stored dialog definition to match the
+ * definition in this file. This means the seed file is the source of
+ * truth: edits made via the dialog editor UI will be overwritten on
+ * next deploy. That is intentional for the campaign we are running.
+ */
 export const seedDefaultDialog = (): void => {
-  const existing = listDialogs();
-  if (existing.length > 0) {
-    log.info("Dialogs already exist, skipping seed", {
-      count: existing.length,
+  const existing = listDialogs().find((d) => d.slug === DIALOG_SLUG);
+
+  if (existing) {
+    log.info("Reconciling existing default dialog from seed", {
+      dialogId: existing.id,
+      slug: DIALOG_SLUG,
     });
+    updateDialog(existing.id, {
+      name: DIALOG_NAME,
+      description: DIALOG_DESCRIPTION,
+      definition: defaultDefinition,
+    });
+    if (!existing.isActive) {
+      setActiveDialog(existing.id);
+    }
     return;
   }
 
-  log.info("No dialogs found, seeding default dialog...");
-
+  log.info("No default dialog found, seeding...");
   const id = createDialog({
-    name: "Felix Gewinnspiel — Altenpflege Essen 2026",
-    slug: "altenpflege-essen-2026",
-    description:
-      "Interaktives Gewinnspiel für den Hello Mirrors Stand auf der Altenpflege Messe Essen 2026",
+    name: DIALOG_NAME,
+    slug: DIALOG_SLUG,
+    description: DIALOG_DESCRIPTION,
     definition: defaultDefinition,
   });
-
   setActiveDialog(id);
-
   log.info("Default dialog seeded and activated", { dialogId: id });
 };

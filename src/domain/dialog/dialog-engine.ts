@@ -148,8 +148,13 @@ function matchChoiceInput(
   score: number
 ): MatchResult {
   const options = currentStep.options ?? [];
+  const needle = trimmed.toLowerCase();
+  // Match against the label (WhatsApp button tap, GoWA typed text) OR
+  // the option id (Telegram callback_query.data). This keeps all three
+  // providers consistent without each webhook having to normalise.
   const matched = options.find(
-    (opt) => opt.label.toLowerCase() === trimmed.toLowerCase()
+    (opt) =>
+      opt.label.toLowerCase() === needle || opt.id.toLowerCase() === needle
   );
 
   if (matched) {
@@ -274,9 +279,15 @@ export function processAnswer(
 
   const { answerValue, answerLabel, scoreAdded } = match;
 
-  // Store answer in variables
+  // Store answer in variables. For choice steps, answerValue is the
+  // option id (stable identifier for conditions) and answerLabel is the
+  // human-readable label — exposed as `<name>_label` so that message
+  // templates can render it naturally, e.g. `{{wettbewerber_label}}`.
   if (currentStep.variableName) {
     updatedVariables[currentStep.variableName] = answerValue;
+    if (answerLabel) {
+      updatedVariables[`${currentStep.variableName}_label`] = answerLabel;
+    }
   }
 
   const newScore = score + scoreAdded;

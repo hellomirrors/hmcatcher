@@ -29,6 +29,19 @@ export async function handleDialogConversation(
 
   const existingSession = getSession(provider, userId);
 
+  // "reset" (case-insensitive) clears the active session so the user
+  // can start over without waiting for the timeout.
+  if (existingSession && text.trim().toLowerCase() === "reset") {
+    completeSession(existingSession.id);
+    log.info("Session reset by user", { provider, userId });
+    const messagingProvider = await createMessagingProvider(provider);
+    await messagingProvider.sendText({
+      to: userId,
+      body: "Deine Session wurde zurückgesetzt. Schreib 'start' um neu zu beginnen!",
+    });
+    return;
+  }
+
   const sessionInput = existingSession
     ? {
         currentStepId: existingSession.currentStepId,

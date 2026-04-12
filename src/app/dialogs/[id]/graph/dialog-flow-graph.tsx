@@ -67,14 +67,20 @@ function DialogFlowGraphInner({ definition }: InnerProps) {
     if (!graphFocusNodeId) {
       return;
     }
-    const node = nodes.find((n) => n.id === graphFocusNodeId);
-    if (node) {
-      setCenter(node.position.x + 100, node.position.y + 40, {
-        zoom: 1.2,
-        duration: 400,
-      });
-    }
-    clearGraphFocus();
+    // Wait for React Flow to finish rendering after a tab switch before
+    // centering. Two rAF frames + a small timeout ensures the viewport
+    // dimensions are settled so setCenter produces a correct result.
+    const timer = setTimeout(() => {
+      const node = nodes.find((n) => n.id === graphFocusNodeId);
+      if (node) {
+        setCenter(node.position.x + 100, node.position.y + 40, {
+          zoom: 1.4,
+          duration: 500,
+        });
+      }
+      clearGraphFocus();
+    }, 150);
+    return () => clearTimeout(timer);
   }, [graphFocusNodeId, clearGraphFocus, nodes, setCenter]);
 
   // Node popup state

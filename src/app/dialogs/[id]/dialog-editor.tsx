@@ -16,6 +16,7 @@ import type {
 import { useDialogEditorStore } from "@/lib/dialog-editor-store";
 import { saveDialogAction } from "./action";
 import { DialogFlowGraph } from "./graph/dialog-flow-graph";
+import { DialogSimulator } from "./simulator/dialog-simulator";
 import { StepForm } from "./step-form";
 import { StepList } from "./step-list";
 import { WhatsappPreview } from "./whatsapp-preview";
@@ -120,10 +121,10 @@ export const DialogEditor = ({ dialog }: DialogEditorProps) => {
     });
   };
 
-  const isGraphTab = activeTab === "graph";
+  const isWideTab = activeTab === "graph" || activeTab === "simulator";
 
   return (
-    <div className={isGraphTab ? "p-4" : "mx-auto w-full max-w-7xl p-4"}>
+    <div className={isWideTab ? "p-4" : "mx-auto w-full max-w-7xl p-4"}>
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Link href="/dialogs">
@@ -165,6 +166,7 @@ export const DialogEditor = ({ dialog }: DialogEditorProps) => {
           <TabsTrigger value="general">Allgemein</TabsTrigger>
           <TabsTrigger value="steps">Schritte</TabsTrigger>
           <TabsTrigger value="graph">Graph</TabsTrigger>
+          <TabsTrigger value="simulator">Simulator</TabsTrigger>
         </TabsList>
 
         <TabsContent value="general">
@@ -267,6 +269,10 @@ export const DialogEditor = ({ dialog }: DialogEditorProps) => {
 
         <TabsContent value="graph">
           <DialogFlowGraph definition={definition} />
+        </TabsContent>
+
+        <TabsContent value="simulator">
+          <DialogSimulator definition={definition} />
         </TabsContent>
       </Tabs>
     </div>

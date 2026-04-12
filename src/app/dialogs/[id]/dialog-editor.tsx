@@ -1,8 +1,8 @@
 "use client";
 
-import { ArrowLeft, Check, Loader2 } from "lucide-react";
+import { ArrowLeft, Check, Download, Loader2, Upload } from "lucide-react";
 import Link from "next/link";
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,6 +13,7 @@ import type {
   DialogDefinition,
   DialogStep,
 } from "@/domain/dialog/dialog-schema";
+import { dialogDefinitionSchema } from "@/domain/dialog/dialog-schema";
 import { useDialogEditorStore } from "@/lib/dialog-editor-store";
 import { saveDialogAction } from "./action";
 import { DialogFlowGraph } from "./graph/dialog-flow-graph";
@@ -40,6 +41,7 @@ export const DialogEditor = ({ dialog }: DialogEditorProps) => {
     message: string;
     type: "success" | "error";
   } | null>(null);
+  const importInputRef = useRef<HTMLInputElement>(null);
 
   const selectedStepId = useDialogEditorStore((s) => s.selectedStepId);
   const setSelectedStepId = useDialogEditorStore((s) => s.setSelectedStepId);
@@ -121,6 +123,42 @@ export const DialogEditor = ({ dialog }: DialogEditorProps) => {
     });
   };
 
+  const handleExport = () => {
+    const json = JSON.stringify(definition, null, 2);
+    const blob = new Blob([json], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${dialog.slug}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) {
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const parsed: unknown = JSON.parse(reader.result as string);
+        const validated = dialogDefinitionSchema.parse(parsed);
+        setDefinition(validated);
+        setDirty(true);
+        setFeedback({ type: "success", message: "Definition importiert" });
+      } catch (err) {
+        setFeedback({
+          type: "error",
+          message: `Import fehlgeschlagen: ${(err as Error).message}`,
+        });
+      }
+    };
+    reader.readAsText(file);
+    // Reset so the same file can be re-imported
+    e.target.value = "";
+  };
+
   const isWideTab = activeTab === "graph" || activeTab === "simulator";
 
   return (
@@ -150,6 +188,25 @@ export const DialogEditor = ({ dialog }: DialogEditorProps) => {
           {dirty && (
             <Badge variant="secondary">Ungespeicherte Änderungen</Badge>
           )}
+          <Button onClick={handleExport} size="sm" variant="outline">
+            <Download className="mr-1.5 size-3.5" />
+            Export
+          </Button>
+          <Button
+            onClick={() => importInputRef.current?.click()}
+            size="sm"
+            variant="outline"
+          >
+            <Upload className="mr-1.5 size-3.5" />
+            Import
+          </Button>
+          <input
+            accept=".json"
+            className="hidden"
+            onChange={handleImport}
+            ref={importInputRef}
+            type="file"
+          />
           <Button disabled={!dirty || isPending} onClick={handleSave}>
             {isPending ? (
               <Loader2 className="mr-2 size-4 animate-spin" />

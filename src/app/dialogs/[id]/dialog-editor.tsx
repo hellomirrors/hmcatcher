@@ -13,7 +13,9 @@ import type {
   DialogDefinition,
   DialogStep,
 } from "@/domain/dialog/dialog-schema";
+import { useDialogEditorStore } from "@/lib/dialog-editor-store";
 import { saveDialogAction } from "./action";
+import { DialogFlowGraph } from "./graph/dialog-flow-graph";
 import { StepForm } from "./step-form";
 import { StepList } from "./step-list";
 import { WhatsappPreview } from "./whatsapp-preview";
@@ -31,13 +33,17 @@ export const DialogEditor = ({ dialog }: DialogEditorProps) => {
   const [definition, setDefinition] = useState<DialogDefinition>(
     dialog.definition
   );
-  const [selectedStepId, setSelectedStepId] = useState<string | null>(null);
   const [dirty, setDirty] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [feedback, setFeedback] = useState<{
     message: string;
     type: "success" | "error";
   } | null>(null);
+
+  const selectedStepId = useDialogEditorStore((s) => s.selectedStepId);
+  const setSelectedStepId = useDialogEditorStore((s) => s.setSelectedStepId);
+  const activeTab = useDialogEditorStore((s) => s.activeTab);
+  const setActiveTab = useDialogEditorStore((s) => s.setActiveTab);
 
   const selectedStep =
     definition.steps.find((s) => s.id === selectedStepId) ?? null;
@@ -114,8 +120,10 @@ export const DialogEditor = ({ dialog }: DialogEditorProps) => {
     });
   };
 
+  const isGraphTab = activeTab === "graph";
+
   return (
-    <div className="mx-auto w-full max-w-7xl p-4">
+    <div className={isGraphTab ? "p-4" : "mx-auto w-full max-w-7xl p-4"}>
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Link href="/dialogs">
@@ -152,10 +160,11 @@ export const DialogEditor = ({ dialog }: DialogEditorProps) => {
         </div>
       </div>
 
-      <Tabs defaultValue="steps">
+      <Tabs onValueChange={setActiveTab} value={activeTab}>
         <TabsList>
           <TabsTrigger value="general">Allgemein</TabsTrigger>
           <TabsTrigger value="steps">Schritte</TabsTrigger>
+          <TabsTrigger value="graph">Graph</TabsTrigger>
         </TabsList>
 
         <TabsContent value="general">
@@ -254,6 +263,10 @@ export const DialogEditor = ({ dialog }: DialogEditorProps) => {
               )}
             </div>
           </div>
+        </TabsContent>
+
+        <TabsContent value="graph">
+          <DialogFlowGraph definition={definition} />
         </TabsContent>
       </Tabs>
     </div>

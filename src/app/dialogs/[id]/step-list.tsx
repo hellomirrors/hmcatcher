@@ -1,10 +1,13 @@
 "use client";
 
-import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, GitBranch, Plus, Trash2 } from "lucide-react";
+import { useEffect, useRef } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import type { DialogStep, DialogStepType } from "@/domain/dialog/dialog-schema";
+import type { DialogStep } from "@/domain/dialog/dialog-schema";
+import { TYPE_COLORS, TYPE_LABELS } from "@/domain/dialog/step-type-display";
+import { useDialogEditorStore } from "@/lib/dialog-editor-store";
 
 interface StepListProps {
   onAddStep: () => void;
@@ -14,26 +17,6 @@ interface StepListProps {
   selectedStepId: string | null;
   steps: DialogStep[];
 }
-
-const TYPE_COLORS: Record<DialogStepType, string> = {
-  text: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
-  buttons:
-    "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
-  list: "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200",
-  free_text:
-    "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-  qr: "bg-rose-100 text-rose-800 dark:bg-rose-900 dark:text-rose-200",
-  video: "bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200",
-};
-
-const TYPE_LABELS: Record<DialogStepType, string> = {
-  text: "Text",
-  buttons: "Buttons",
-  list: "Liste",
-  free_text: "Freitext",
-  qr: "QR",
-  video: "Video",
-};
 
 const groupByPhase = (steps: DialogStep[]) => {
   const groups: { phase: string | undefined; steps: DialogStep[] }[] = [];
@@ -70,8 +53,28 @@ export const StepList = ({
   const groups = groupByPhase(steps);
   let globalIndex = 0;
 
+  const focusGraphNode = useDialogEditorStore((s) => s.focusGraphNode);
+  const stepsFocusStepId = useDialogEditorStore((s) => s.stepsFocusStepId);
+  const clearStepsFocus = useDialogEditorStore((s) => s.clearStepsFocus);
+
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Scroll the requested step into view when navigating from the graph tab
+  useEffect(() => {
+    if (!(stepsFocusStepId && containerRef.current)) {
+      return;
+    }
+    const el = containerRef.current.querySelector(
+      `[data-step-id="${stepsFocusStepId}"]`
+    );
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+    clearStepsFocus();
+  }, [stepsFocusStepId, clearStepsFocus]);
+
   return (
-    <div className="grid gap-2">
+    <div className="grid gap-2" ref={containerRef}>
       <div className="flex items-center justify-between px-1">
         <h2 className="font-semibold text-sm">Schritte</h2>
         <Button onClick={onAddStep} size="sm" type="button" variant="outline">
@@ -106,6 +109,7 @@ export const StepList = ({
                         ? "bg-accent text-accent-foreground"
                         : "hover:bg-muted"
                     }`}
+                    data-step-id={step.id}
                     key={step.id}
                   >
                     <button
@@ -126,6 +130,15 @@ export const StepList = ({
                       </span>
                     </button>
                     <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+                      <Button
+                        onClick={() => focusGraphNode(step.id)}
+                        size="icon-xs"
+                        title="Im Graph anzeigen"
+                        type="button"
+                        variant="ghost"
+                      >
+                        <GitBranch className="size-3" />
+                      </Button>
                       {!isFirst && (
                         <Button
                           onClick={() => onMoveStep(step.id, "up")}

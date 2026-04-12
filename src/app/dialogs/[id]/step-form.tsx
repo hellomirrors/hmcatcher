@@ -1,6 +1,6 @@
 "use client";
 
-import { Trash2 } from "lucide-react";
+import { ExternalLink, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -22,6 +22,7 @@ import type {
   DialogValidationType,
   UnmatchedInputMode,
 } from "@/domain/dialog/dialog-schema";
+import { useDialogEditorStore } from "@/lib/dialog-editor-store";
 import { ConditionBuilder } from "./condition-builder";
 
 interface StepFormProps {
@@ -493,6 +494,22 @@ export const StepForm = ({
                     </SelectContent>
                   </Select>
                 </div>
+                {transition.targetStepId && (
+                  <Button
+                    className="mt-5"
+                    onClick={() =>
+                      useDialogEditorStore
+                        .getState()
+                        .focusStepsStep(transition.targetStepId)
+                    }
+                    size="icon-sm"
+                    title="Zum Zielschritt springen"
+                    type="button"
+                    variant="ghost"
+                  >
+                    <ExternalLink className="size-3.5" />
+                  </Button>
+                )}
                 <Button
                   className="mt-5"
                   onClick={() => removeTransition(index)}

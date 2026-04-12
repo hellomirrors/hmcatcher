@@ -1,3 +1,4 @@
+import { buildContactLink } from "@/domain/conversation/conversation-handler";
 import { logMessage } from "@/domain/messaging/message-log";
 import { createMessagingProvider } from "@/domain/messaging/provider-factory";
 import { generateQrPng } from "@/domain/messaging/qr-service";
@@ -152,24 +153,29 @@ async function sendResponse(
         externalId: textSent.messageId,
       });
 
-      if (response.qr) {
-        const qrBuffer = await generateQrPng(response.qr.content);
-        const qrSent = await messagingProvider.sendImage({
-          to: userId,
-          imageBuffer: qrBuffer,
-          mimeType: "image/png",
-          caption: response.qr.caption,
-        });
-        logMessage({
-          provider,
-          direction: "out",
-          contact: userId,
-          kind: "image",
-          body: response.qr.content,
-          caption: response.qr.caption,
-          externalId: qrSent.messageId,
-        });
-      }
+      // When qrTemplate is empty the engine returns an empty content
+      // string. Fall back to generating a unique contact-link URL so
+      // dialog authors don't need to hard-code the pattern.
+      const qrContent =
+        response.qr?.content || (await buildContactLink(provider, userId));
+      const qrCaption = response.qr?.caption || "";
+
+      const qrBuffer = await generateQrPng(qrContent);
+      const qrSent = await messagingProvider.sendImage({
+        to: userId,
+        imageBuffer: qrBuffer,
+        mimeType: "image/png",
+        caption: qrCaption,
+      });
+      logMessage({
+        provider,
+        direction: "out",
+        contact: userId,
+        kind: "image",
+        body: qrContent,
+        caption: qrCaption,
+        externalId: qrSent.messageId,
+      });
       break;
     }
     case "video": {

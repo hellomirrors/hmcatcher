@@ -12,7 +12,7 @@ const log = createLogger("conversation");
 
 const TRAILING_SLASHES = /\/+$/;
 
-async function buildContactLink(
+export async function buildContactLink(
   provider: string,
   userId: string
 ): Promise<string> {

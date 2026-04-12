@@ -11,7 +11,11 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { deleteDialogAction, setActiveDialogAction } from "./action";
+import {
+  deleteDialogAction,
+  loadDefaultDialogAction,
+  setActiveDialogAction,
+} from "./action";
 
 interface DialogListItem {
   createdAt: Date;
@@ -34,11 +38,20 @@ export function DialogList({ dialogs }: { dialogs: DialogListItem[] }) {
               Konfigurierbare Konversations-Flows verwalten.
             </CardDescription>
           </div>
-          <Link href="/dialogs/new">
-            <Button size="sm" variant="outline">
-              Neuer Dialog
+          <div className="flex gap-2">
+            <Button
+              onClick={() => loadDefaultDialogAction()}
+              size="sm"
+              variant="secondary"
+            >
+              Default laden
             </Button>
-          </Link>
+            <Link href="/dialogs/new">
+              <Button size="sm" variant="outline">
+                Neuer Dialog
+              </Button>
+            </Link>
+          </div>
         </div>
       </CardHeader>
       <CardContent>

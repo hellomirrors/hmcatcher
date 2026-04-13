@@ -21,7 +21,7 @@ export function DialogSimulator({ definition }: DialogSimulatorProps) {
 
       {/* Session panel — right */}
       <div className="w-72 shrink-0">
-        <SessionPanel />
+        <SessionPanel scoreBuckets={definition.scoreBuckets} />
       </div>
     </div>
   );

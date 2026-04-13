@@ -17,6 +17,7 @@ import { dialogDefinitionSchema } from "@/domain/dialog/dialog-schema";
 import { useDialogEditorStore } from "@/lib/dialog-editor-store";
 import { saveDialogAction } from "./action";
 import { DialogFlowGraph } from "./graph/dialog-flow-graph";
+import { DialogScoreTab } from "./score/dialog-score-tab";
 import { DialogSimulator } from "./simulator/dialog-simulator";
 import { StepForm } from "./step-form";
 import { StepList } from "./step-list";
@@ -223,6 +224,7 @@ export const DialogEditor = ({ dialog }: DialogEditorProps) => {
           <TabsTrigger value="general">Allgemein</TabsTrigger>
           <TabsTrigger value="steps">Schritte</TabsTrigger>
           <TabsTrigger value="graph">Graph</TabsTrigger>
+          <TabsTrigger value="score">Score</TabsTrigger>
           <TabsTrigger value="simulator">Simulator</TabsTrigger>
         </TabsList>
 
@@ -326,6 +328,15 @@ export const DialogEditor = ({ dialog }: DialogEditorProps) => {
 
         <TabsContent value="graph">
           <DialogFlowGraph definition={definition} />
+        </TabsContent>
+
+        <TabsContent value="score">
+          <DialogScoreTab
+            definition={definition}
+            onUpdateBuckets={(buckets) =>
+              updateDefinition({ scoreBuckets: buckets })
+            }
+          />
         </TabsContent>
 
         <TabsContent value="simulator">

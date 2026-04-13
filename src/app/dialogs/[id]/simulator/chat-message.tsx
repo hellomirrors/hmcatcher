@@ -12,6 +12,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import type { DialogResponse } from "@/domain/dialog/dialog-engine";
+import type { ScoreBucket } from "@/domain/dialog/dialog-schema";
+import { resolveBucket } from "@/domain/dialog/score-buckets";
 import { useDialogEditorStore } from "@/lib/dialog-editor-store";
 import {
   BotAvatar,
@@ -27,16 +29,19 @@ interface ChatMessageProps {
   isLatestBotMessage: boolean;
   message: SimulatorMessage;
   onSelectOption: (label: string) => void;
+  scoreBuckets?: ScoreBucket[];
 }
 
 function BotMessageContent({
   response,
   isLatestBotMessage,
   onSelectOption,
+  scoreBuckets,
 }: {
   isLatestBotMessage: boolean;
   onSelectOption: (label: string) => void;
   response: DialogResponse;
+  scoreBuckets?: ScoreBucket[];
 }) {
   return (
     <>
@@ -105,6 +110,7 @@ function BotMessageContent({
         <SimulatorQrCode
           caption={response.qr?.caption}
           mode={response.qr?.mode ?? "template"}
+          scoreBuckets={scoreBuckets}
           templateContent={response.qr?.content}
         />
       )}
@@ -133,6 +139,7 @@ export function ChatMessage({
   message,
   isLatestBotMessage,
   onSelectOption,
+  scoreBuckets,
 }: ChatMessageProps) {
   const focusStepsStep = useDialogEditorStore((s) => s.focusStepsStep);
 
@@ -158,6 +165,7 @@ export function ChatMessage({
             isLatestBotMessage={isLatestBotMessage}
             onSelectOption={onSelectOption}
             response={message.response}
+            scoreBuckets={scoreBuckets}
           />
         ) : (
           <p className="whitespace-pre-line text-sm">{message.text}</p>
@@ -190,7 +198,8 @@ export function ChatMessage({
 
 function buildSessionDataJson(
   variables: Record<string, string>,
-  score: number
+  score: number,
+  scoreBuckets?: ScoreBucket[]
 ): string {
   const data: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(variables)) {
@@ -199,6 +208,10 @@ function buildSessionDataJson(
     }
   }
   data.score = score;
+  const bucket = resolveBucket(score, scoreBuckets);
+  if (bucket) {
+    data.bucket = bucket.id;
+  }
   return JSON.stringify(data, null, 2);
 }
 
@@ -206,9 +219,11 @@ function SimulatorQrCode({
   mode,
   templateContent,
   caption,
+  scoreBuckets,
 }: {
   caption?: string;
   mode: "template" | "session-data";
+  scoreBuckets?: ScoreBucket[];
   templateContent?: string;
 }) {
   const session = useSimulatorStore((s) => s.session);
@@ -217,7 +232,7 @@ function SimulatorQrCode({
 
   const qrContent =
     mode === "session-data" && session
-      ? buildSessionDataJson(session.variables, session.score)
+      ? buildSessionDataJson(session.variables, session.score, scoreBuckets)
       : templateContent || "";
 
   useEffect(() => {

@@ -96,6 +96,16 @@ export const dialogStepSchema = z.object({
 
 export type DialogStep = z.infer<typeof dialogStepSchema>;
 
+// --- Score bucket ---
+
+export const scoreBucketSchema = z.object({
+  id: z.string().min(1),
+  label: z.string().min(1),
+  minScore: z.number(),
+});
+
+export type ScoreBucket = z.infer<typeof scoreBucketSchema>;
+
 // --- Top-level definition ---
 
 export const dialogDefinitionSchema = z.object({
@@ -111,6 +121,7 @@ export const dialogDefinitionSchema = z.object({
     .string()
     .default("Bitte wähle eine der angebotenen Optionen."),
   steps: z.array(dialogStepSchema),
+  scoreBuckets: z.array(scoreBucketSchema).optional(),
 });
 
 export type DialogDefinition = z.infer<typeof dialogDefinitionSchema>;

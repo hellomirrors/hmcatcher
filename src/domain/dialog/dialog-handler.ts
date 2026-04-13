@@ -12,6 +12,7 @@ import {
   insertAnswer,
   updateSession,
 } from "./dialog-repository";
+import { resolveBucket } from "./score-buckets";
 
 const log = createLogger("dialog-handler");
 
@@ -96,7 +97,8 @@ export async function handleDialogConversation(
         userId,
         response,
         provider,
-        result.session
+        result.session,
+        dialog.definition.scoreBuckets
       );
     } catch (error) {
       log.error("Failed to send dialog response", error, {
@@ -108,12 +110,40 @@ export async function handleDialogConversation(
   }
 }
 
+function buildQrContent(
+  response: DialogResponse,
+  session: { variables: Record<string, string>; score: number },
+  provider: string,
+  userId: string,
+  scoreBuckets?: { id: string; label: string; minScore: number }[]
+): string {
+  const qrMode = response.qr?.mode ?? "template";
+  if (qrMode !== "session-data") {
+    return response.qr?.content || "";
+  }
+  const data: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(session.variables)) {
+    if (!k.startsWith("_")) {
+      data[k] = v;
+    }
+  }
+  data.score = session.score;
+  const bucket = resolveBucket(session.score, scoreBuckets);
+  if (bucket) {
+    data.bucket = bucket.id;
+  }
+  data.provider = provider;
+  data.userId = userId;
+  return JSON.stringify(data);
+}
+
 async function sendResponse(
   messagingProvider: Awaited<ReturnType<typeof createMessagingProvider>>,
   userId: string,
   response: DialogResponse,
   provider: string,
-  session: { variables: Record<string, string>; score: number }
+  session: { variables: Record<string, string>; score: number },
+  scoreBuckets?: { id: string; label: string; minScore: number }[]
 ): Promise<void> {
   switch (response.type) {
     case "buttons": {
@@ -172,25 +202,13 @@ async function sendResponse(
         externalId: textSent.messageId,
       });
 
-      const qrMode = response.qr?.mode ?? "template";
-      let qrContent = "";
-
-      if (qrMode === "session-data") {
-        // Encode the full lead record as JSON for the QR scanner.
-        const data: Record<string, unknown> = {};
-        for (const [k, v] of Object.entries(session.variables)) {
-          if (!k.startsWith("_")) {
-            data[k] = v;
-          }
-        }
-        data.score = session.score;
-        data.provider = provider;
-        data.userId = userId;
-        qrContent = JSON.stringify(data);
-      } else {
-        qrContent = response.qr?.content || "";
-      }
-
+      const qrContent = buildQrContent(
+        response,
+        session,
+        provider,
+        userId,
+        scoreBuckets
+      );
       const qrCaption = response.qr?.caption || "";
 
       const qrBuffer = await generateQrPng(qrContent);

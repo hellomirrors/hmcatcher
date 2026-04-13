@@ -25,6 +25,11 @@ const defaultDefinition: DialogDefinition = {
     "Deine Gewinnspiel-Session ist leider abgelaufen. Schreib 'start' um neu zu beginnen!",
   unmatchedInputMode: "error",
   errorMessage: "Bitte wähle eine der angebotenen Optionen.",
+  scoreBuckets: [
+    { id: "low", label: "Low", minScore: 0 },
+    { id: "medium", label: "Medium", minScore: 51 },
+    { id: "high", label: "High", minScore: 101 },
+  ],
   steps: [
     // ─── SHARED_START ───────────────────────────────────────────
 

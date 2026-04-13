@@ -5,9 +5,15 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import type { ScoreBucket } from "@/domain/dialog/dialog-schema";
+import { bucketColorClass, resolveBucket } from "@/domain/dialog/score-buckets";
 import { useSimulatorStore } from "./simulator-store";
 
-export function SessionPanel() {
+interface SessionPanelProps {
+  scoreBuckets?: ScoreBucket[];
+}
+
+export function SessionPanel({ scoreBuckets }: SessionPanelProps) {
   const session = useSimulatorStore((s) => s.session);
   const status = useSimulatorStore((s) => s.status);
   const snapshots = useSimulatorStore((s) => s.snapshots);
@@ -71,9 +77,24 @@ export function SessionPanel() {
                   {session.currentStepId}
                 </code>
               </div>
-              <div className="flex justify-between">
+              <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Score</span>
-                <span className="font-medium">{session.score}</span>
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">{session.score}</span>
+                  {(() => {
+                    const bucket = resolveBucket(session.score, scoreBuckets);
+                    if (!bucket) {
+                      return null;
+                    }
+                    return (
+                      <span
+                        className={`rounded px-1.5 py-0.5 font-medium text-[0.6rem] ${bucketColorClass(bucket.id)}`}
+                      >
+                        {bucket.label}
+                      </span>
+                    );
+                  })()}
+                </div>
               </div>
             </div>
 

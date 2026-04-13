@@ -39,6 +39,7 @@ export function ChatArea({ definition }: ChatAreaProps) {
             key={msg.id}
             message={msg}
             onSelectOption={(label) => sendMessage(definition, label)}
+            scoreBuckets={definition.scoreBuckets}
           />
         ))}
         <div ref={bottomRef} />

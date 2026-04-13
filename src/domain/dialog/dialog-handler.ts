@@ -1,4 +1,3 @@
-import { buildContactLink } from "@/domain/conversation/conversation-handler";
 import { logMessage } from "@/domain/messaging/message-log";
 import { createMessagingProvider } from "@/domain/messaging/provider-factory";
 import { generateQrPng } from "@/domain/messaging/qr-service";
@@ -92,7 +91,13 @@ export async function handleDialogConversation(
 
   for (const response of result.responses) {
     try {
-      await sendResponse(messagingProvider, userId, response, provider);
+      await sendResponse(
+        messagingProvider,
+        userId,
+        response,
+        provider,
+        result.session
+      );
     } catch (error) {
       log.error("Failed to send dialog response", error, {
         provider,
@@ -107,7 +112,8 @@ async function sendResponse(
   messagingProvider: Awaited<ReturnType<typeof createMessagingProvider>>,
   userId: string,
   response: DialogResponse,
-  provider: string
+  provider: string,
+  session: { variables: Record<string, string>; score: number }
 ): Promise<void> {
   switch (response.type) {
     case "buttons": {
@@ -166,11 +172,22 @@ async function sendResponse(
         externalId: textSent.messageId,
       });
 
-      // When qrTemplate is empty the engine returns an empty content
-      // string. Fall back to generating a unique contact-link URL so
-      // dialog authors don't need to hard-code the pattern.
-      const qrContent =
-        response.qr?.content || (await buildContactLink(provider, userId));
+      // When qrTemplate is empty, encode the captured session data as
+      // JSON so the QR code contains the full lead record instead of
+      // just a link. Filter out internal variables (prefixed with _).
+      let qrContent = response.qr?.content || "";
+      if (!qrContent) {
+        const data: Record<string, unknown> = {};
+        for (const [k, v] of Object.entries(session.variables)) {
+          if (!k.startsWith("_")) {
+            data[k] = v;
+          }
+        }
+        data.score = session.score;
+        data.provider = provider;
+        data.userId = userId;
+        qrContent = JSON.stringify(data);
+      }
       const qrCaption = response.qr?.caption || "";
 
       const qrBuffer = await generateQrPng(qrContent);

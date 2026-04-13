@@ -1,6 +1,15 @@
 "use client";
 
-import { ArrowDown, ArrowUp, List, Plus, Rows3, Trash2 } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  GitFork,
+  List,
+  Network,
+  Plus,
+  Rows3,
+  Trash2,
+} from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,11 +21,13 @@ import type {
 } from "@/domain/dialog/dialog-schema";
 import { bucketColorClass } from "@/domain/dialog/score-buckets";
 import {
+  buildScoreTree,
   type DialogPath,
   enumeratePaths,
   type PathSummary,
   summarizePaths,
 } from "./path-calculator";
+import { CardTreeView, TextTreeView } from "./score-tree-view";
 
 interface DialogScoreTabProps {
   definition: DialogDefinition;
@@ -282,7 +293,8 @@ export function DialogScoreTab({
   definition,
   onUpdateBuckets,
 }: DialogScoreTabProps) {
-  const [view, setView] = useState<"summary" | "detail">("summary");
+  const [view, setView] = useState<"summary" | "tree" | "detail">("summary");
+  const [treeStyle, setTreeStyle] = useState<"text" | "card">("text");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
 
   const buckets = definition.scoreBuckets ?? [];
@@ -290,6 +302,10 @@ export function DialogScoreTab({
   const paths = useMemo(() => enumeratePaths(definition), [definition]);
   const summaries = useMemo(
     () => summarizePaths(paths, definition.scoreBuckets),
+    [paths, definition.scoreBuckets]
+  );
+  const scoreTree = useMemo(
+    () => buildScoreTree(paths, definition.scoreBuckets),
     [paths, definition.scoreBuckets]
   );
 
@@ -340,36 +356,77 @@ export function DialogScoreTab({
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="text-sm">Score-Pfade</CardTitle>
-            <div className="flex gap-1 rounded-lg bg-muted p-0.5">
-              <Button
-                className="h-7 px-2"
-                onClick={() => setView("summary")}
-                size="sm"
-                variant={view === "summary" ? "secondary" : "ghost"}
-              >
-                <Rows3 className="mr-1 size-3.5" />
-                Übersicht
-              </Button>
-              <Button
-                className="h-7 px-2"
-                onClick={() => setView("detail")}
-                size="sm"
-                variant={view === "detail" ? "secondary" : "ghost"}
-              >
-                <List className="mr-1 size-3.5" />
-                Detail ({paths.length})
-              </Button>
+            <div className="flex items-center gap-2">
+              {view === "tree" && (
+                <div className="flex gap-1 rounded-lg bg-muted p-0.5">
+                  <Button
+                    className="h-6 px-1.5"
+                    onClick={() => setTreeStyle("text")}
+                    size="sm"
+                    variant={treeStyle === "text" ? "secondary" : "ghost"}
+                  >
+                    <List className="size-3" />
+                  </Button>
+                  <Button
+                    className="h-6 px-1.5"
+                    onClick={() => setTreeStyle("card")}
+                    size="sm"
+                    variant={treeStyle === "card" ? "secondary" : "ghost"}
+                  >
+                    <Network className="size-3" />
+                  </Button>
+                </div>
+              )}
+              <div className="flex gap-1 rounded-lg bg-muted p-0.5">
+                <Button
+                  className="h-7 px-2"
+                  onClick={() => setView("summary")}
+                  size="sm"
+                  variant={view === "summary" ? "secondary" : "ghost"}
+                >
+                  <Rows3 className="mr-1 size-3.5" />
+                  Übersicht
+                </Button>
+                <Button
+                  className="h-7 px-2"
+                  onClick={() => setView("tree")}
+                  size="sm"
+                  variant={view === "tree" ? "secondary" : "ghost"}
+                >
+                  <GitFork className="mr-1 size-3.5" />
+                  Baum
+                </Button>
+                <Button
+                  className="h-7 px-2"
+                  onClick={() => setView("detail")}
+                  size="sm"
+                  variant={view === "detail" ? "secondary" : "ghost"}
+                >
+                  <List className="mr-1 size-3.5" />
+                  Detail ({paths.length})
+                </Button>
+              </div>
             </div>
           </div>
         </CardHeader>
         <CardContent>
-          {view === "summary" ? (
+          {view === "summary" && (
             <SummaryView
               onToggleSort={toggleSort}
               sortDir={sortDir}
               summaries={summaries}
             />
-          ) : (
+          )}
+          {view === "tree" && (
+            <div className="max-h-[600px] overflow-y-auto">
+              {treeStyle === "text" ? (
+                <TextTreeView root={scoreTree} />
+              ) : (
+                <CardTreeView root={scoreTree} />
+              )}
+            </div>
+          )}
+          {view === "detail" && (
             <DetailView
               onToggleSort={toggleSort}
               paths={paths}

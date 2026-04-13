@@ -62,8 +62,18 @@ function responsesToMessages(
   }));
 }
 
+/** Steps that produce output but don't require user input. */
 function isOutputOnlyStep(type: string): boolean {
   return type === "text" || type === "qr" || type === "video";
+}
+
+/**
+ * Steps that should auto-advance in the simulator. QR and video are
+ * excluded because their visual content needs to be inspectable —
+ * the user clicks "Weiter" to advance past them.
+ */
+function shouldAutoAdvance(type: string): boolean {
+  return type === "text";
 }
 
 // ---------------------------------------------------------------------------
@@ -110,9 +120,9 @@ export const useSimulatorStore = create<SimulatorState>()((set, get) => ({
       snapshots: [],
     });
 
-    // Auto-advance output-only steps
+    // Auto-advance text-only steps (QR/video need manual "Weiter")
     const step = definition.steps.find((s) => s.id === session.currentStepId);
-    if (step && isOutputOnlyStep(step.type) && session.state === "active") {
+    if (step && shouldAutoAdvance(step.type) && session.state === "active") {
       setTimeout(() => get().sendMessage(definition, ""), 600);
     }
   },
@@ -178,11 +188,11 @@ export const useSimulatorStore = create<SimulatorState>()((set, get) => ({
       return;
     }
 
-    // Auto-advance output-only steps
+    // Auto-advance text-only steps (QR/video need manual "Weiter")
     const nextStep = definition.steps.find(
       (s) => s.id === newSession.currentStepId
     );
-    if (nextStep && isOutputOnlyStep(nextStep.type)) {
+    if (nextStep && shouldAutoAdvance(nextStep.type)) {
       setTimeout(() => get().sendMessage(definition, ""), 600);
     }
   },

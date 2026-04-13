@@ -106,6 +106,17 @@ function BotMessageContent({
           <VideoPlaceholder url={response.videoUrl} />
         </div>
       )}
+
+      {/* "Weiter" button for output-only steps that don't auto-advance */}
+      {isLatestBotMessage &&
+        (response.type === "qr" || response.type === "video") && (
+          <div className="mt-2">
+            <ButtonPill
+              label="Weiter"
+              onClick={() => onSelectOption("weiter")}
+            />
+          </div>
+        )}
     </>
   );
 }

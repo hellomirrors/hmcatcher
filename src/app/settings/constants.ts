@@ -27,6 +27,7 @@ export const ENV_FALLBACKS: Record<string, string> = {
   gowaDeviceId: "GOWA_DEVICE_ID",
   gowaPhoneNumber: "GOWA_PHONE_NUMBER",
   appBaseUrl: "APP_BASE_URL",
+  openrouterApiKey: "OPENROUTER_API_KEY",
 };
 
 export const STRING_FIELDS = [
@@ -43,4 +44,6 @@ export const STRING_FIELDS = [
   "gowaDeviceId",
   "gowaPhoneNumber",
   "appBaseUrl",
+  "openrouterApiKey",
+  "openrouterModel",
 ] as const;

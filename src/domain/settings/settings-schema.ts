@@ -29,6 +29,10 @@ export const settingsSchema = z.object({
 
   // General
   appBaseUrl: z.string().optional(),
+
+  // AI / OpenRouter
+  openrouterApiKey: z.string().optional(),
+  openrouterModel: z.string().optional(),
 });
 
 export type Settings = z.infer<typeof settingsSchema>;
@@ -42,6 +46,8 @@ export interface ResolvedSettings {
   gowaPassword: string;
   gowaPhoneNumber: string;
   gowaUsername: string;
+  openrouterApiKey: string;
+  openrouterModel: string;
   showTelegramQr: boolean;
   telegramBotToken: string;
   telegramBotUsername: string;

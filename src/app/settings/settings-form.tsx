@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState } from "react";
+import { Search } from "lucide-react";
+import { useActionState, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -24,6 +25,7 @@ import { Switch } from "@/components/ui/switch";
 import type { Settings } from "@/domain/settings/settings-schema";
 import { updateSettingsAction } from "./action";
 import type { EnvFallbackInfo } from "./constants";
+import { ModelBrowser } from "./model-browser";
 
 interface FieldProps {
   envFallbacks: Map<string, EnvFallbackInfo>;
@@ -285,11 +287,64 @@ export function SettingsForm({
             />
           </section>
 
+          <Separator />
+
+          {/* AI / OpenRouter */}
+          <AiSection envFallbacks={fallbackMap} settings={s} />
+
           <Button disabled={pending} size="lg" type="submit">
             {pending ? "Wird gespeichert…" : "Speichern"}
           </Button>
         </form>
       </CardContent>
     </Card>
+  );
+}
+
+function AiSection({ envFallbacks, settings }: FieldProps) {
+  const [browserOpen, setBrowserOpen] = useState(false);
+  const [selectedModel, setSelectedModel] = useState(
+    settings.openrouterModel ?? ""
+  );
+
+  return (
+    <section className="grid gap-4">
+      <h2 className="font-medium text-sm">KI / OpenRouter</h2>
+      <SettingInput
+        envFallbacks={envFallbacks}
+        field="openrouterApiKey"
+        label="API Key"
+        settings={settings}
+        type="password"
+      />
+      <div className="grid gap-1.5">
+        <Label htmlFor="openrouterModel">Modell</Label>
+        <div className="flex items-center gap-2">
+          <Input
+            className="flex-1"
+            defaultValue={selectedModel}
+            id="openrouterModel"
+            name="openrouterModel"
+            onChange={(e) => setSelectedModel(e.target.value)}
+            placeholder="z.B. anthropic/claude-sonnet-4"
+            value={selectedModel}
+          />
+          <Button
+            onClick={() => setBrowserOpen(true)}
+            size="icon"
+            type="button"
+            variant="outline"
+          >
+            <Search className="size-4" />
+          </Button>
+        </div>
+      </div>
+      <ModelBrowser
+        currentModel={selectedModel}
+        onOpenChange={setBrowserOpen}
+        onSelectModel={(modelId) => setSelectedModel(modelId)}
+        open={browserOpen}
+      />
+    </section>
   );
 }

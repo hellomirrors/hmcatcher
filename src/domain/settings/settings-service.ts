@@ -56,6 +56,7 @@ const ENV_DEFAULTS: Record<string, string> = {
   gowaDeviceId: "GOWA_DEVICE_ID",
   gowaPhoneNumber: "GOWA_PHONE_NUMBER",
   appBaseUrl: "APP_BASE_URL",
+  openrouterApiKey: "OPENROUTER_API_KEY",
 };
 
 /**
@@ -108,5 +109,7 @@ export async function resolveSettings(): Promise<ResolvedSettings> {
     gowaDeviceId: s.gowaDeviceId ?? "",
     gowaPhoneNumber: s.gowaPhoneNumber ?? "",
     appBaseUrl: s.appBaseUrl ?? "",
+    openrouterApiKey: s.openrouterApiKey ?? "",
+    openrouterModel: s.openrouterModel ?? "",
   };
 }

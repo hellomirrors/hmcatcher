@@ -280,17 +280,40 @@ const StepTypeConfig = ({
         </CardHeader>
         <CardContent className="grid gap-4">
           <div className="grid gap-1.5">
-            <Label htmlFor="step-qr-template">QR-Template</Label>
-            <Textarea
-              id="step-qr-template"
-              onChange={(e) =>
-                update({ qrTemplate: e.target.value || undefined })
+            <Label htmlFor="step-qr-mode">QR-Modus</Label>
+            <Select
+              onValueChange={(val) =>
+                update({ qrMode: val as "template" | "session-data" })
               }
-              placeholder="https://example.com/{{id}}"
-              rows={3}
-              value={step.qrTemplate ?? ""}
-            />
+              value={step.qrMode ?? "template"}
+            >
+              <SelectTrigger id="step-qr-mode">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="template">
+                  Template (eigener Inhalt)
+                </SelectItem>
+                <SelectItem value="session-data">
+                  Session-Daten (Variablen + Score als JSON)
+                </SelectItem>
+              </SelectContent>
+            </Select>
           </div>
+          {(step.qrMode ?? "template") === "template" && (
+            <div className="grid gap-1.5">
+              <Label htmlFor="step-qr-template">QR-Template</Label>
+              <Textarea
+                id="step-qr-template"
+                onChange={(e) =>
+                  update({ qrTemplate: e.target.value || undefined })
+                }
+                placeholder="https://example.com/{{id}}"
+                rows={3}
+                value={step.qrTemplate ?? ""}
+              />
+            </div>
+          )}
           <div className="grid gap-1.5">
             <Label htmlFor="step-qr-caption">Bildunterschrift (optional)</Label>
             <Input

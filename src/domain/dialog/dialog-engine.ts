@@ -24,7 +24,7 @@ export interface DialogResponse {
     footer?: string;
     sections: ListSection[];
   };
-  qr?: { content: string; caption: string };
+  qr?: { content: string; caption: string; mode: "template" | "session-data" };
   text: string;
   type: "text" | "buttons" | "list" | "qr" | "video";
   videoUrl?: string;
@@ -501,9 +501,11 @@ export function renderStep(
     }
 
     case "qr": {
-      const qrContent = step.qrTemplate
-        ? renderTemplate(step.qrTemplate, variables)
-        : "";
+      const qrMode = step.qrMode ?? "template";
+      const qrContent =
+        qrMode === "template" && step.qrTemplate
+          ? renderTemplate(step.qrTemplate, variables)
+          : "";
       const qrCaption = step.qrCaption
         ? renderTemplate(step.qrCaption, variables)
         : "";
@@ -512,7 +514,7 @@ export function renderStep(
         text,
         header,
         footer,
-        qr: { content: qrContent, caption: qrCaption },
+        qr: { content: qrContent, caption: qrCaption, mode: qrMode },
       };
     }
 

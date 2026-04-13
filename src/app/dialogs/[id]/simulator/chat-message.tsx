@@ -1,18 +1,27 @@
 "use client";
 
-import { Pencil } from "lucide-react";
+import { Code, Pencil } from "lucide-react";
+import Image from "next/image";
+import { useEffect, useState } from "react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import type { DialogResponse } from "@/domain/dialog/dialog-engine";
 import { useDialogEditorStore } from "@/lib/dialog-editor-store";
 import {
   BotAvatar,
   ButtonPill,
-  QrPlaceholder,
   SystemBubble,
   UserBubble,
   VideoPlaceholder,
 } from "./shared-bubbles";
 import type { SimulatorMessage } from "./simulator-store";
+import { useSimulatorStore } from "./simulator-store";
 
 interface ChatMessageProps {
   isLatestBotMessage: boolean;
@@ -93,12 +102,11 @@ function BotMessageContent({
       )}
 
       {response.type === "qr" && (
-        <div className="mt-2">
-          <QrPlaceholder />
-          {response.qr?.caption && (
-            <p className="mt-1 text-gray-500 text-xs">{response.qr.caption}</p>
-          )}
-        </div>
+        <SimulatorQrCode
+          caption={response.qr?.caption}
+          mode={response.qr?.mode ?? "template"}
+          templateContent={response.qr?.content}
+        />
       )}
 
       {response.type === "video" && (
@@ -172,6 +180,109 @@ export function ChatMessage({
           </Button>
         )}
       </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// QR code component for the simulator — generates a real QR image client-side
+// ---------------------------------------------------------------------------
+
+function buildSessionDataJson(
+  variables: Record<string, string>,
+  score: number
+): string {
+  const data: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(variables)) {
+    if (!k.startsWith("_")) {
+      data[k] = v;
+    }
+  }
+  data.score = score;
+  return JSON.stringify(data, null, 2);
+}
+
+function SimulatorQrCode({
+  mode,
+  templateContent,
+  caption,
+}: {
+  caption?: string;
+  mode: "template" | "session-data";
+  templateContent?: string;
+}) {
+  const session = useSimulatorStore((s) => s.session);
+  const [dataUrl, setDataUrl] = useState<string | null>(null);
+  const [showRaw, setShowRaw] = useState(false);
+
+  const qrContent =
+    mode === "session-data" && session
+      ? buildSessionDataJson(session.variables, session.score)
+      : templateContent || "";
+
+  useEffect(() => {
+    if (!qrContent) {
+      return;
+    }
+    // Dynamic import to avoid SSR issues with canvas-based qrcode
+    import("qrcode").then((QRCode) => {
+      QRCode.toDataURL(qrContent, { width: 200, margin: 2 }).then(
+        (url: string) => setDataUrl(url)
+      );
+    });
+  }, [qrContent]);
+
+  return (
+    <div className="mt-2">
+      <div className="relative inline-block">
+        {dataUrl ? (
+          <Image
+            alt="QR Code"
+            className="rounded-lg"
+            height={200}
+            src={dataUrl}
+            unoptimized
+            width={200}
+          />
+        ) : (
+          <div className="flex h-[200px] w-[200px] items-center justify-center rounded-lg border-2 border-gray-300 border-dashed bg-gray-50 text-gray-400 text-xs">
+            Generiere QR...
+          </div>
+        )}
+
+        {/* Raw data popup trigger */}
+        {qrContent && (
+          <Button
+            className="absolute top-1 right-1 opacity-70 hover:opacity-100"
+            onClick={() => setShowRaw(true)}
+            size="icon-xs"
+            title="Rohdaten anzeigen"
+            type="button"
+            variant="secondary"
+          >
+            <Code className="size-2.5" />
+          </Button>
+        )}
+      </div>
+
+      {caption && <p className="mt-1 text-gray-500 text-xs">{caption}</p>}
+
+      {mode === "session-data" && (
+        <Badge className="mt-1 text-[0.6rem]" variant="outline">
+          Session-Daten
+        </Badge>
+      )}
+
+      <Dialog onOpenChange={setShowRaw} open={showRaw}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-sm">QR-Code Rohdaten</DialogTitle>
+          </DialogHeader>
+          <pre className="max-h-80 overflow-auto rounded-md bg-muted p-3 text-xs">
+            {qrContent}
+          </pre>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

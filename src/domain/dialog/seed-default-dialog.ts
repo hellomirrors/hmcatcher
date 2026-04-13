@@ -349,6 +349,7 @@ const defaultDefinition: DialogDefinition = {
       id: "qr-code",
       type: "qr",
       phase: "Aktivierung",
+      qrMode: "session-data",
       message:
         "Dein persönlicher QR Code wird generiert...\n\nFertig! Halte den QR Code an den Scanner an unserem Stand.\n\nDas Glücksrad dreht sich auf dem großen Screen!",
       transitions: [{ targetStepId: "gewinn" }],

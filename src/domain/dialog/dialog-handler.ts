@@ -172,11 +172,11 @@ async function sendResponse(
         externalId: textSent.messageId,
       });
 
-      // When qrTemplate is empty, encode the captured session data as
-      // JSON so the QR code contains the full lead record instead of
-      // just a link. Filter out internal variables (prefixed with _).
-      let qrContent = response.qr?.content || "";
-      if (!qrContent) {
+      const qrMode = response.qr?.mode ?? "template";
+      let qrContent = "";
+
+      if (qrMode === "session-data") {
+        // Encode the full lead record as JSON for the QR scanner.
         const data: Record<string, unknown> = {};
         for (const [k, v] of Object.entries(session.variables)) {
           if (!k.startsWith("_")) {
@@ -187,7 +187,10 @@ async function sendResponse(
         data.provider = provider;
         data.userId = userId;
         qrContent = JSON.stringify(data);
+      } else {
+        qrContent = response.qr?.content || "";
       }
+
       const qrCaption = response.qr?.caption || "";
 
       const qrBuffer = await generateQrPng(qrContent);

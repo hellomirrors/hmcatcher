@@ -24,7 +24,11 @@ export interface DialogResponse {
     footer?: string;
     sections: ListSection[];
   };
-  qr?: { content: string; caption: string; mode: "template" | "session-data" };
+  qr?: {
+    content: string;
+    caption: string;
+    mode: "template" | "session-data" | "messe";
+  };
   text: string;
   type: "text" | "buttons" | "list" | "qr" | "video";
   videoUrl?: string;

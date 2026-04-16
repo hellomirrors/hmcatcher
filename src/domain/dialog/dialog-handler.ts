@@ -110,6 +110,22 @@ export async function handleDialogConversation(
   }
 }
 
+const MESSE_QR_SEPARATOR = "1a2b3c4d5e6f7g8h9i";
+
+function reverseString(value: string): string {
+  return [...value].reverse().join("");
+}
+
+function buildMesseQrContent(
+  session: { variables: Record<string, string>; score: number },
+  scoreBuckets?: { id: string; label: string; minScore: number }[]
+): string {
+  const vorname = session.variables.vorname ?? "";
+  const bucket = resolveBucket(session.score, scoreBuckets);
+  const bucketReversed = bucket ? reverseString(bucket.id) : "";
+  return `${vorname}${MESSE_QR_SEPARATOR}${bucketReversed}${MESSE_QR_SEPARATOR}`;
+}
+
 function buildQrContent(
   response: DialogResponse,
   session: { variables: Record<string, string>; score: number },
@@ -118,8 +134,11 @@ function buildQrContent(
   scoreBuckets?: { id: string; label: string; minScore: number }[]
 ): string {
   const qrMode = response.qr?.mode ?? "template";
-  if (qrMode !== "session-data") {
+  if (qrMode === "template") {
     return response.qr?.content || "";
+  }
+  if (qrMode === "messe") {
+    return buildMesseQrContent(session, scoreBuckets);
   }
   const data: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(session.variables)) {

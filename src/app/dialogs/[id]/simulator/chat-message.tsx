@@ -196,6 +196,8 @@ export function ChatMessage({
 // QR code component for the simulator — generates a real QR image client-side
 // ---------------------------------------------------------------------------
 
+const MESSE_QR_SEPARATOR = "1a2b3c4d5e6f7g8h9i";
+
 function buildSessionDataJson(
   variables: Record<string, string>,
   score: number,
@@ -215,6 +217,17 @@ function buildSessionDataJson(
   return JSON.stringify(data, null, 2);
 }
 
+function buildMesseQr(
+  variables: Record<string, string>,
+  score: number,
+  scoreBuckets?: ScoreBucket[]
+): string {
+  const vorname = variables.vorname ?? "";
+  const bucket = resolveBucket(score, scoreBuckets);
+  const bucketReversed = bucket ? [...bucket.id].reverse().join("") : "";
+  return `${vorname}${MESSE_QR_SEPARATOR}${bucketReversed}${MESSE_QR_SEPARATOR}`;
+}
+
 function SimulatorQrCode({
   mode,
   templateContent,
@@ -222,7 +235,7 @@ function SimulatorQrCode({
   scoreBuckets,
 }: {
   caption?: string;
-  mode: "template" | "session-data";
+  mode: "template" | "session-data" | "messe";
   scoreBuckets?: ScoreBucket[];
   templateContent?: string;
 }) {
@@ -230,10 +243,16 @@ function SimulatorQrCode({
   const [dataUrl, setDataUrl] = useState<string | null>(null);
   const [showRaw, setShowRaw] = useState(false);
 
-  const qrContent =
-    mode === "session-data" && session
-      ? buildSessionDataJson(session.variables, session.score, scoreBuckets)
-      : templateContent || "";
+  let qrContent = templateContent || "";
+  if (mode === "session-data" && session) {
+    qrContent = buildSessionDataJson(
+      session.variables,
+      session.score,
+      scoreBuckets
+    );
+  } else if (mode === "messe" && session) {
+    qrContent = buildMesseQr(session.variables, session.score, scoreBuckets);
+  }
 
   useEffect(() => {
     if (!qrContent) {
@@ -285,6 +304,12 @@ function SimulatorQrCode({
       {mode === "session-data" && (
         <Badge className="mt-1 text-[0.6rem]" variant="outline">
           Session-Daten
+        </Badge>
+      )}
+
+      {mode === "messe" && (
+        <Badge className="mt-1 text-[0.6rem]" variant="outline">
+          Messe
         </Badge>
       )}
 

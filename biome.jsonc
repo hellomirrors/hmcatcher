@@ -7,7 +7,16 @@
     "ultracite/biome/vitest"
   ],
   "files": {
-    "includes": ["!.agents", "!**/.agents", "!**/*.html", "!drizzle/meta"]
+    "includes": [
+      "!.agents",
+      "!**/.agents",
+      "!.claude",
+      "!**/.claude",
+      "!.junie",
+      "!**/.junie",
+      "!**/*.html",
+      "!drizzle/meta"
+    ]
   },
   "linter": {
     "rules": {

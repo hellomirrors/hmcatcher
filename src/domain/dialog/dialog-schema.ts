@@ -87,7 +87,7 @@ export const dialogStepSchema = z.object({
   validationMessage: z.string().optional(),
   unmatchedInputMode: unmatchedInputModeSchema.optional(),
   unmatchedInputValue: z.string().optional(),
-  qrMode: z.enum(["template", "session-data"]).optional(),
+  qrMode: z.enum(["template", "session-data", "messe"]).optional(),
   qrTemplate: z.string().optional(),
   qrCaption: z.string().optional(),
   videoUrl: z.string().optional(),

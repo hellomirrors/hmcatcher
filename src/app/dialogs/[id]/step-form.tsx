@@ -283,7 +283,9 @@ const StepTypeConfig = ({
             <Label htmlFor="step-qr-mode">QR-Modus</Label>
             <Select
               onValueChange={(val) =>
-                update({ qrMode: val as "template" | "session-data" })
+                update({
+                  qrMode: val as "template" | "session-data" | "messe",
+                })
               }
               value={step.qrMode ?? "template"}
             >
@@ -296,6 +298,9 @@ const StepTypeConfig = ({
                 </SelectItem>
                 <SelectItem value="session-data">
                   Session-Daten (Variablen + Score als JSON)
+                </SelectItem>
+                <SelectItem value="messe">
+                  Messe (Vorname + Bucket-Code)
                 </SelectItem>
               </SelectContent>
             </Select>

@@ -8,10 +8,19 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
 import type {
   DialogDefinition,
   DialogStep,
+  UnmatchedInputMode,
 } from "@/domain/dialog/dialog-schema";
 import { dialogDefinitionSchema } from "@/domain/dialog/dialog-schema";
 import { useDialogEditorStore } from "@/lib/dialog-editor-store";
@@ -26,13 +35,26 @@ import { WhatsappPreview } from "./whatsapp-preview";
 interface DialogEditorProps {
   dialog: {
     definition: DialogDefinition;
+    description: string;
     id: number;
     name: string;
     slug: string;
   };
 }
 
+const UNMATCHED_MODE_LABELS: Record<UnmatchedInputMode, string> = {
+  error: "Fehlermeldung senden",
+  as_other: "Als Sonstiges speichern",
+  accept: "Akzeptieren",
+};
+
+const UNMATCHED_MODES = Object.keys(
+  UNMATCHED_MODE_LABELS
+) as UnmatchedInputMode[];
+
 export const DialogEditor = ({ dialog }: DialogEditorProps) => {
+  const [name, setName] = useState(dialog.name);
+  const [description, setDescription] = useState(dialog.description);
   const [definition, setDefinition] = useState<DialogDefinition>(
     dialog.definition
   );
@@ -59,6 +81,11 @@ export const DialogEditor = ({ dialog }: DialogEditorProps) => {
 
   const updateDefinition = (patch: Partial<DialogDefinition>) => {
     setDefinition((prev) => ({ ...prev, ...patch }));
+    setDirty(true);
+    setFeedback(null);
+  };
+
+  const markDirty = () => {
     setDirty(true);
     setFeedback(null);
   };
@@ -108,10 +135,11 @@ export const DialogEditor = ({ dialog }: DialogEditorProps) => {
 
   const handleSave = () => {
     startTransition(async () => {
-      const result = await saveDialogAction(
-        dialog.id,
-        JSON.stringify(definition)
-      );
+      const result = await saveDialogAction(dialog.id, {
+        name,
+        description,
+        definitionJson: JSON.stringify(definition),
+      });
       if (result.success) {
         setDirty(false);
         setFeedback({ type: "success", message: "Gespeichert" });
@@ -171,7 +199,7 @@ export const DialogEditor = ({ dialog }: DialogEditorProps) => {
               <ArrowLeft className="size-4" />
             </Button>
           </Link>
-          <h1 className="font-semibold text-xl">{dialog.name}</h1>
+          <h1 className="font-semibold text-xl">{name}</h1>
           <Badge variant="outline">{dialog.slug}</Badge>
         </div>
         <div className="flex items-center gap-2">
@@ -234,9 +262,34 @@ export const DialogEditor = ({ dialog }: DialogEditorProps) => {
               <CardTitle>Allgemein</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-1.5">
+                  <Label htmlFor="dialog-name">Name</Label>
+                  <Input
+                    id="dialog-name"
+                    onChange={(e) => {
+                      setName(e.target.value);
+                      markDirty();
+                    }}
+                    value={name}
+                  />
+                </div>
+                <div className="grid gap-1.5">
+                  <Label htmlFor="dialog-slug">Slug</Label>
+                  <Input id="dialog-slug" readOnly value={dialog.slug} />
+                </div>
+              </div>
               <div className="grid gap-1.5">
-                <Label htmlFor="dialog-name">Name</Label>
-                <Input id="dialog-name" readOnly value={dialog.name} />
+                <Label htmlFor="dialog-description">Beschreibung</Label>
+                <Textarea
+                  id="dialog-description"
+                  onChange={(e) => {
+                    setDescription(e.target.value);
+                    markDirty();
+                  }}
+                  rows={2}
+                  value={description}
+                />
               </div>
               <div className="grid gap-1.5">
                 <Label htmlFor="dialog-keywords">
@@ -288,6 +341,89 @@ export const DialogEditor = ({ dialog }: DialogEditorProps) => {
                     value={definition.reminderAfterMinutes ?? ""}
                   />
                 </div>
+              </div>
+              <div className="grid gap-1.5">
+                <Label htmlFor="dialog-reminder-message">
+                  Erinnerungsnachricht
+                </Label>
+                <Textarea
+                  id="dialog-reminder-message"
+                  onChange={(e) =>
+                    updateDefinition({
+                      reminderMessage: e.target.value || undefined,
+                    })
+                  }
+                  rows={2}
+                  value={definition.reminderMessage ?? ""}
+                />
+              </div>
+              <div className="grid gap-1.5">
+                <Label htmlFor="dialog-timeout-message">
+                  Timeout-Nachricht
+                </Label>
+                <Textarea
+                  id="dialog-timeout-message"
+                  onChange={(e) =>
+                    updateDefinition({
+                      timeoutMessage: e.target.value || undefined,
+                    })
+                  }
+                  rows={2}
+                  value={definition.timeoutMessage ?? ""}
+                />
+              </div>
+              <div className="grid gap-1.5">
+                <Label htmlFor="dialog-error-message">Fehlermeldung</Label>
+                <Textarea
+                  id="dialog-error-message"
+                  onChange={(e) =>
+                    updateDefinition({ errorMessage: e.target.value })
+                  }
+                  rows={2}
+                  value={definition.errorMessage}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-1.5">
+                  <Label htmlFor="dialog-unmatched">
+                    Verhalten bei unerwarteter Eingabe
+                  </Label>
+                  <Select
+                    onValueChange={(val) =>
+                      updateDefinition({
+                        unmatchedInputMode: val as UnmatchedInputMode,
+                      })
+                    }
+                    value={definition.unmatchedInputMode}
+                  >
+                    <SelectTrigger id="dialog-unmatched">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {UNMATCHED_MODES.map((mode) => (
+                        <SelectItem key={mode} value={mode}>
+                          {UNMATCHED_MODE_LABELS[mode]}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {definition.unmatchedInputMode === "as_other" && (
+                  <div className="grid gap-1.5">
+                    <Label htmlFor="dialog-unmatched-value">
+                      Wert für Sonstiges
+                    </Label>
+                    <Input
+                      id="dialog-unmatched-value"
+                      onChange={(e) =>
+                        updateDefinition({
+                          unmatchedInputValue: e.target.value || undefined,
+                        })
+                      }
+                      value={definition.unmatchedInputValue ?? ""}
+                    />
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>

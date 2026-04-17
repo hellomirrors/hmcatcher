@@ -9,14 +9,28 @@ interface SaveDialogResult {
   success: boolean;
 }
 
+interface SaveDialogInput {
+  definitionJson: string;
+  description: string;
+  name: string;
+}
+
 export const saveDialogAction = async (
   id: number,
-  definitionJson: string
+  input: SaveDialogInput
 ): Promise<SaveDialogResult> => {
   try {
-    const parsed: unknown = JSON.parse(definitionJson);
+    const name = input.name.trim();
+    if (!name) {
+      return { success: false, error: "Name darf nicht leer sein." };
+    }
+    const parsed: unknown = JSON.parse(input.definitionJson);
     const definition = dialogDefinitionSchema.parse(parsed);
-    updateDialog(id, { definition });
+    updateDialog(id, {
+      name,
+      description: input.description,
+      definition,
+    });
     await revalidatePath(`/dialogs/${id}`);
     return { success: true };
   } catch (error) {

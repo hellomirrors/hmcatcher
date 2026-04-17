@@ -25,6 +25,7 @@ export default async function DialogEditorPage({
       dialog={{
         id: dialog.id,
         name: dialog.name,
+        description: dialog.description ?? "",
         slug: dialog.slug,
         definition: dialog.definition,
       }}

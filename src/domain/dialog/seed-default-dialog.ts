@@ -473,18 +473,47 @@ const defaultDefinition: DialogDefinition = {
 };
 
 /**
- * Seeds or upserts the default trade-fair dialog by slug.
+ * Seeds the default trade-fair dialog by slug if it does not yet exist.
  *
- * Every startup reconciles the stored dialog definition to match the
- * definition in this file. This means the seed file is the source of
- * truth: edits made via the dialog editor UI will be overwritten on
- * next deploy. That is intentional for the campaign we are running.
+ * Insert-only: an existing dialog is never overwritten, so edits made via
+ * the dialog editor UI (score weights, messages, transitions) survive
+ * deploys and page reloads. The only reconciliation is to re-activate the
+ * default dialog if it was deactivated.
+ *
+ * To force-load the bundled defaults over the stored definition, use
+ * `resetDefaultDialog` (wired to the "Default laden" button).
  */
 export const seedDefaultDialog = (): void => {
   const existing = listDialogs().find((d) => d.slug === DIALOG_SLUG);
 
   if (existing) {
-    log.info("Reconciling existing default dialog from seed", {
+    if (!existing.isActive) {
+      setActiveDialog(existing.id);
+    }
+    return;
+  }
+
+  log.info("No default dialog found, seeding...");
+  const id = createDialog({
+    name: DIALOG_NAME,
+    slug: DIALOG_SLUG,
+    description: DIALOG_DESCRIPTION,
+    definition: defaultDefinition,
+  });
+  setActiveDialog(id);
+  log.info("Default dialog seeded and activated", { dialogId: id });
+};
+
+/**
+ * Force-overwrites the stored default dialog with the bundled defaults
+ * from this file. Creates the dialog if it does not exist. Intended for
+ * explicit user action via the "Default laden" button.
+ */
+export const resetDefaultDialog = (): void => {
+  const existing = listDialogs().find((d) => d.slug === DIALOG_SLUG);
+
+  if (existing) {
+    log.info("Resetting default dialog to bundled seed", {
       dialogId: existing.id,
       slug: DIALOG_SLUG,
     });
@@ -507,5 +536,4 @@ export const seedDefaultDialog = (): void => {
     definition: defaultDefinition,
   });
   setActiveDialog(id);
-  log.info("Default dialog seeded and activated", { dialogId: id });
 };

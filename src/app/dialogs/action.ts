@@ -8,7 +8,7 @@ import {
   setActiveDialog,
 } from "@/domain/dialog/dialog-repository";
 import { dialogDefinitionSchema } from "@/domain/dialog/dialog-schema";
-import { seedDefaultDialog } from "@/domain/dialog/seed-default-dialog";
+import { resetDefaultDialog } from "@/domain/dialog/seed-default-dialog";
 
 export interface DialogActionState {
   dialogId?: number;
@@ -104,7 +104,7 @@ export async function importDialogAction(
 
 export async function loadDefaultDialogAction(): Promise<void> {
   await Promise.resolve();
-  seedDefaultDialog();
+  resetDefaultDialog();
   revalidatePath("/dialogs");
 }
 

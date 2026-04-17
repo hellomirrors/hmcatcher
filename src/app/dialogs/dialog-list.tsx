@@ -12,7 +12,9 @@ import {
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import {
+  createNewDialogAction,
   deleteDialogAction,
+  duplicateDialogAction,
   loadDefaultDialogAction,
   setActiveDialogAction,
 } from "./action";
@@ -46,11 +48,13 @@ export function DialogList({ dialogs }: { dialogs: DialogListItem[] }) {
             >
               Default laden
             </Button>
-            <Link href="/dialogs/new">
-              <Button size="sm" variant="outline">
-                Neuer Dialog
-              </Button>
-            </Link>
+            <Button
+              onClick={() => createNewDialogAction()}
+              size="sm"
+              variant="outline"
+            >
+              Neuer Dialog
+            </Button>
           </div>
         </div>
       </CardHeader>
@@ -90,6 +94,13 @@ export function DialogList({ dialogs }: { dialogs: DialogListItem[] }) {
                       Sessions
                     </Button>
                   </Link>
+                  <Button
+                    onClick={() => duplicateDialogAction(dialog.id)}
+                    size="sm"
+                    variant="ghost"
+                  >
+                    Duplizieren
+                  </Button>
                   {dialog.isActive !== 1 && (
                     <>
                       <Button

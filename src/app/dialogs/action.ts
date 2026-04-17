@@ -1,14 +1,80 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import {
   createDialog,
   deleteDialog,
   getDialogById,
+  listDialogs,
   setActiveDialog,
 } from "@/domain/dialog/dialog-repository";
+import type { DialogDefinition } from "@/domain/dialog/dialog-schema";
 import { dialogDefinitionSchema } from "@/domain/dialog/dialog-schema";
 import { resetDefaultDialog } from "@/domain/dialog/seed-default-dialog";
+
+const BLANK_DEFINITION: DialogDefinition = {
+  version: 1,
+  triggerKeywords: ["start"],
+  timeoutMinutes: 60,
+  unmatchedInputMode: "error",
+  errorMessage: "Bitte wähle eine der angebotenen Optionen.",
+  steps: [
+    {
+      id: "welcome",
+      type: "text",
+      message: "Willkommen!",
+      transitions: [],
+    },
+  ],
+};
+
+const COUNTED_SUFFIX = /^(.*?)\s*\((\d+)\)\s*$/;
+const SLUG_REPLACE = /[^a-z0-9]+/g;
+const SLUG_TRIM = /^-+|-+$/g;
+const UMLAUT_MAP: Record<string, string> = {
+  ä: "ae",
+  ö: "oe",
+  ü: "ue",
+  ß: "ss",
+};
+
+function slugify(input: string): string {
+  const lower = input.toLowerCase();
+  const transliterated = lower.replace(/[äöüß]/g, (c) => UMLAUT_MAP[c] ?? c);
+  return transliterated.replace(SLUG_REPLACE, "-").replace(SLUG_TRIM, "");
+}
+
+function findUniqueNameAndSlug(baseName: string): {
+  name: string;
+  slug: string;
+} {
+  const match = COUNTED_SUFFIX.exec(baseName);
+  const stripped = match ? match[1].trim() : baseName.trim();
+
+  const existing = listDialogs();
+  const existingNames = new Set(existing.map((d) => d.name));
+  const existingSlugs = new Set(existing.map((d) => d.slug));
+
+  let name = stripped;
+  if (existingNames.has(name)) {
+    let n = 2;
+    while (existingNames.has(`${stripped} (${n})`)) {
+      n++;
+    }
+    name = `${stripped} (${n})`;
+  }
+
+  const baseSlug = slugify(name) || "dialog";
+  let slug = baseSlug;
+  let m = 2;
+  while (existingSlugs.has(slug)) {
+    slug = `${baseSlug}-${m}`;
+    m++;
+  }
+
+  return { name, slug };
+}
 
 export interface DialogActionState {
   dialogId?: number;
@@ -54,6 +120,35 @@ export async function createDialogAction(
   } catch (error) {
     return { success: false, error: (error as Error).message };
   }
+}
+
+export async function createNewDialogAction(): Promise<void> {
+  await Promise.resolve();
+  const { name, slug } = findUniqueNameAndSlug("Neuer Dialog");
+  const id = createDialog({
+    name,
+    slug,
+    definition: BLANK_DEFINITION,
+  });
+  revalidatePath("/dialogs");
+  redirect(`/dialogs/${id}`);
+}
+
+export async function duplicateDialogAction(sourceId: number): Promise<void> {
+  await Promise.resolve();
+  const source = getDialogById(sourceId);
+  if (!source) {
+    throw new Error("Dialog nicht gefunden.");
+  }
+  const { name, slug } = findUniqueNameAndSlug(source.name);
+  const id = createDialog({
+    name,
+    slug,
+    description: source.description ?? undefined,
+    definition: source.definition,
+  });
+  revalidatePath("/dialogs");
+  redirect(`/dialogs/${id}`);
 }
 
 export async function deleteDialogAction(id: number): Promise<void> {

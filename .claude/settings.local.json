@@ -3,7 +3,15 @@
     "allow": [
       "Bash(gh api:*)",
       "Bash(sqlite3:*)",
-      "mcp__next-devtools__nextjs_docs"
+      "mcp__next-devtools__nextjs_docs",
+      "Bash(echo \"EXIT=$?\")",
+      "Read(//tmp/**)",
+      "Bash(python -c \"import json,sys; apps=json.load\\(sys.stdin\\); [print\\(a.get\\('uuid'\\),'|',a.get\\('name'\\),'|',a.get\\('fqdn'\\)\\) for a in apps]\")",
+      "Bash(python -c \"import json,sys; [print\\(e['key'],'=',e['value'][:40]\\) for e in json.load\\(sys.stdin\\)]\")",
+      "Bash(python -c \"import json,sys; [print\\(e['key'],'=',e['value']\\) for e in json.load\\(sys.stdin\\) if 'AUTH' in e['key']]\")",
+      "Bash(python -m json.tool)",
+      "Bash(python -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(d.get\\('user',{}\\).get\\('username'\\),d.get\\('user',{}\\).get\\('pk'\\)\\)\")",
+      "Bash(python -c \"import json,sys; [print\\(g['pk'],g['name'],len\\(g.get\\('users',[]\\)\\)\\) for g in json.load\\(sys.stdin\\)['results']]\")"
     ]
   }
 }

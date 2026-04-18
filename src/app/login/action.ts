@@ -2,8 +2,8 @@
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-
-const ADMIN_PASSWORD = "Cortex@2022";
+import { signIn, signOut } from "@/lib/auth";
+import { AUTH_MODE } from "@/lib/auth-mode";
 
 export async function loginAction(
   _prev: { error?: string } | undefined,
@@ -11,8 +11,12 @@ export async function loginAction(
 ) {
   const password = formData.get("password");
   const from = formData.get("from");
+  const expected = process.env.ADMIN_PASSWORD;
 
-  if (password !== ADMIN_PASSWORD) {
+  if (!expected) {
+    return { error: "ADMIN_PASSWORD nicht konfiguriert" };
+  }
+  if (password !== expected) {
     return { error: "Falsches Passwort" };
   }
 
@@ -27,7 +31,18 @@ export async function loginAction(
   redirect(typeof from === "string" && from ? from : "/admin");
 }
 
+export async function authentikLoginAction(formData: FormData) {
+  const from = formData.get("from");
+  await signIn("authentik", {
+    redirectTo: typeof from === "string" && from ? from : "/admin",
+  });
+}
+
 export async function logoutAction() {
+  if (AUTH_MODE === "authentik") {
+    await signOut({ redirectTo: "/" });
+    return;
+  }
   const cookieStore = await cookies();
   cookieStore.delete("admin-auth");
   redirect("/");

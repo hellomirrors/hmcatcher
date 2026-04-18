@@ -290,8 +290,14 @@ export function deleteDialog(id: number): void {
 
 export function setActiveDialog(id: number): void {
   try {
-    db.update(dialogs).set({ isActive: 0 }).run();
-    db.update(dialogs).set({ isActive: 1 }).where(eq(dialogs.id, id)).run();
+    db.update(dialogs)
+      .set({ isActive: 0, updatedAt: new Date() })
+      .where(eq(dialogs.isActive, 1))
+      .run();
+    db.update(dialogs)
+      .set({ isActive: 1, updatedAt: new Date() })
+      .where(eq(dialogs.id, id))
+      .run();
   } catch (error) {
     log.error("Failed to set active dialog", error, { dialogId: id });
     throw error;

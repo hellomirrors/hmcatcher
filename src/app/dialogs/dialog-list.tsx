@@ -2,8 +2,6 @@
 
 import { Lock, Unlock } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useTransition } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -35,17 +33,33 @@ interface DialogListItem {
   version: number;
 }
 
+const toggleLockAction = async (formData: FormData) => {
+  const id = Number(formData.get("id"));
+  const locked = formData.get("locked") === "1";
+  await setDialogLockedAction(id, !locked);
+};
+
+const activateAction = async (formData: FormData) => {
+  const id = Number(formData.get("id"));
+  await setActiveDialogAction(id);
+};
+
+const deactivateAction = async (formData: FormData) => {
+  const id = Number(formData.get("id"));
+  await deactivateDialogAction(id);
+};
+
+const duplicateAction = async (formData: FormData) => {
+  const id = Number(formData.get("id"));
+  await duplicateDialogAction(id);
+};
+
+const deleteAction = async (formData: FormData) => {
+  const id = Number(formData.get("id"));
+  await deleteDialogAction(id);
+};
+
 export function DialogList({ dialogs }: { dialogs: DialogListItem[] }) {
-  const router = useRouter();
-  const [isPending, startTransition] = useTransition();
-
-  const run = (fn: () => Promise<void>) => {
-    startTransition(async () => {
-      await fn();
-      router.refresh();
-    });
-  };
-
   return (
     <Card>
       <CardHeader>
@@ -57,20 +71,16 @@ export function DialogList({ dialogs }: { dialogs: DialogListItem[] }) {
             </CardDescription>
           </div>
           <div className="flex gap-2">
-            <Button
-              onClick={() => run(loadDefaultDialogAction)}
-              size="sm"
-              variant="secondary"
-            >
-              Default laden
-            </Button>
-            <Button
-              onClick={() => run(createNewDialogAction)}
-              size="sm"
-              variant="outline"
-            >
-              Neuer Dialog
-            </Button>
+            <form action={loadDefaultDialogAction}>
+              <Button size="sm" type="submit" variant="secondary">
+                Default laden
+              </Button>
+            </form>
+            <form action={createNewDialogAction}>
+              <Button size="sm" type="submit" variant="outline">
+                Neuer Dialog
+              </Button>
+            </form>
           </div>
         </div>
       </CardHeader>
@@ -117,69 +127,56 @@ export function DialogList({ dialogs }: { dialogs: DialogListItem[] }) {
                         Sessions
                       </Button>
                     </Link>
-                    <Button
-                      disabled={isPending}
-                      onClick={() =>
-                        run(() => duplicateDialogAction(dialog.id))
-                      }
-                      size="sm"
-                      variant="ghost"
-                    >
-                      Duplizieren
-                    </Button>
-                    <Button
-                      disabled={isPending}
-                      onClick={() =>
-                        run(() => setDialogLockedAction(dialog.id, !isLocked))
-                      }
-                      size="sm"
-                      variant="ghost"
-                    >
-                      {isLocked ? (
-                        <>
-                          <Unlock className="mr-1 size-3.5" />
-                          Entsperren
-                        </>
-                      ) : (
-                        <>
-                          <Lock className="mr-1 size-3.5" />
-                          Sperren
-                        </>
-                      )}
-                    </Button>
+                    <form action={duplicateAction}>
+                      <input name="id" type="hidden" value={dialog.id} />
+                      <Button size="sm" type="submit" variant="ghost">
+                        Duplizieren
+                      </Button>
+                    </form>
+                    <form action={toggleLockAction}>
+                      <input name="id" type="hidden" value={dialog.id} />
+                      <input
+                        name="locked"
+                        type="hidden"
+                        value={isLocked ? "1" : "0"}
+                      />
+                      <Button size="sm" type="submit" variant="ghost">
+                        {isLocked ? (
+                          <>
+                            <Unlock className="mr-1 size-3.5" />
+                            Entsperren
+                          </>
+                        ) : (
+                          <>
+                            <Lock className="mr-1 size-3.5" />
+                            Sperren
+                          </>
+                        )}
+                      </Button>
+                    </form>
                     <Separator className="mx-1 h-4" orientation="vertical" />
                     {isActive ? (
-                      <Button
-                        disabled={isPending}
-                        onClick={() =>
-                          run(() => deactivateDialogAction(dialog.id))
-                        }
-                        size="sm"
-                        variant="outline"
-                      >
-                        Deaktivieren
-                      </Button>
+                      <form action={deactivateAction}>
+                        <input name="id" type="hidden" value={dialog.id} />
+                        <Button size="sm" type="submit" variant="outline">
+                          Deaktivieren
+                        </Button>
+                      </form>
                     ) : (
-                      <Button
-                        disabled={isPending}
-                        onClick={() =>
-                          run(() => setActiveDialogAction(dialog.id))
-                        }
-                        size="sm"
-                        variant="outline"
-                      >
-                        Aktivieren
-                      </Button>
+                      <form action={activateAction}>
+                        <input name="id" type="hidden" value={dialog.id} />
+                        <Button size="sm" type="submit" variant="outline">
+                          Aktivieren
+                        </Button>
+                      </form>
                     )}
                     {!(isActive || isLocked) && (
-                      <Button
-                        disabled={isPending}
-                        onClick={() => run(() => deleteDialogAction(dialog.id))}
-                        size="sm"
-                        variant="destructive"
-                      >
-                        Löschen
-                      </Button>
+                      <form action={deleteAction}>
+                        <input name="id" type="hidden" value={dialog.id} />
+                        <Button size="sm" type="submit" variant="destructive">
+                          Löschen
+                        </Button>
+                      </form>
                     )}
                   </div>
                 </div>

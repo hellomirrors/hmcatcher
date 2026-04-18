@@ -28,6 +28,7 @@ export default async function DialogEditorPage({
         description: dialog.description ?? "",
         slug: dialog.slug,
         definition: dialog.definition,
+        isLocked: dialog.isLocked === 1,
       }}
     />
   );

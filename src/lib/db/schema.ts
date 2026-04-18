@@ -31,6 +31,7 @@ export const dialogs = sqliteTable("dialogs", {
   description: text("description"),
   definition: text("definition").notNull(), // JSON: DialogDefinition
   isActive: integer("is_active").notNull().default(0),
+  isLocked: integer("is_locked").notNull().default(0),
   version: integer("version").notNull().default(1),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()

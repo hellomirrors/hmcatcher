@@ -4,10 +4,12 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import {
   createDialog,
+  deactivateDialog,
   deleteDialog,
   getDialogById,
   listDialogs,
   setActiveDialog,
+  setDialogLocked,
 } from "@/domain/dialog/dialog-repository";
 import type { DialogDefinition } from "@/domain/dialog/dialog-schema";
 import { dialogDefinitionSchema } from "@/domain/dialog/dialog-schema";
@@ -153,6 +155,10 @@ export async function duplicateDialogAction(sourceId: number): Promise<void> {
 
 export async function deleteDialogAction(id: number): Promise<void> {
   await Promise.resolve();
+  const dialog = getDialogById(id);
+  if (dialog?.isLocked === 1) {
+    throw new Error("Dialog ist gesperrt.");
+  }
   deleteDialog(id);
   revalidatePath("/dialogs");
 }
@@ -161,6 +167,22 @@ export async function setActiveDialogAction(id: number): Promise<void> {
   await Promise.resolve();
   setActiveDialog(id);
   revalidatePath("/dialogs");
+}
+
+export async function deactivateDialogAction(id: number): Promise<void> {
+  await Promise.resolve();
+  deactivateDialog(id);
+  revalidatePath("/dialogs");
+}
+
+export async function setDialogLockedAction(
+  id: number,
+  locked: boolean
+): Promise<void> {
+  await Promise.resolve();
+  setDialogLocked(id, locked);
+  revalidatePath("/dialogs");
+  revalidatePath(`/dialogs/${id}`);
 }
 
 export async function importDialogAction(

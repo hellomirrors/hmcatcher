@@ -16,6 +16,7 @@ interface DialogRow {
   description: string | null;
   id: number;
   isActive: number;
+  isLocked: number;
   name: string;
   slug: string;
   updatedAt: Date;
@@ -27,6 +28,7 @@ interface DialogListItem {
   description: string | null;
   id: number;
   isActive: number;
+  isLocked: number;
   name: string;
   slug: string;
   version: number;
@@ -149,6 +151,7 @@ function toDialogRow(row: typeof dialogs.$inferSelect): DialogRow | undefined {
     description: row.description,
     definition,
     isActive: row.isActive,
+    isLocked: row.isLocked,
     version: row.version,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
@@ -210,6 +213,7 @@ export function listDialogs(): DialogListItem[] {
         name: dialogs.name,
         description: dialogs.description,
         isActive: dialogs.isActive,
+        isLocked: dialogs.isLocked,
         version: dialogs.version,
         createdAt: dialogs.createdAt,
       })
@@ -290,6 +294,27 @@ export function setActiveDialog(id: number): void {
     db.update(dialogs).set({ isActive: 1 }).where(eq(dialogs.id, id)).run();
   } catch (error) {
     log.error("Failed to set active dialog", error, { dialogId: id });
+    throw error;
+  }
+}
+
+export function deactivateDialog(id: number): void {
+  try {
+    db.update(dialogs).set({ isActive: 0 }).where(eq(dialogs.id, id)).run();
+  } catch (error) {
+    log.error("Failed to deactivate dialog", error, { dialogId: id });
+    throw error;
+  }
+}
+
+export function setDialogLocked(id: number, locked: boolean): void {
+  try {
+    db.update(dialogs)
+      .set({ isLocked: locked ? 1 : 0, updatedAt: new Date() })
+      .where(eq(dialogs.id, id))
+      .run();
+  } catch (error) {
+    log.error("Failed to set dialog lock", error, { dialogId: id, locked });
     throw error;
   }
 }

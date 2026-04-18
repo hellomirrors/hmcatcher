@@ -1,7 +1,16 @@
 "use client";
 
-import { ArrowLeft, Check, Download, Loader2, Upload } from "lucide-react";
+import {
+  ArrowLeft,
+  Check,
+  Download,
+  Loader2,
+  Lock,
+  Unlock,
+  Upload,
+} from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useRef, useState, useTransition } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -24,6 +33,7 @@ import type {
 } from "@/domain/dialog/dialog-schema";
 import { dialogDefinitionSchema } from "@/domain/dialog/dialog-schema";
 import { useDialogEditorStore } from "@/lib/dialog-editor-store";
+import { setDialogLockedAction } from "../action";
 import { saveDialogAction } from "./action";
 import { DialogFlowGraph } from "./graph/dialog-flow-graph";
 import { DialogScoreTab } from "./score/dialog-score-tab";
@@ -37,6 +47,7 @@ interface DialogEditorProps {
     definition: DialogDefinition;
     description: string;
     id: number;
+    isLocked: boolean;
     name: string;
     slug: string;
   };
@@ -53,6 +64,8 @@ const UNMATCHED_MODES = Object.keys(
 ) as UnmatchedInputMode[];
 
 export const DialogEditor = ({ dialog }: DialogEditorProps) => {
+  const router = useRouter();
+  const isLocked = dialog.isLocked;
   const [name, setName] = useState(dialog.name);
   const [description, setDescription] = useState(dialog.description);
   const [definition, setDefinition] = useState<DialogDefinition>(
@@ -60,6 +73,7 @@ export const DialogEditor = ({ dialog }: DialogEditorProps) => {
   );
   const [dirty, setDirty] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const [isLockPending, startLockTransition] = useTransition();
   const [feedback, setFeedback] = useState<{
     message: string;
     type: "success" | "error";
@@ -133,7 +147,17 @@ export const DialogEditor = ({ dialog }: DialogEditorProps) => {
     });
   };
 
+  const handleToggleLock = () => {
+    startLockTransition(async () => {
+      await setDialogLockedAction(dialog.id, !isLocked);
+      router.refresh();
+    });
+  };
+
   const handleSave = () => {
+    if (isLocked) {
+      return;
+    }
     startTransition(async () => {
       const result = await saveDialogAction(dialog.id, {
         name,
@@ -201,6 +225,12 @@ export const DialogEditor = ({ dialog }: DialogEditorProps) => {
           </Link>
           <h1 className="font-semibold text-xl">{name}</h1>
           <Badge variant="outline">{dialog.slug}</Badge>
+          {isLocked && (
+            <Badge variant="secondary">
+              <Lock className="mr-1 size-3" />
+              Gesperrt
+            </Badge>
+          )}
         </div>
         <div className="flex items-center gap-2">
           {feedback && (
@@ -222,12 +252,30 @@ export const DialogEditor = ({ dialog }: DialogEditorProps) => {
             Export
           </Button>
           <Button
+            disabled={isLocked}
             onClick={() => importInputRef.current?.click()}
             size="sm"
             variant="outline"
           >
             <Upload className="mr-1.5 size-3.5" />
             Import
+          </Button>
+          <Button
+            disabled={isLockPending}
+            onClick={handleToggleLock}
+            size="sm"
+            variant="outline"
+          >
+            {(() => {
+              if (isLockPending) {
+                return <Loader2 className="mr-1.5 size-3.5 animate-spin" />;
+              }
+              if (isLocked) {
+                return <Unlock className="mr-1.5 size-3.5" />;
+              }
+              return <Lock className="mr-1.5 size-3.5" />;
+            })()}
+            {isLocked ? "Entsperren" : "Sperren"}
           </Button>
           <input
             accept=".json"
@@ -236,7 +284,10 @@ export const DialogEditor = ({ dialog }: DialogEditorProps) => {
             ref={importInputRef}
             type="file"
           />
-          <Button disabled={!dirty || isPending} onClick={handleSave}>
+          <Button
+            disabled={!dirty || isPending || isLocked}
+            onClick={handleSave}
+          >
             {isPending ? (
               <Loader2 className="mr-2 size-4 animate-spin" />
             ) : (
@@ -262,204 +313,208 @@ export const DialogEditor = ({ dialog }: DialogEditorProps) => {
               <CardTitle>Allgemein</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="grid gap-1.5">
-                  <Label htmlFor="dialog-name">Name</Label>
-                  <Input
-                    id="dialog-name"
-                    onChange={(e) => {
-                      setName(e.target.value);
-                      markDirty();
-                    }}
-                    value={name}
-                  />
-                </div>
-                <div className="grid gap-1.5">
-                  <Label htmlFor="dialog-slug">Slug</Label>
-                  <Input id="dialog-slug" readOnly value={dialog.slug} />
-                </div>
-              </div>
-              <div className="grid gap-1.5">
-                <Label htmlFor="dialog-description">Beschreibung</Label>
-                <Textarea
-                  id="dialog-description"
-                  onChange={(e) => {
-                    setDescription(e.target.value);
-                    markDirty();
-                  }}
-                  rows={2}
-                  value={description}
-                />
-              </div>
-              <div className="grid gap-1.5">
-                <Label htmlFor="dialog-keywords">
-                  Trigger-Schlüsselwörter (kommagetrennt)
-                </Label>
-                <Input
-                  id="dialog-keywords"
-                  onChange={(e) =>
-                    updateDefinition({
-                      triggerKeywords: e.target.value
-                        .split(",")
-                        .map((k) => k.trim())
-                        .filter(Boolean),
-                    })
-                  }
-                  value={definition.triggerKeywords.join(", ")}
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="grid gap-1.5">
-                  <Label htmlFor="dialog-timeout">Timeout (Minuten)</Label>
-                  <Input
-                    id="dialog-timeout"
-                    min={1}
-                    onChange={(e) =>
-                      updateDefinition({
-                        timeoutMinutes: Number(e.target.value) || 60,
-                      })
-                    }
-                    type="number"
-                    value={definition.timeoutMinutes}
-                  />
-                </div>
-                <div className="grid gap-1.5">
-                  <Label htmlFor="dialog-reminder">
-                    Erinnerung nach (Minuten)
-                  </Label>
-                  <Input
-                    id="dialog-reminder"
-                    min={0}
-                    onChange={(e) =>
-                      updateDefinition({
-                        reminderAfterMinutes: e.target.value
-                          ? Number(e.target.value)
-                          : undefined,
-                      })
-                    }
-                    type="number"
-                    value={definition.reminderAfterMinutes ?? ""}
-                  />
-                </div>
-              </div>
-              <div className="grid gap-1.5">
-                <Label htmlFor="dialog-reminder-message">
-                  Erinnerungsnachricht
-                </Label>
-                <Textarea
-                  id="dialog-reminder-message"
-                  onChange={(e) =>
-                    updateDefinition({
-                      reminderMessage: e.target.value || undefined,
-                    })
-                  }
-                  rows={2}
-                  value={definition.reminderMessage ?? ""}
-                />
-              </div>
-              <div className="grid gap-1.5">
-                <Label htmlFor="dialog-timeout-message">
-                  Timeout-Nachricht
-                </Label>
-                <Textarea
-                  id="dialog-timeout-message"
-                  onChange={(e) =>
-                    updateDefinition({
-                      timeoutMessage: e.target.value || undefined,
-                    })
-                  }
-                  rows={2}
-                  value={definition.timeoutMessage ?? ""}
-                />
-              </div>
-              <div className="grid gap-1.5">
-                <Label htmlFor="dialog-error-message">Fehlermeldung</Label>
-                <Textarea
-                  id="dialog-error-message"
-                  onChange={(e) =>
-                    updateDefinition({ errorMessage: e.target.value })
-                  }
-                  rows={2}
-                  value={definition.errorMessage}
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="grid gap-1.5">
-                  <Label htmlFor="dialog-unmatched">
-                    Verhalten bei unerwarteter Eingabe
-                  </Label>
-                  <Select
-                    onValueChange={(val) =>
-                      updateDefinition({
-                        unmatchedInputMode: val as UnmatchedInputMode,
-                      })
-                    }
-                    value={definition.unmatchedInputMode}
-                  >
-                    <SelectTrigger id="dialog-unmatched">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {UNMATCHED_MODES.map((mode) => (
-                        <SelectItem key={mode} value={mode}>
-                          {UNMATCHED_MODE_LABELS[mode]}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                {definition.unmatchedInputMode === "as_other" && (
+              <fieldset className="contents" disabled={isLocked}>
+                <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-1.5">
-                    <Label htmlFor="dialog-unmatched-value">
-                      Wert für Sonstiges
-                    </Label>
+                    <Label htmlFor="dialog-name">Name</Label>
                     <Input
-                      id="dialog-unmatched-value"
-                      onChange={(e) =>
-                        updateDefinition({
-                          unmatchedInputValue: e.target.value || undefined,
-                        })
-                      }
-                      value={definition.unmatchedInputValue ?? ""}
+                      id="dialog-name"
+                      onChange={(e) => {
+                        setName(e.target.value);
+                        markDirty();
+                      }}
+                      value={name}
                     />
                   </div>
-                )}
-              </div>
+                  <div className="grid gap-1.5">
+                    <Label htmlFor="dialog-slug">Slug</Label>
+                    <Input id="dialog-slug" readOnly value={dialog.slug} />
+                  </div>
+                </div>
+                <div className="grid gap-1.5">
+                  <Label htmlFor="dialog-description">Beschreibung</Label>
+                  <Textarea
+                    id="dialog-description"
+                    onChange={(e) => {
+                      setDescription(e.target.value);
+                      markDirty();
+                    }}
+                    rows={2}
+                    value={description}
+                  />
+                </div>
+                <div className="grid gap-1.5">
+                  <Label htmlFor="dialog-keywords">
+                    Trigger-Schlüsselwörter (kommagetrennt)
+                  </Label>
+                  <Input
+                    id="dialog-keywords"
+                    onChange={(e) =>
+                      updateDefinition({
+                        triggerKeywords: e.target.value
+                          .split(",")
+                          .map((k) => k.trim())
+                          .filter(Boolean),
+                      })
+                    }
+                    value={definition.triggerKeywords.join(", ")}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="grid gap-1.5">
+                    <Label htmlFor="dialog-timeout">Timeout (Minuten)</Label>
+                    <Input
+                      id="dialog-timeout"
+                      min={1}
+                      onChange={(e) =>
+                        updateDefinition({
+                          timeoutMinutes: Number(e.target.value) || 60,
+                        })
+                      }
+                      type="number"
+                      value={definition.timeoutMinutes}
+                    />
+                  </div>
+                  <div className="grid gap-1.5">
+                    <Label htmlFor="dialog-reminder">
+                      Erinnerung nach (Minuten)
+                    </Label>
+                    <Input
+                      id="dialog-reminder"
+                      min={0}
+                      onChange={(e) =>
+                        updateDefinition({
+                          reminderAfterMinutes: e.target.value
+                            ? Number(e.target.value)
+                            : undefined,
+                        })
+                      }
+                      type="number"
+                      value={definition.reminderAfterMinutes ?? ""}
+                    />
+                  </div>
+                </div>
+                <div className="grid gap-1.5">
+                  <Label htmlFor="dialog-reminder-message">
+                    Erinnerungsnachricht
+                  </Label>
+                  <Textarea
+                    id="dialog-reminder-message"
+                    onChange={(e) =>
+                      updateDefinition({
+                        reminderMessage: e.target.value || undefined,
+                      })
+                    }
+                    rows={2}
+                    value={definition.reminderMessage ?? ""}
+                  />
+                </div>
+                <div className="grid gap-1.5">
+                  <Label htmlFor="dialog-timeout-message">
+                    Timeout-Nachricht
+                  </Label>
+                  <Textarea
+                    id="dialog-timeout-message"
+                    onChange={(e) =>
+                      updateDefinition({
+                        timeoutMessage: e.target.value || undefined,
+                      })
+                    }
+                    rows={2}
+                    value={definition.timeoutMessage ?? ""}
+                  />
+                </div>
+                <div className="grid gap-1.5">
+                  <Label htmlFor="dialog-error-message">Fehlermeldung</Label>
+                  <Textarea
+                    id="dialog-error-message"
+                    onChange={(e) =>
+                      updateDefinition({ errorMessage: e.target.value })
+                    }
+                    rows={2}
+                    value={definition.errorMessage}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="grid gap-1.5">
+                    <Label htmlFor="dialog-unmatched">
+                      Verhalten bei unerwarteter Eingabe
+                    </Label>
+                    <Select
+                      onValueChange={(val) =>
+                        updateDefinition({
+                          unmatchedInputMode: val as UnmatchedInputMode,
+                        })
+                      }
+                      value={definition.unmatchedInputMode}
+                    >
+                      <SelectTrigger id="dialog-unmatched">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {UNMATCHED_MODES.map((mode) => (
+                          <SelectItem key={mode} value={mode}>
+                            {UNMATCHED_MODE_LABELS[mode]}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {definition.unmatchedInputMode === "as_other" && (
+                    <div className="grid gap-1.5">
+                      <Label htmlFor="dialog-unmatched-value">
+                        Wert für Sonstiges
+                      </Label>
+                      <Input
+                        id="dialog-unmatched-value"
+                        onChange={(e) =>
+                          updateDefinition({
+                            unmatchedInputValue: e.target.value || undefined,
+                          })
+                        }
+                        value={definition.unmatchedInputValue ?? ""}
+                      />
+                    </div>
+                  )}
+                </div>
+              </fieldset>
             </CardContent>
           </Card>
         </TabsContent>
 
         <TabsContent value="steps">
-          <div className="flex gap-6">
-            {/* Left column — Step list */}
-            <div className="w-1/2">
-              <Card>
-                <CardContent className="pt-6">
-                  <StepList
-                    onAddStep={handleAddStep}
-                    onDeleteStep={handleDeleteStep}
-                    onMoveStep={handleMoveStep}
-                    onSelectStep={setSelectedStepId}
-                    selectedStepId={selectedStepId}
-                    steps={definition.steps}
-                  />
-                </CardContent>
-              </Card>
-            </div>
+          <fieldset className="contents" disabled={isLocked}>
+            <div className="flex gap-6">
+              {/* Left column — Step list */}
+              <div className="w-1/2">
+                <Card>
+                  <CardContent className="pt-6">
+                    <StepList
+                      onAddStep={handleAddStep}
+                      onDeleteStep={handleDeleteStep}
+                      onMoveStep={handleMoveStep}
+                      onSelectStep={setSelectedStepId}
+                      selectedStepId={selectedStepId}
+                      steps={definition.steps}
+                    />
+                  </CardContent>
+                </Card>
+              </div>
 
-            {/* Right column — Preview + Step form */}
-            <div className="flex w-1/2 flex-col gap-6">
-              <WhatsappPreview step={selectedStep} />
-              {selectedStep && (
-                <StepForm
-                  allStepIds={allStepIds}
-                  allVariableNames={allVariableNames}
-                  onChange={handleStepChange}
-                  step={selectedStep}
-                />
-              )}
+              {/* Right column — Preview + Step form */}
+              <div className="flex w-1/2 flex-col gap-6">
+                <WhatsappPreview step={selectedStep} />
+                {selectedStep && (
+                  <StepForm
+                    allStepIds={allStepIds}
+                    allVariableNames={allVariableNames}
+                    onChange={handleStepChange}
+                    step={selectedStep}
+                  />
+                )}
+              </div>
             </div>
-          </div>
+          </fieldset>
         </TabsContent>
 
         <TabsContent value="graph">
@@ -467,12 +522,14 @@ export const DialogEditor = ({ dialog }: DialogEditorProps) => {
         </TabsContent>
 
         <TabsContent value="score">
-          <DialogScoreTab
-            definition={definition}
-            onUpdateBuckets={(buckets) =>
-              updateDefinition({ scoreBuckets: buckets })
-            }
-          />
+          <fieldset className="contents" disabled={isLocked}>
+            <DialogScoreTab
+              definition={definition}
+              onUpdateBuckets={(buckets) =>
+                updateDefinition({ scoreBuckets: buckets })
+              }
+            />
+          </fieldset>
         </TabsContent>
 
         <TabsContent value="simulator">

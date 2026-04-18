@@ -11,7 +11,11 @@
       "Bash(python -c \"import json,sys; [print\\(e['key'],'=',e['value']\\) for e in json.load\\(sys.stdin\\) if 'AUTH' in e['key']]\")",
       "Bash(python -m json.tool)",
       "Bash(python -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(d.get\\('user',{}\\).get\\('username'\\),d.get\\('user',{}\\).get\\('pk'\\)\\)\")",
-      "Bash(python -c \"import json,sys; [print\\(g['pk'],g['name'],len\\(g.get\\('users',[]\\)\\)\\) for g in json.load\\(sys.stdin\\)['results']]\")"
+      "Bash(python -c \"import json,sys; [print\\(g['pk'],g['name'],len\\(g.get\\('users',[]\\)\\)\\) for g in json.load\\(sys.stdin\\)['results']]\")",
+      "Bash(ls drizzle/)",
+      "Bash(ls migrations/)",
+      "Bash(cat drizzle.config.ts)",
+      "Bash(cat drizzle.config.js)"
     ]
   }
 }

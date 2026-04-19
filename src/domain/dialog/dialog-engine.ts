@@ -30,7 +30,7 @@ export interface DialogResponse {
     mode: "template" | "session-data" | "messe";
   };
   text: string;
-  type: "text" | "buttons" | "list" | "qr" | "video";
+  type: "text" | "buttons" | "list" | "qr" | "video" | "mqtt";
   videoUrl?: string;
 }
 
@@ -254,6 +254,23 @@ export function processAnswer(
   const trimmed = text.trim();
   const updatedVariables = { ...variables };
 
+  // MQTT steps only advance via external MQTT events, not user input.
+  // User messages while waiting are silently ignored (no response).
+  if (currentStep.type === "mqtt") {
+    log.info("User input ignored in mqtt step (waiting for mqtt event)", {
+      stepId: currentStep.id,
+    });
+    return {
+      responses: [],
+      session: {
+        currentStepId: currentStep.id,
+        variables: updatedVariables,
+        score,
+        state: "active",
+      },
+    };
+  }
+
   let match: MatchResult;
 
   if (currentStep.type === "buttons" || currentStep.type === "list") {
@@ -370,6 +387,75 @@ export function processAnswer(
       answerValue,
       answerLabel,
       scoreAdded,
+    },
+  };
+}
+
+// --- MQTT event advance ---
+
+/**
+ * Advances a session from an mqtt step when a matching MQTT event is
+ * received. Treats the event as a no-op answer (no variable, no score)
+ * and evaluates transitions identically to any other step.
+ */
+export function advanceFromMqttEvent(
+  definition: DialogDefinition,
+  currentStep: DialogStep,
+  variables: Record<string, string>,
+  score: number
+): DialogEngineResult {
+  const updatedVariables = { ...variables, _score: String(score) };
+
+  const nextStepId = evaluateTransitions(
+    currentStep.transitions,
+    updatedVariables
+  );
+
+  if (!nextStepId) {
+    log.info("MQTT event: no transition matched, completing session", {
+      stepId: currentStep.id,
+    });
+    return {
+      responses: [],
+      session: {
+        currentStepId: currentStep.id,
+        variables: updatedVariables,
+        score,
+        state: "completed",
+      },
+    };
+  }
+
+  const nextStep = findStep(definition, nextStepId);
+  if (!nextStep) {
+    log.warn("MQTT event: target step not found", {
+      currentStepId: currentStep.id,
+      targetStepId: nextStepId,
+    });
+    return {
+      responses: [],
+      session: {
+        currentStepId: currentStep.id,
+        variables: updatedVariables,
+        score,
+        state: "completed",
+      },
+    };
+  }
+
+  const response = renderStep(nextStep, updatedVariables);
+  log.info("MQTT event advanced session", {
+    from: currentStep.id,
+    to: nextStep.id,
+  });
+
+  return {
+    responses: [response],
+    session: {
+      currentStepId: nextStep.id,
+      variables: updatedVariables,
+      score,
+      state: "active",
     },
   };
 }
@@ -527,6 +613,10 @@ export function renderStep(
         ? renderTemplate(step.videoUrl, variables)
         : undefined;
       return { type: "video", text, header, footer, videoUrl };
+    }
+
+    case "mqtt": {
+      return { type: "mqtt", text, header, footer };
     }
 
     default: {

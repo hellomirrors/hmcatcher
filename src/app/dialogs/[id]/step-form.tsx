@@ -20,6 +20,7 @@ import type {
   DialogStepType,
   DialogTransition,
   DialogValidationType,
+  MqttMatchMode,
   UnmatchedInputMode,
 } from "@/domain/dialog/dialog-schema";
 import { useDialogEditorStore } from "@/lib/dialog-editor-store";
@@ -39,6 +40,7 @@ const STEP_TYPE_LABELS: Record<DialogStepType, string> = {
   free_text: "Freitext",
   qr: "QR-Code",
   video: "Video",
+  mqtt: "MQTT-Trigger",
 };
 
 const STEP_TYPES = Object.keys(STEP_TYPE_LABELS) as DialogStepType[];
@@ -335,29 +337,111 @@ const StepTypeConfig = ({
   }
 
   if (step.type === "video") {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Video</CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-4">
-          <div className="grid gap-1.5">
-            <Label htmlFor="step-video-url">Video-URL</Label>
-            <Input
-              id="step-video-url"
-              onChange={(e) =>
-                update({ videoUrl: e.target.value || undefined })
-              }
-              placeholder="https://example.com/video.mp4"
-              value={step.videoUrl ?? ""}
-            />
-          </div>
-        </CardContent>
-      </Card>
-    );
+    return <VideoStepConfig step={step} update={update} />;
+  }
+
+  if (step.type === "mqtt") {
+    return <MqttStepConfig step={step} update={update} />;
   }
 
   return null;
+};
+
+const VideoStepConfig = ({
+  step,
+  update,
+}: {
+  step: DialogStep;
+  update: (patch: Partial<DialogStep>) => void;
+}) => (
+  <Card>
+    <CardHeader>
+      <CardTitle>Video</CardTitle>
+    </CardHeader>
+    <CardContent className="grid gap-4">
+      <div className="grid gap-1.5">
+        <Label htmlFor="step-video-url">Video-URL</Label>
+        <Input
+          id="step-video-url"
+          onChange={(e) => update({ videoUrl: e.target.value || undefined })}
+          placeholder="https://example.com/video.mp4"
+          value={step.videoUrl ?? ""}
+        />
+      </div>
+    </CardContent>
+  </Card>
+);
+
+const MqttStepConfig = ({
+  step,
+  update,
+}: {
+  step: DialogStep;
+  update: (patch: Partial<DialogStep>) => void;
+}) => {
+  const matchMode = step.mqttMatchMode ?? "text";
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>MQTT-Trigger</CardTitle>
+      </CardHeader>
+      <CardContent className="grid gap-4">
+        <div className="grid gap-1.5">
+          <Label htmlFor="step-mqtt-topic">Topic</Label>
+          <Input
+            id="step-mqtt-topic"
+            onChange={(e) => update({ mqttTopic: e.target.value || undefined })}
+            placeholder="z.B. hmslots/winner"
+            value={step.mqttTopic ?? ""}
+          />
+        </div>
+        <div className="grid gap-1.5">
+          <Label htmlFor="step-mqtt-mode">Payload-Format</Label>
+          <Select
+            onValueChange={(val) =>
+              update({ mqttMatchMode: val as MqttMatchMode })
+            }
+            value={matchMode}
+          >
+            <SelectTrigger id="step-mqtt-mode">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="text">Text</SelectItem>
+              <SelectItem value="json">JSON</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        {matchMode === "json" && (
+          <div className="grid gap-1.5">
+            <Label htmlFor="step-mqtt-json-key">JSON-Key (Ebene 1)</Label>
+            <Input
+              id="step-mqtt-json-key"
+              onChange={(e) =>
+                update({ mqttJsonKey: e.target.value || undefined })
+              }
+              placeholder="z.B. event"
+              value={step.mqttJsonKey ?? ""}
+            />
+          </div>
+        )}
+        <div className="grid gap-1.5">
+          <Label htmlFor="step-mqtt-match">Match-String</Label>
+          <Input
+            id="step-mqtt-match"
+            onChange={(e) =>
+              update({ mqttMatchString: e.target.value || undefined })
+            }
+            placeholder={matchMode === "json" ? "Wert bei key" : "Text exakt"}
+            value={step.mqttMatchString ?? ""}
+          />
+          <p className="text-muted-foreground text-xs">
+            Bei Übereinstimmung wird der Schritt fortgesetzt.
+          </p>
+        </div>
+      </CardContent>
+    </Card>
+  );
 };
 
 export const StepForm = ({

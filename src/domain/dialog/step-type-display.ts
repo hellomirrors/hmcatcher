@@ -9,6 +9,7 @@ export const TYPE_COLORS: Record<DialogStepType, string> = {
     "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
   qr: "bg-rose-100 text-rose-800 dark:bg-rose-900 dark:text-rose-200",
   video: "bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200",
+  mqtt: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
 };
 
 export const TYPE_LABELS: Record<DialogStepType, string> = {
@@ -18,6 +19,7 @@ export const TYPE_LABELS: Record<DialogStepType, string> = {
   free_text: "Freitext",
   qr: "QR",
   video: "Video",
+  mqtt: "MQTT",
 };
 
 /** Node border/ring colors keyed by step type (Tailwind classes). */
@@ -28,4 +30,5 @@ export const TYPE_BORDER_COLORS: Record<DialogStepType, string> = {
   free_text: "border-green-400",
   qr: "border-rose-400",
   video: "border-cyan-400",
+  mqtt: "border-orange-400",
 };

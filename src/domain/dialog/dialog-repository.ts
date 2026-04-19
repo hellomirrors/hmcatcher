@@ -408,6 +408,25 @@ export function updateSession(id: number, updates: UpdateSessionInput): void {
   }
 }
 
+export function getActiveSessionsByDialog(dialogId: number): SessionRow[] {
+  try {
+    return db
+      .select()
+      .from(dialogSessions)
+      .where(
+        and(
+          eq(dialogSessions.dialogId, dialogId),
+          eq(dialogSessions.state, "active")
+        )
+      )
+      .all()
+      .map(toSessionRow);
+  } catch (error) {
+    log.error("Failed to get active sessions by dialog", error, { dialogId });
+    return [];
+  }
+}
+
 export function completeSession(id: number): void {
   try {
     db.update(dialogSessions)

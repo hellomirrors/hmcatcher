@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getDialogById, updateDialog } from "@/domain/dialog/dialog-repository";
 import { dialogDefinitionSchema } from "@/domain/dialog/dialog-schema";
+import { refreshMqttSubscriptions } from "@/domain/messaging/mqtt-service";
 
 interface SaveDialogResult {
   error?: string;
@@ -35,6 +36,7 @@ export const saveDialogAction = async (
       description: input.description,
       definition,
     });
+    refreshMqttSubscriptions();
     await revalidatePath(`/dialogs/${id}`);
     return { success: true };
   } catch (error) {

@@ -66,7 +66,11 @@ export const dialogStepTypeSchema = z.enum([
   "free_text",
   "qr",
   "video",
+  "mqtt",
 ]);
+
+export const mqttMatchModeSchema = z.enum(["text", "json"]);
+export type MqttMatchMode = z.infer<typeof mqttMatchModeSchema>;
 
 export type DialogStepType = z.infer<typeof dialogStepTypeSchema>;
 
@@ -91,6 +95,10 @@ export const dialogStepSchema = z.object({
   qrTemplate: z.string().optional(),
   qrCaption: z.string().optional(),
   videoUrl: z.string().optional(),
+  mqttTopic: z.string().optional(),
+  mqttMatchMode: mqttMatchModeSchema.optional(),
+  mqttMatchString: z.string().optional(),
+  mqttJsonKey: z.string().optional(),
   transitions: z.array(dialogTransitionSchema),
 });
 

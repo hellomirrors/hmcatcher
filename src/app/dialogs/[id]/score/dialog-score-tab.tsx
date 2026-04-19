@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider";
 import type {
   DialogDefinition,
   ScoreBucket,
@@ -219,55 +220,58 @@ function BucketEditor({
       {sorted.map((bucket) => {
         const originalIndex = buckets.indexOf(bucket);
         return (
-          <div
-            className="flex items-end gap-2 rounded-md border p-2"
-            key={bucket.id}
-          >
-            <div className="grid flex-1 gap-1">
-              <Label className="text-xs">ID</Label>
-              <Input
-                className="h-8 text-xs"
-                onChange={(e) =>
-                  handleUpdate(originalIndex, { id: e.target.value })
-                }
-                value={bucket.id}
-              />
+          <div className="grid gap-2 rounded-md border p-3" key={bucket.id}>
+            <div className="flex items-end gap-2">
+              <div className="grid flex-1 gap-1">
+                <Label className="text-xs">ID</Label>
+                <Input
+                  className="h-8 text-xs"
+                  onChange={(e) =>
+                    handleUpdate(originalIndex, { id: e.target.value })
+                  }
+                  value={bucket.id}
+                />
+              </div>
+              <div className="grid flex-1 gap-1">
+                <Label className="text-xs">Label</Label>
+                <Input
+                  className="h-8 text-xs"
+                  onChange={(e) =>
+                    handleUpdate(originalIndex, { label: e.target.value })
+                  }
+                  value={bucket.label}
+                />
+              </div>
+              <div className="flex items-center pb-1">
+                <BucketBadge bucket={bucket} />
+              </div>
+              <Button
+                onClick={() => handleRemove(originalIndex)}
+                size="icon-xs"
+                type="button"
+                variant="ghost"
+              >
+                <Trash2 className="size-3 text-destructive" />
+              </Button>
             </div>
-            <div className="grid flex-1 gap-1">
-              <Label className="text-xs">Label</Label>
-              <Input
-                className="h-8 text-xs"
-                onChange={(e) =>
-                  handleUpdate(originalIndex, { label: e.target.value })
-                }
-                value={bucket.label}
-              />
-            </div>
-            <div className="grid w-24 gap-1">
-              <Label className="text-xs">Ab Score</Label>
-              <Input
-                className="h-8 text-xs"
+            <div className="grid gap-1">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs">Ab Score</Label>
+                <span className="font-mono text-xs tabular-nums">
+                  {bucket.minScore}
+                </span>
+              </div>
+              <Slider
+                max={200}
                 min={0}
-                onChange={(e) =>
-                  handleUpdate(originalIndex, {
-                    minScore: Number(e.target.value) || 0,
-                  })
-                }
-                type="number"
-                value={bucket.minScore}
+                onValueChange={(val) => {
+                  const next = Array.isArray(val) ? val[0] : val;
+                  handleUpdate(originalIndex, { minScore: next ?? 0 });
+                }}
+                step={1}
+                value={[bucket.minScore]}
               />
             </div>
-            <div className="flex items-center">
-              <BucketBadge bucket={bucket} />
-            </div>
-            <Button
-              onClick={() => handleRemove(originalIndex)}
-              size="icon-xs"
-              type="button"
-              variant="ghost"
-            >
-              <Trash2 className="size-3 text-destructive" />
-            </Button>
           </div>
         );
       })}

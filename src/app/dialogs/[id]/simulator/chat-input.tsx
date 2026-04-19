@@ -1,6 +1,6 @@
 "use client";
 
-import { Play, Send } from "lucide-react";
+import { Send } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,20 +13,8 @@ interface ChatInputProps {
 
 export function ChatInput({ definition }: ChatInputProps) {
   const status = useSimulatorStore((s) => s.status);
-  const start = useSimulatorStore((s) => s.start);
   const sendMessage = useSimulatorStore((s) => s.sendMessage);
   const [text, setText] = useState("");
-
-  if (status === "idle") {
-    return (
-      <div className="flex justify-center border-t bg-white/80 p-4">
-        <Button onClick={() => start(definition)} size="lg">
-          <Play className="mr-2 size-4" />
-          Simulation starten
-        </Button>
-      </div>
-    );
-  }
 
   const handleSend = () => {
     const trimmed = text.trim();

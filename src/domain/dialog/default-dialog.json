@@ -49,6 +49,42 @@
       "validationMessage": "Bitte gib deinen Nachnamen ein.",
       "transitions": [
         {
+          "targetStepId": "email"
+        }
+      ]
+    },
+    {
+      "id": "email",
+      "type": "free_text",
+      "phase": "Lead Erfassung",
+      "message": "Wie lautet deine E-Mail-Adresse?",
+      "variableName": "email",
+      "validation": "email",
+      "validationMessage": "Bitte gib eine gültige E-Mail-Adresse ein.",
+      "transitions": [
+        {
+          "targetStepId": "alreadyCustomer"
+        }
+      ]
+    },
+    {
+      "id": "alreadyCustomer",
+      "type": "buttons",
+      "phase": "Lead Erfassung",
+      "message": "Bist du bereits Kunde bei Hello Mirrors?",
+      "variableName": "alreadyCustomer",
+      "options": [
+        {
+          "id": "ac-ja",
+          "label": "Ja"
+        },
+        {
+          "id": "ac-nein",
+          "label": "Nein"
+        }
+      ],
+      "transitions": [
+        {
           "targetStepId": "arbeitsbereich"
         }
       ]

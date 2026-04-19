@@ -1,6 +1,11 @@
 import type { ScoreBucket } from "./dialog-schema";
 
-/** Resolve which bucket a score falls into (highest minScore ≤ score). */
+/**
+ * Resolve which bucket a score falls into (highest minScore ≤ score).
+ * Falls back to the lowest-threshold bucket when the score sits below
+ * every configured minScore (e.g. negative scores when the lowest
+ * bucket starts at 0) so the caller always gets a bucket back.
+ */
 export function resolveBucket(
   score: number,
   buckets: ScoreBucket[] | undefined
@@ -8,9 +13,13 @@ export function resolveBucket(
   if (!buckets || buckets.length === 0) {
     return undefined;
   }
-  // Sort descending by minScore, pick first match
   const sorted = [...buckets].sort((a, b) => b.minScore - a.minScore);
-  return sorted.find((b) => score >= b.minScore);
+  const matched = sorted.find((b) => score >= b.minScore);
+  if (matched) {
+    return matched;
+  }
+  // Score below every threshold — return the lowest bucket as fallback.
+  return sorted.at(-1);
 }
 
 /** Badge color class for a bucket (by id convention). */

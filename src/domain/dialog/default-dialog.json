@@ -98,7 +98,8 @@
       "options": [
         {
           "id": "ac-ja",
-          "label": "Ja"
+          "label": "Ja",
+          "score": -30
         },
         {
           "id": "ac-nein",

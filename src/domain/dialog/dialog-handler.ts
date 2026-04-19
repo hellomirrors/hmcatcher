@@ -58,9 +58,9 @@ export async function handleDialogConversation(
   }
 
   // Persist session state
-  let sid: string;
+  let sessionId: string;
   if (existingSession) {
-    sid = existingSession.sid;
+    sessionId = existingSession.sessionId;
     if (result.answer) {
       insertAnswer({
         sessionId: existingSession.id,
@@ -87,7 +87,7 @@ export async function handleDialogConversation(
       contact: userId,
       currentStepId: result.session.currentStepId,
     });
-    sid = created.sid;
+    sessionId = created.sessionId;
   }
 
   // Send responses
@@ -100,7 +100,7 @@ export async function handleDialogConversation(
         userId,
         response,
         provider,
-        { ...result.session, sid },
+        { ...result.session, sessionId },
         dialog.definition.scoreBuckets
       );
     } catch (error) {
@@ -131,7 +131,11 @@ function buildMesseQrContent(
 
 function buildQrContent(
   response: DialogResponse,
-  session: { variables: Record<string, string>; score: number; sid: string },
+  session: {
+    variables: Record<string, string>;
+    score: number;
+    sessionId: string;
+  },
   provider: string,
   userId: string,
   scoreBuckets?: { id: string; label: string; minScore: number }[]
@@ -149,7 +153,7 @@ function buildQrContent(
       data[k] = v;
     }
   }
-  data.sid = session.sid;
+  data.sid = session.sessionId;
   data.score = session.score;
   const bucket = resolveBucket(session.score, scoreBuckets);
   if (bucket) {
@@ -165,7 +169,11 @@ async function sendResponse(
   userId: string,
   response: DialogResponse,
   provider: string,
-  session: { variables: Record<string, string>; score: number; sid: string },
+  session: {
+    variables: Record<string, string>;
+    score: number;
+    sessionId: string;
+  },
   scoreBuckets?: { id: string; label: string; minScore: number }[]
 ): Promise<void> {
   switch (response.type) {

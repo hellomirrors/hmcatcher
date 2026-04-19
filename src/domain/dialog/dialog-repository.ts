@@ -61,7 +61,7 @@ interface SessionRow {
   provider: string;
   reminderSentAt: Date | null;
   score: number;
-  sid: string;
+  sessionId: string;
   state: string;
   updatedAt: Date;
   variables: Record<string, string>;
@@ -161,23 +161,23 @@ function toDialogRow(row: typeof dialogs.$inferSelect): DialogRow | undefined {
 }
 
 function toSessionRow(row: typeof dialogSessions.$inferSelect): SessionRow {
-  let { sid } = row;
-  if (!sid) {
-    sid = randomUUID();
+  let { sessionId } = row;
+  if (!sessionId) {
+    sessionId = randomUUID();
     try {
       db.update(dialogSessions)
-        .set({ sid })
+        .set({ sessionId })
         .where(eq(dialogSessions.id, row.id))
         .run();
     } catch (error) {
-      log.error("Failed to backfill sid on session", error, {
-        sessionId: row.id,
+      log.error("Failed to backfill sessionId on session", error, {
+        rowId: row.id,
       });
     }
   }
   return {
     id: row.id,
-    sid,
+    sessionId,
     dialogId: row.dialogId,
     provider: row.provider,
     contact: row.contact,
@@ -374,14 +374,14 @@ export function getSession(
 
 export function createSession(input: CreateSessionInput): {
   id: number;
-  sid: string;
+  sessionId: string;
 } {
   try {
-    const sid = randomUUID();
+    const sessionId = randomUUID();
     const result = db
       .insert(dialogSessions)
       .values({
-        sid,
+        sessionId,
         dialogId: input.dialogId,
         provider: input.provider,
         contact: input.contact,
@@ -389,7 +389,7 @@ export function createSession(input: CreateSessionInput): {
         state: "active",
       })
       .run();
-    return { id: Number(result.lastInsertRowid), sid };
+    return { id: Number(result.lastInsertRowid), sessionId };
   } catch (error) {
     log.error("Failed to create session", error, {
       dialogId: input.dialogId,

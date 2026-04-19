@@ -43,7 +43,7 @@ export const dialogs = sqliteTable("dialogs", {
 
 export const dialogSessions = sqliteTable("dialog_sessions", {
   id: integer("id").primaryKey({ autoIncrement: true }),
-  sid: text("sid"),
+  sessionId: text("sid"),
   dialogId: integer("dialog_id")
     .notNull()
     .references(() => dialogs.id),

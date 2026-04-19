@@ -202,19 +202,19 @@ function buildSessionDataJson(
   variables: Record<string, string>,
   score: number,
   scoreBuckets?: ScoreBucket[]
-): string {
-  const data: Record<string, unknown> = {};
-  for (const [k, v] of Object.entries(variables)) {
-    if (!k.startsWith("_")) {
-      data[k] = v;
-    }
-  }
-  data.score = score;
+): { json: string; base64: string } {
   const bucket = resolveBucket(score, scoreBuckets);
-  if (bucket) {
-    data.bucket = bucket.id;
-  }
-  return JSON.stringify(data, null, 2);
+  const data = {
+    sessionId: variables._sessionId ?? "sim-session",
+    vorname: variables.vorname ?? "",
+    bucket: bucket?.id ?? "",
+  };
+  const json = JSON.stringify(data);
+  const base64 =
+    typeof btoa === "function"
+      ? btoa(unescape(encodeURIComponent(json)))
+      : json;
+  return { json, base64 };
 }
 
 function buildMesseQr(
@@ -244,14 +244,18 @@ function SimulatorQrCode({
   const [showRaw, setShowRaw] = useState(false);
 
   let qrContent = templateContent || "";
+  let rawDisplay = qrContent;
   if (mode === "session-data" && session) {
-    qrContent = buildSessionDataJson(
+    const { json, base64 } = buildSessionDataJson(
       session.variables,
       session.score,
       scoreBuckets
     );
+    qrContent = base64;
+    rawDisplay = `${base64}\n\n— decoded —\n${json}`;
   } else if (mode === "messe" && session) {
     qrContent = buildMesseQr(session.variables, session.score, scoreBuckets);
+    rawDisplay = qrContent;
   }
 
   useEffect(() => {
@@ -319,7 +323,7 @@ function SimulatorQrCode({
             <DialogTitle className="text-sm">QR-Code Rohdaten</DialogTitle>
           </DialogHeader>
           <pre className="max-h-80 overflow-auto rounded-md bg-muted p-3 text-xs">
-            {qrContent}
+            {rawDisplay}
           </pre>
         </DialogContent>
       </Dialog>

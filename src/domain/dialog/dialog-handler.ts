@@ -1,6 +1,9 @@
+import { promises as fs } from "node:fs";
+import path from "node:path";
 import { logMessage } from "@/domain/messaging/message-log";
 import { createMessagingProvider } from "@/domain/messaging/provider-factory";
 import { generateQrPng } from "@/domain/messaging/qr-service";
+import type { MessagingProvider } from "@/domain/types";
 import { createLogger } from "@/lib/logger";
 import type { DialogResponse } from "./dialog-engine";
 import { handleDialogMessage } from "./dialog-engine";
@@ -15,6 +18,8 @@ import {
 import { resolveBucket } from "./score-buckets";
 
 const log = createLogger("dialog-handler");
+
+const LEADING_SLASHES = /^\/+/;
 
 export async function handleDialogConversation(
   provider: string,
@@ -90,22 +95,35 @@ export async function handleDialogConversation(
     sessionId = created.sessionId;
   }
 
-  // Send responses
-  const messagingProvider = await createMessagingProvider(provider);
+  // Send responses. Resolve the messaging provider per response so that
+  // steps with `forceProvider` (e.g. PDF must go via GoWa) can override
+  // the session's default provider.
+  const providerCache = new Map<string, MessagingProvider>();
+
+  async function resolveProvider(name: string): Promise<MessagingProvider> {
+    let cached = providerCache.get(name);
+    if (!cached) {
+      cached = await createMessagingProvider(name);
+      providerCache.set(name, cached);
+    }
+    return cached;
+  }
 
   for (const response of result.responses) {
+    const effectiveProvider = response.forceProvider ?? provider;
     try {
+      const messagingProvider = await resolveProvider(effectiveProvider);
       await sendResponse(
         messagingProvider,
         userId,
         response,
-        provider,
+        effectiveProvider,
         { ...result.session, sessionId },
         dialog.definition.scoreBuckets
       );
     } catch (error) {
       log.error("Failed to send dialog response", error, {
-        provider,
+        provider: effectiveProvider,
         userId,
         type: response.type,
       });
@@ -273,6 +291,35 @@ async function sendResponse(
     case "mqtt": {
       // Silent wait: no message is sent to the user. The session stays on
       // this step until a matching MQTT event advances it.
+      break;
+    }
+    case "document": {
+      if (!response.document) {
+        log.warn("Document step missing document config", {
+          stepId: session.sessionId,
+        });
+        break;
+      }
+      const publicDir = path.join(process.cwd(), "public");
+      const relPath = response.document.path.replace(LEADING_SLASHES, "");
+      const absPath = path.join(publicDir, relPath);
+      const buffer = await fs.readFile(absPath);
+      const sent = await messagingProvider.sendDocument({
+        to: userId,
+        documentBuffer: buffer,
+        mimeType: response.document.mimeType,
+        filename: response.document.filename,
+        caption: response.text,
+      });
+      logMessage({
+        provider,
+        direction: "out",
+        contact: userId,
+        kind: "image",
+        body: response.document.filename,
+        caption: response.text,
+        externalId: sent.messageId,
+      });
       break;
     }
     default: {

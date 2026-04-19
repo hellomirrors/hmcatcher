@@ -10,6 +10,14 @@ export interface ImageMessage {
   to: string;
 }
 
+export interface DocumentMessage {
+  caption?: string;
+  documentBuffer: Buffer;
+  filename: string;
+  mimeType: string;
+  to: string;
+}
+
 export interface ButtonOption {
   id: string;
   title: string;
@@ -60,6 +68,7 @@ export interface InboundMessage {
 export interface MessagingProvider {
   readonly name: string;
   sendButtons(message: ButtonMessage): Promise<SendResult>;
+  sendDocument(message: DocumentMessage): Promise<SendResult>;
   sendImage(message: ImageMessage): Promise<SendResult>;
   sendList(message: ListMessage): Promise<SendResult>;
   sendText(message: TextMessage): Promise<SendResult>;

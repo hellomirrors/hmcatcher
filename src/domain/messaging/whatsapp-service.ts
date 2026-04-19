@@ -1,5 +1,6 @@
 import type {
   ButtonMessage,
+  DocumentMessage,
   ImageMessage,
   ListMessage,
   MessagingProvider,
@@ -241,6 +242,12 @@ export class WhatsappService implements MessagingProvider {
       },
     });
     return { messageId, provider: this.name };
+  }
+
+  sendDocument(_message: DocumentMessage): Promise<SendResult> {
+    throw new Error(
+      "WhatsApp Cloud API document send not implemented. Use forceProvider=gowa on document steps."
+    );
   }
 
   async sendImage(message: ImageMessage): Promise<SendResult> {

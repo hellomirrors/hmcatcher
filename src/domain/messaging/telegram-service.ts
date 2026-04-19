@@ -1,5 +1,6 @@
 import type {
   ButtonMessage,
+  DocumentMessage,
   ImageMessage,
   ListMessage,
   MessagingProvider,
@@ -53,6 +54,12 @@ export class TelegramService implements MessagingProvider {
       reply_markup: { inline_keyboard: keyboard },
     });
     return { messageId: String(res.result.message_id), provider: this.name };
+  }
+
+  sendDocument(_message: DocumentMessage): Promise<SendResult> {
+    throw new Error(
+      "Telegram document send not implemented. Use forceProvider=gowa on document steps."
+    );
   }
 
   async sendImage(message: ImageMessage): Promise<SendResult> {

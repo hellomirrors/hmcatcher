@@ -1,5 +1,6 @@
 import type {
   ButtonMessage,
+  DocumentMessage,
   ImageMessage,
   ListMessage,
   MessagingProvider,
@@ -61,6 +62,45 @@ export class GowaService implements MessagingProvider {
     }
     const text = `*${message.title}*\n${message.body}\n\n${lines.join("\n")}`;
     return await this.postText(message.to, text);
+  }
+
+  async sendDocument(message: DocumentMessage): Promise<SendResult> {
+    const formData = new FormData();
+    formData.append("phone", toWhatsAppJid(message.to));
+    const uint8 = new Uint8Array(message.documentBuffer);
+    formData.append(
+      "file",
+      new Blob([uint8], { type: message.mimeType }),
+      message.filename
+    );
+    if (message.caption) {
+      formData.append("caption", message.caption);
+    }
+
+    const url = `${this.config.baseUrl}/send/file`;
+    log.info("Sending file", {
+      url,
+      to: message.to,
+      filename: message.filename,
+    });
+
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        Authorization: this.authHeader,
+        "X-Device-Id": this.config.deviceId,
+      },
+      body: formData,
+    });
+
+    const data = await this.parseResponse(res, "send file");
+    if (!res.ok) {
+      throw new Error(`GoWA file failed: ${data.message ?? res.statusText}`);
+    }
+    return {
+      messageId: data.results?.message_id ?? "unknown",
+      provider: this.name,
+    };
   }
 
   async sendImage(message: ImageMessage): Promise<SendResult> {

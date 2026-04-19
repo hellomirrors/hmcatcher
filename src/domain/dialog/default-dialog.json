@@ -765,10 +765,10 @@
       "id": "gewinn-high",
       "type": "text",
       "phase": "Aktivierung",
-      "message": "Jackpot Felix!\n\nDu hast 4 Wochen Felix für nur 100 Euro gewonnen (statt regulär 350 Euro)!\n\nInklusive Installation und Einweisung.\nSuch dir sofort deinen Preis am Counter aus!",
+      "message": "Du hast gewonnen!\n\nDu erhältst unser Goldenes Ticket: 4 Wochen Felix für einmalig 100€.",
       "transitions": [
         {
-          "targetStepId": "produkt-info"
+          "targetStepId": "kanal-opt-in"
         }
       ]
     },
@@ -776,10 +776,10 @@
       "id": "gewinn-medium",
       "type": "text",
       "phase": "Aktivierung",
-      "message": "Glückwunsch!\n\nDu hast einen Mittelgewinn erzielt. Hol dir deinen Preis am Counter ab!",
+      "message": "Du hast gewonnen!\n\nDu erhältst einen Preis. Viel Spaß damit.",
       "transitions": [
         {
-          "targetStepId": "produkt-info"
+          "targetStepId": "kanal-opt-in"
         }
       ]
     },
@@ -787,7 +787,86 @@
       "id": "gewinn-low",
       "type": "text",
       "phase": "Aktivierung",
-      "message": "Danke fürs Mitspielen!\n\nHeute kein großer Gewinn — aber ein kleines Goodie wartet am Counter auf dich.",
+      "message": "Danke für deine Teilnahme!\n\nViel Spaß mit deinem kleinen Preis.",
+      "transitions": [
+        {
+          "targetStepId": "kanal-opt-in"
+        }
+      ]
+    },
+    {
+      "id": "kanal-opt-in",
+      "type": "buttons",
+      "phase": "Info-Kanal",
+      "message": "Dürfen wir dich weiterhin per WhatsApp kontaktieren?",
+      "variableName": "kanal_opt_in",
+      "options": [
+        {
+          "id": "kanal-ja",
+          "label": "Ja, gerne"
+        },
+        {
+          "id": "kanal-nein",
+          "label": "Nein, danke"
+        }
+      ],
+      "transitions": [
+        {
+          "conditions": [
+            {
+              "field": "kanal_opt_in",
+              "operator": "eq",
+              "value": "kanal-nein"
+            }
+          ],
+          "targetStepId": "kanal-abschied"
+        },
+        {
+          "targetStepId": "kanal-info"
+        }
+      ]
+    },
+    {
+      "id": "kanal-abschied",
+      "type": "text",
+      "phase": "Info-Kanal",
+      "message": "Schade, vielleicht beim nächsten Mal!",
+      "transitions": []
+    },
+    {
+      "id": "kanal-info",
+      "type": "text",
+      "phase": "Info-Kanal",
+      "message": "Wir nehmen dich nun in unseren Info-Kanal auf.\n\nHier erhältst du ab und zu Neuigkeiten über unser Gesundheitsdisplay.",
+      "forceProvider": "gowa",
+      "transitions": [
+        {
+          "targetStepId": "kanal-pdf"
+        }
+      ]
+    },
+    {
+      "id": "kanal-pdf",
+      "type": "document",
+      "phase": "Info-Kanal",
+      "message": "Willkommen in unserem Info-Kanal! Hier unser aktueller Flyer.",
+      "documentPath": "/HelloFelix-2026-Q2.pdf",
+      "documentFilename": "HelloFelix-2026-Q2.pdf",
+      "documentMimeType": "application/pdf",
+      "forceProvider": "gowa",
+      "transitions": [
+        {
+          "targetStepId": "kanal-video"
+        }
+      ]
+    },
+    {
+      "id": "kanal-video",
+      "type": "video",
+      "phase": "Info-Kanal",
+      "message": "Schau dir auch unser kurzes Video an:",
+      "videoUrl": "https://youtu.be/ou_qajvNTCI?si=gfB-pYiDiNGDChGW",
+      "forceProvider": "gowa",
       "transitions": [
         {
           "targetStepId": "produkt-info"

@@ -5,6 +5,7 @@ import type {
   DialogDefinition,
   DialogStep,
   DialogTransition,
+  MessagingProviderName,
 } from "./dialog-schema";
 import { renderTemplate } from "./template-engine";
 import { validateAnswer } from "./validation";
@@ -15,7 +16,13 @@ const log = createLogger("dialog-engine");
 
 export interface DialogResponse {
   buttons?: ButtonOption[];
+  document?: {
+    path: string;
+    filename: string;
+    mimeType: string;
+  };
   footer?: string;
+  forceProvider?: MessagingProviderName;
   header?: string;
   list?: {
     title: string;
@@ -30,7 +37,7 @@ export interface DialogResponse {
     mode: "template" | "session-data" | "messe";
   };
   text: string;
-  type: "text" | "buttons" | "list" | "qr" | "video" | "mqtt";
+  type: "text" | "buttons" | "list" | "qr" | "video" | "mqtt" | "document";
   videoUrl?: string;
 }
 
@@ -576,6 +583,7 @@ export function renderStep(
         text,
         header,
         footer,
+        forceProvider: step.forceProvider,
         list: {
           title: header ?? "",
           body: text,
@@ -587,7 +595,13 @@ export function renderStep(
     }
 
     case "free_text": {
-      return { type: "text", text, header, footer };
+      return {
+        type: "text",
+        text,
+        header,
+        footer,
+        forceProvider: step.forceProvider,
+      };
     }
 
     case "qr": {
@@ -604,6 +618,7 @@ export function renderStep(
         text,
         header,
         footer,
+        forceProvider: step.forceProvider,
         qr: { content: qrContent, caption: qrCaption, mode: qrMode },
       };
     }
@@ -612,15 +627,51 @@ export function renderStep(
       const videoUrl = step.videoUrl
         ? renderTemplate(step.videoUrl, variables)
         : undefined;
-      return { type: "video", text, header, footer, videoUrl };
+      return {
+        type: "video",
+        text,
+        header,
+        footer,
+        videoUrl,
+        forceProvider: step.forceProvider,
+      };
     }
 
     case "mqtt": {
-      return { type: "mqtt", text, header, footer };
+      return {
+        type: "mqtt",
+        text,
+        header,
+        footer,
+        forceProvider: step.forceProvider,
+      };
+    }
+
+    case "document": {
+      return {
+        type: "document",
+        text,
+        header,
+        footer,
+        forceProvider: step.forceProvider,
+        document: step.documentPath
+          ? {
+              path: step.documentPath,
+              filename: step.documentFilename ?? "document.pdf",
+              mimeType: step.documentMimeType ?? "application/pdf",
+            }
+          : undefined,
+      };
     }
 
     default: {
-      return { type: "text", text, header, footer };
+      return {
+        type: "text",
+        text,
+        header,
+        footer,
+        forceProvider: step.forceProvider,
+      };
     }
   }
 }

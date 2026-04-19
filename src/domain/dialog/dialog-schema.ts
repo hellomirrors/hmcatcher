@@ -67,7 +67,11 @@ export const dialogStepTypeSchema = z.enum([
   "qr",
   "video",
   "mqtt",
+  "document",
 ]);
+
+export const messagingProviderSchema = z.enum(["whatsapp", "gowa", "telegram"]);
+export type MessagingProviderName = z.infer<typeof messagingProviderSchema>;
 
 export const mqttMatchModeSchema = z.enum(["text", "json", "session"]);
 export type MqttMatchMode = z.infer<typeof mqttMatchModeSchema>;
@@ -100,6 +104,10 @@ export const dialogStepSchema = z.object({
   mqttMatchString: z.string().optional(),
   mqttJsonKey: z.string().optional(),
   mqttSessionIdKey: z.string().optional(),
+  documentPath: z.string().optional(),
+  documentFilename: z.string().optional(),
+  documentMimeType: z.string().optional(),
+  forceProvider: messagingProviderSchema.optional(),
   transitions: z.array(dialogTransitionSchema),
 });
 

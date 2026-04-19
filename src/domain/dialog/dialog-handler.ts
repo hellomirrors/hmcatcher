@@ -136,8 +136,8 @@ function buildQrContent(
     score: number;
     sessionId: string;
   },
-  provider: string,
-  userId: string,
+  _provider: string,
+  _userId: string,
   scoreBuckets?: { id: string; label: string; minScore: number }[]
 ): string {
   const qrMode = response.qr?.mode ?? "template";
@@ -147,20 +147,12 @@ function buildQrContent(
   if (qrMode === "messe") {
     return buildMesseQrContent(session, scoreBuckets);
   }
-  const data: Record<string, unknown> = {};
-  for (const [k, v] of Object.entries(session.variables)) {
-    if (!k.startsWith("_")) {
-      data[k] = v;
-    }
-  }
-  data.sessionId = session.sessionId;
-  data.score = session.score;
   const bucket = resolveBucket(session.score, scoreBuckets);
-  if (bucket) {
-    data.bucket = bucket.id;
-  }
-  data.provider = provider;
-  data.userId = userId;
+  const data = {
+    sessionId: session.sessionId,
+    vorname: session.variables.vorname ?? "",
+    bucket: bucket?.id ?? "",
+  };
   return Buffer.from(JSON.stringify(data), "utf8").toString("base64");
 }
 

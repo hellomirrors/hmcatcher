@@ -754,15 +754,49 @@
       "mqttSessionIdKey": "sessionId",
       "transitions": [
         {
-          "targetStepId": "gewinn"
+          "conditions": [
+            { "field": "bucket", "operator": "eq", "value": "high" }
+          ],
+          "targetStepId": "gewinn-high"
+        },
+        {
+          "conditions": [
+            { "field": "bucket", "operator": "eq", "value": "medium" }
+          ],
+          "targetStepId": "gewinn-medium"
+        },
+        {
+          "targetStepId": "gewinn-low"
         }
       ]
     },
     {
-      "id": "gewinn",
+      "id": "gewinn-high",
       "type": "text",
       "phase": "Aktivierung",
-      "message": "Jackpot Felix!\n\nDu hast 4 Wochen Felix für nur 100 Euro gewonnen (statt regulär 350 Euro)!\n\nInklusive Installation und Einweisung\nSuch dir sofort Preise am Counter aus!",
+      "message": "Jackpot Felix!\n\nDu hast 4 Wochen Felix für nur 100 Euro gewonnen (statt regulär 350 Euro)!\n\nInklusive Installation und Einweisung.\nSuch dir sofort deinen Preis am Counter aus!",
+      "transitions": [
+        {
+          "targetStepId": "produkt-info"
+        }
+      ]
+    },
+    {
+      "id": "gewinn-medium",
+      "type": "text",
+      "phase": "Aktivierung",
+      "message": "Glückwunsch!\n\nDu hast einen Mittelgewinn erzielt. Hol dir deinen Preis am Counter ab!",
+      "transitions": [
+        {
+          "targetStepId": "produkt-info"
+        }
+      ]
+    },
+    {
+      "id": "gewinn-low",
+      "type": "text",
+      "phase": "Aktivierung",
+      "message": "Danke fürs Mitspielen!\n\nHeute kein großer Gewinn — aber ein kleines Goodie wartet am Counter auf dich.",
       "transitions": [
         {
           "targetStepId": "produkt-info"

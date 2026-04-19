@@ -13,17 +13,39 @@
       "type": "buttons",
       "phase": "Onboarding",
       "message": "Willkommen beim Felix Jackpot!\n\nWenn du mitmachen möchtest, bestätige mit 'Ja, teilnehmen' und nimm automatisch an unserer Slotmaschine teil.\n\nMit deiner Teilnahme akzeptierst du unsere Teilnahmebedingungen und Datenschutzhinweise:\nhellomirrors.com/essen",
+      "variableName": "teilnahme",
       "options": [
         {
           "id": "welcome-ja",
           "label": "Ja, teilnehmen"
+        },
+        {
+          "id": "welcome-nein",
+          "label": "Nein, danke"
         }
       ],
       "transitions": [
         {
+          "conditions": [
+            {
+              "field": "teilnahme",
+              "operator": "eq",
+              "value": "welcome-nein"
+            }
+          ],
+          "targetStepId": "abschied"
+        },
+        {
           "targetStepId": "vorname"
         }
       ]
+    },
+    {
+      "id": "abschied",
+      "type": "text",
+      "phase": "Onboarding",
+      "message": "Schade, dann vielleicht beim nächsten Mal!",
+      "transitions": []
     },
     {
       "id": "vorname",
@@ -728,8 +750,8 @@
       "phase": "Aktivierung",
       "message": "Warte auf Signal der Slotmaschine...",
       "mqttTopic": "hmslots",
-      "mqttMatchMode": "text",
-      "mqttMatchString": "winner",
+      "mqttMatchMode": "session",
+      "mqttSessionIdKey": "sessionId",
       "transitions": [
         {
           "targetStepId": "gewinn"

@@ -153,7 +153,7 @@ function buildQrContent(
       data[k] = v;
     }
   }
-  data.sid = session.sessionId;
+  data.sessionId = session.sessionId;
   data.score = session.score;
   const bucket = resolveBucket(session.score, scoreBuckets);
   if (bucket) {

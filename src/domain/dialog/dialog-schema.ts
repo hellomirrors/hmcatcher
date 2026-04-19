@@ -69,7 +69,7 @@ export const dialogStepTypeSchema = z.enum([
   "mqtt",
 ]);
 
-export const mqttMatchModeSchema = z.enum(["text", "json"]);
+export const mqttMatchModeSchema = z.enum(["text", "json", "session"]);
 export type MqttMatchMode = z.infer<typeof mqttMatchModeSchema>;
 
 export type DialogStepType = z.infer<typeof dialogStepTypeSchema>;
@@ -99,6 +99,7 @@ export const dialogStepSchema = z.object({
   mqttMatchMode: mqttMatchModeSchema.optional(),
   mqttMatchString: z.string().optional(),
   mqttJsonKey: z.string().optional(),
+  mqttSessionIdKey: z.string().optional(),
   transitions: z.array(dialogTransitionSchema),
 });
 

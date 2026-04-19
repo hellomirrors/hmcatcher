@@ -16,30 +16,71 @@ const log = createLogger("mqtt-service");
 let client: MqttClient | undefined;
 const subscribedTopics = new Set<string>();
 
-function matchPayload(step: DialogStep, payload: Buffer): boolean {
+interface MatchResult {
+  matched: boolean;
+  parsed?: Record<string, unknown>;
+}
+
+function parseJsonObject(raw: string): Record<string, unknown> | undefined {
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      return;
+    }
+    return parsed as Record<string, unknown>;
+  } catch {
+    return;
+  }
+}
+
+function matchPayload(
+  step: DialogStep,
+  payload: Buffer,
+  sessionId: string
+): MatchResult {
   const raw = payload.toString("utf8").trim();
   const expected = step.mqttMatchString ?? "";
 
-  if (step.mqttMatchMode === "json") {
-    try {
-      const parsed: unknown = JSON.parse(raw);
-      if (
-        !parsed ||
-        typeof parsed !== "object" ||
-        Array.isArray(parsed) ||
-        !step.mqttJsonKey
-      ) {
-        return false;
-      }
-      const value = (parsed as Record<string, unknown>)[step.mqttJsonKey];
-      return String(value) === expected;
-    } catch {
-      return false;
+  if (step.mqttMatchMode === "session") {
+    const parsed = parseJsonObject(raw);
+    if (!parsed) {
+      return { matched: false };
     }
+    const key = step.mqttSessionIdKey ?? "sessionId";
+    const value = parsed[key];
+    return { matched: String(value) === sessionId, parsed };
+  }
+
+  if (step.mqttMatchMode === "json") {
+    const parsed = parseJsonObject(raw);
+    if (!(parsed && step.mqttJsonKey)) {
+      return { matched: false };
+    }
+    const value = parsed[step.mqttJsonKey];
+    return { matched: String(value) === expected, parsed };
   }
 
   // text mode
-  return raw === expected;
+  return { matched: raw === expected };
+}
+
+function extractPayloadVars(
+  parsed: Record<string, unknown> | undefined
+): Record<string, string> {
+  if (!parsed) {
+    return {};
+  }
+  const vars: Record<string, string> = {};
+  for (const [k, v] of Object.entries(parsed)) {
+    if (
+      typeof v === "string" ||
+      typeof v === "number" ||
+      typeof v === "boolean"
+    ) {
+      vars[k] = String(v);
+    }
+  }
+  return vars;
 }
 
 async function dispatchMqttEvent(
@@ -57,25 +98,29 @@ async function dispatchMqttEvent(
     const step = dialog.definition.steps.find(
       (s) => s.id === session.currentStepId
     );
-    if (
-      !step ||
-      step.type !== "mqtt" ||
-      step.mqttTopic !== topic ||
-      !matchPayload(step, payload)
-    ) {
+    if (!step || step.type !== "mqtt" || step.mqttTopic !== topic) {
+      continue;
+    }
+    const match = matchPayload(step, payload, session.sessionId);
+    if (!match.matched) {
       continue;
     }
 
     log.info("MQTT event matched session, advancing", {
-      sessionId: session.id,
+      sessionId: session.sessionId,
       stepId: step.id,
       topic,
     });
 
+    const mergedVariables = {
+      ...session.variables,
+      ...extractPayloadVars(match.parsed),
+    };
+
     const result = advanceFromMqttEvent(
       dialog.definition,
       step,
-      session.variables,
+      mergedVariables,
       session.score
     );
 

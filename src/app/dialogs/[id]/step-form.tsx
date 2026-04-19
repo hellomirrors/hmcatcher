@@ -409,6 +409,7 @@ const MqttStepConfig = ({
             <SelectContent>
               <SelectItem value="text">Text</SelectItem>
               <SelectItem value="json">JSON</SelectItem>
+              <SelectItem value="session">Session (sessionId match)</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -425,20 +426,39 @@ const MqttStepConfig = ({
             />
           </div>
         )}
-        <div className="grid gap-1.5">
-          <Label htmlFor="step-mqtt-match">Match-String</Label>
-          <Input
-            id="step-mqtt-match"
-            onChange={(e) =>
-              update({ mqttMatchString: e.target.value || undefined })
-            }
-            placeholder={matchMode === "json" ? "Wert bei key" : "Text exakt"}
-            value={step.mqttMatchString ?? ""}
-          />
-          <p className="text-muted-foreground text-xs">
-            Bei Übereinstimmung wird der Schritt fortgesetzt.
-          </p>
-        </div>
+        {matchMode === "session" && (
+          <div className="grid gap-1.5">
+            <Label htmlFor="step-mqtt-sid-key">SessionId-Key im Payload</Label>
+            <Input
+              id="step-mqtt-sid-key"
+              onChange={(e) =>
+                update({ mqttSessionIdKey: e.target.value || undefined })
+              }
+              placeholder="sessionId"
+              value={step.mqttSessionIdKey ?? ""}
+            />
+            <p className="text-muted-foreground text-xs">
+              JSON-payload muss sessionId-key mit session.sessionId enthalten.
+              Andere top-level Felder werden in Variablen übernommen.
+            </p>
+          </div>
+        )}
+        {matchMode !== "session" && (
+          <div className="grid gap-1.5">
+            <Label htmlFor="step-mqtt-match">Match-String</Label>
+            <Input
+              id="step-mqtt-match"
+              onChange={(e) =>
+                update({ mqttMatchString: e.target.value || undefined })
+              }
+              placeholder={matchMode === "json" ? "Wert bei key" : "Text exakt"}
+              value={step.mqttMatchString ?? ""}
+            />
+            <p className="text-muted-foreground text-xs">
+              Bei Übereinstimmung wird der Schritt fortgesetzt.
+            </p>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

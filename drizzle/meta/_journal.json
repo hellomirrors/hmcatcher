@@ -29,6 +29,13 @@
       "when": 1776534515033,
       "tag": "0003_massive_patch",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1776589745832,
+      "tag": "0004_brief_nick_fury",
+      "breakpoints": true
     }
   ]
 }

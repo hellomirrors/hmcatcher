@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { and, eq, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { dialogAnswers, dialogSessions, dialogs } from "@/lib/db/schema";
@@ -60,6 +61,7 @@ interface SessionRow {
   provider: string;
   reminderSentAt: Date | null;
   score: number;
+  sid: string;
   state: string;
   updatedAt: Date;
   variables: Record<string, string>;
@@ -159,8 +161,23 @@ function toDialogRow(row: typeof dialogs.$inferSelect): DialogRow | undefined {
 }
 
 function toSessionRow(row: typeof dialogSessions.$inferSelect): SessionRow {
+  let { sid } = row;
+  if (!sid) {
+    sid = randomUUID();
+    try {
+      db.update(dialogSessions)
+        .set({ sid })
+        .where(eq(dialogSessions.id, row.id))
+        .run();
+    } catch (error) {
+      log.error("Failed to backfill sid on session", error, {
+        sessionId: row.id,
+      });
+    }
+  }
   return {
     id: row.id,
+    sid,
     dialogId: row.dialogId,
     provider: row.provider,
     contact: row.contact,
@@ -355,11 +372,16 @@ export function getSession(
   }
 }
 
-export function createSession(input: CreateSessionInput): number {
+export function createSession(input: CreateSessionInput): {
+  id: number;
+  sid: string;
+} {
   try {
+    const sid = randomUUID();
     const result = db
       .insert(dialogSessions)
       .values({
+        sid,
         dialogId: input.dialogId,
         provider: input.provider,
         contact: input.contact,
@@ -367,7 +389,7 @@ export function createSession(input: CreateSessionInput): number {
         state: "active",
       })
       .run();
-    return Number(result.lastInsertRowid);
+    return { id: Number(result.lastInsertRowid), sid };
   } catch (error) {
     log.error("Failed to create session", error, {
       dialogId: input.dialogId,

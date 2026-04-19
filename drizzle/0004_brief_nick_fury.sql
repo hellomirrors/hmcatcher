@@ -1,0 +1,1 @@
+ALTER TABLE `dialog_sessions` ADD `sid` text;

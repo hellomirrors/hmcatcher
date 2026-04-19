@@ -58,7 +58,9 @@ export async function handleDialogConversation(
   }
 
   // Persist session state
+  let sid: string;
   if (existingSession) {
+    sid = existingSession.sid;
     if (result.answer) {
       insertAnswer({
         sessionId: existingSession.id,
@@ -79,12 +81,13 @@ export async function handleDialogConversation(
       });
     }
   } else {
-    createSession({
+    const created = createSession({
       dialogId: dialog.id,
       provider,
       contact: userId,
       currentStepId: result.session.currentStepId,
     });
+    sid = created.sid;
   }
 
   // Send responses
@@ -97,7 +100,7 @@ export async function handleDialogConversation(
         userId,
         response,
         provider,
-        result.session,
+        { ...result.session, sid },
         dialog.definition.scoreBuckets
       );
     } catch (error) {
@@ -128,7 +131,7 @@ function buildMesseQrContent(
 
 function buildQrContent(
   response: DialogResponse,
-  session: { variables: Record<string, string>; score: number },
+  session: { variables: Record<string, string>; score: number; sid: string },
   provider: string,
   userId: string,
   scoreBuckets?: { id: string; label: string; minScore: number }[]
@@ -146,6 +149,7 @@ function buildQrContent(
       data[k] = v;
     }
   }
+  data.sid = session.sid;
   data.score = session.score;
   const bucket = resolveBucket(session.score, scoreBuckets);
   if (bucket) {
@@ -153,7 +157,7 @@ function buildQrContent(
   }
   data.provider = provider;
   data.userId = userId;
-  return JSON.stringify(data);
+  return Buffer.from(JSON.stringify(data), "utf8").toString("base64");
 }
 
 async function sendResponse(
@@ -161,7 +165,7 @@ async function sendResponse(
   userId: string,
   response: DialogResponse,
   provider: string,
-  session: { variables: Record<string, string>; score: number },
+  session: { variables: Record<string, string>; score: number; sid: string },
   scoreBuckets?: { id: string; label: string; minScore: number }[]
 ): Promise<void> {
   switch (response.type) {

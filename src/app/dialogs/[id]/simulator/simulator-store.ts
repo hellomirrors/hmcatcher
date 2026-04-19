@@ -49,6 +49,19 @@ export interface SimulatorState {
 let msgCounter = 0;
 const nextId = () => `sim-${++msgCounter}`;
 
+// Unique simulator session id per `start()` — so QR payloads carry a new id
+// every run and downstream consumers (e.g. hmslots) don't treat subsequent
+// scans as duplicates of a hard-coded fallback like "sim-session".
+const newSessionId = (): string => {
+  if (
+    typeof crypto !== "undefined" &&
+    typeof crypto.randomUUID === "function"
+  ) {
+    return `sim-${crypto.randomUUID()}`;
+  }
+  return `sim-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+};
+
 function responsesToMessages(
   responses: DialogResponse[],
   currentStepId: string
@@ -91,7 +104,10 @@ export const useSimulatorStore = create<SimulatorState>()((set, get) => ({
     const keyword = definition.triggerKeywords[0] ?? "start";
     const result = handleDialogMessage(definition, null, keyword);
 
-    const session: SessionState = { ...result.session };
+    const session: SessionState = {
+      ...result.session,
+      variables: { ...result.session.variables, _sessionId: newSessionId() },
+    };
     const msgs = responsesToMessages(
       result.responses,
       result.session.currentStepId
@@ -164,7 +180,16 @@ export const useSimulatorStore = create<SimulatorState>()((set, get) => ({
     );
     newMessages.push(...botMsgs);
 
-    const newSession: SessionState = { ...result.session };
+    // Preserve the simulator-only _sessionId across turns — the dialog engine
+    // works with a stripped variables map and may not carry custom underscore
+    // keys through. Reattach from the previous session.
+    const preservedSessionId = session.variables._sessionId;
+    const newSession: SessionState = {
+      ...result.session,
+      variables: preservedSessionId
+        ? { ...result.session.variables, _sessionId: preservedSessionId }
+        : result.session.variables,
+    };
 
     set({
       messages: newMessages,

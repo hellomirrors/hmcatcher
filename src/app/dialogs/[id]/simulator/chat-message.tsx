@@ -204,8 +204,13 @@ function buildSessionDataJson(
   scoreBuckets?: ScoreBucket[]
 ): { json: string; base64: string } {
   const bucket = resolveBucket(score, scoreBuckets);
+  if (!variables._sessionId) {
+    console.warn(
+      "[simulator] buildSessionDataJson called without _sessionId — QR will carry a fallback id"
+    );
+  }
   const data = {
-    sessionId: variables._sessionId ?? "sim-session",
+    sessionId: variables._sessionId ?? `sim-fallback-${Date.now()}`,
     vorname: variables.vorname ?? "",
     bucket: bucket?.id ?? "",
   };

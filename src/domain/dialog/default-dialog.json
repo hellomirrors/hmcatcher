@@ -682,6 +682,20 @@
       "qrMode": "session-data",
       "transitions": [
         {
+          "targetStepId": "warte-slotmachine"
+        }
+      ]
+    },
+    {
+      "id": "warte-slotmachine",
+      "type": "mqtt",
+      "phase": "Aktivierung",
+      "message": "Warte auf Signal der Slotmaschine...",
+      "mqttTopic": "hmslots",
+      "mqttMatchMode": "text",
+      "mqttMatchString": "winner",
+      "transitions": [
+        {
           "targetStepId": "gewinn"
         }
       ]

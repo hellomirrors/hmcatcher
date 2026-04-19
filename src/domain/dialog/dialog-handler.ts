@@ -266,6 +266,11 @@ async function sendResponse(
       });
       break;
     }
+    case "mqtt": {
+      // Silent wait: no message is sent to the user. The session stays on
+      // this step until a matching MQTT event advances it.
+      break;
+    }
     default: {
       const sent = await messagingProvider.sendText({
         to: userId,

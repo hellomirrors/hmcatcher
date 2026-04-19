@@ -240,11 +240,6 @@
           "score": 10
         },
         {
-          "id": "rs-pfk",
-          "label": "Pflegefachkraft",
-          "score": 10
-        },
-        {
           "id": "rs-43b",
           "label": "Betreuungskraft ",
           "score": 10
@@ -391,11 +386,6 @@
           "id": "ra-tl",
           "label": "Teamleitung",
           "score": 25
-        },
-        {
-          "id": "ra-pfk",
-          "label": "Pflegefachkraft",
-          "score": 10
         },
         {
           "id": "ra-bk",

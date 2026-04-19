@@ -66,6 +66,8 @@ const UNMATCHED_MODES = Object.keys(
   UNMATCHED_MODE_LABELS
 ) as UnmatchedInputMode[];
 
+const LIST_MAX_OPTIONS = 10;
+
 const StepTypeConfig = ({
   step,
   update,
@@ -73,155 +75,8 @@ const StepTypeConfig = ({
   step: DialogStep;
   update: (patch: Partial<DialogStep>) => void;
 }) => {
-  const updateOption = (index: number, patch: Partial<DialogAnswerOption>) => {
-    const options = [...(step.options ?? [])];
-    options[index] = { ...options[index], ...patch };
-    update({ options });
-  };
-
-  const removeOption = (index: number) => {
-    update({
-      options: (step.options ?? []).filter((_, i) => i !== index),
-    });
-  };
-
-  const addOption = () => {
-    const options = step.options ?? [];
-    update({
-      options: [...options, { id: `opt_${Date.now()}`, label: "" }],
-    });
-  };
-
   if (step.type === "buttons" || step.type === "list") {
-    return (
-      <>
-        <Card>
-          <CardHeader>
-            <CardTitle>Antwortoptionen</CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-3">
-            {step.type === "list" && (
-              <div className="grid gap-1.5">
-                <Label htmlFor="list-button-text">Button-Text der Liste</Label>
-                <Input
-                  id="list-button-text"
-                  onChange={(e) =>
-                    update({ listButtonText: e.target.value || undefined })
-                  }
-                  placeholder="Optionen anzeigen"
-                  value={step.listButtonText ?? ""}
-                />
-              </div>
-            )}
-            {(step.options ?? []).map((option, index) => (
-              <div
-                className="flex items-start gap-2 rounded-md border p-2"
-                key={option.id}
-              >
-                <div className="grid flex-1 gap-1.5">
-                  <Input
-                    onChange={(e) =>
-                      updateOption(index, { id: e.target.value })
-                    }
-                    placeholder="ID (auto)"
-                    value={option.id}
-                  />
-                  <Input
-                    onChange={(e) =>
-                      updateOption(index, { label: e.target.value })
-                    }
-                    placeholder="Label"
-                    value={option.label}
-                  />
-                  {step.type === "list" && (
-                    <Input
-                      onChange={(e) =>
-                        updateOption(index, {
-                          description: e.target.value || undefined,
-                        })
-                      }
-                      placeholder="Beschreibung (optional)"
-                      value={option.description ?? ""}
-                    />
-                  )}
-                </div>
-                <div className="grid gap-1.5">
-                  <Input
-                    className="w-20"
-                    onChange={(e) =>
-                      updateOption(index, {
-                        score: e.target.value
-                          ? Number(e.target.value)
-                          : undefined,
-                      })
-                    }
-                    placeholder="Score"
-                    type="number"
-                    value={option.score ?? ""}
-                  />
-                </div>
-                <Button
-                  onClick={() => removeOption(index)}
-                  size="icon-sm"
-                  type="button"
-                  variant="ghost"
-                >
-                  <Trash2 className="size-3.5 text-destructive" />
-                </Button>
-              </div>
-            ))}
-            <Button
-              onClick={addOption}
-              size="sm"
-              type="button"
-              variant="outline"
-            >
-              Option hinzufügen
-            </Button>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Unerwartete Eingabe</CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-4">
-            <div className="grid gap-1.5">
-              <Label htmlFor="step-unmatched">Verhalten</Label>
-              <Select
-                onValueChange={(val) =>
-                  update({ unmatchedInputMode: val as UnmatchedInputMode })
-                }
-                value={step.unmatchedInputMode ?? "error"}
-              >
-                <SelectTrigger id="step-unmatched">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {UNMATCHED_MODES.map((mode) => (
-                    <SelectItem key={mode} value={mode}>
-                      {UNMATCHED_MODE_LABELS[mode]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            {step.unmatchedInputMode === "as_other" && (
-              <div className="grid gap-1.5">
-                <Label htmlFor="step-unmatched-value">Wert für Sonstiges</Label>
-                <Input
-                  id="step-unmatched-value"
-                  onChange={(e) =>
-                    update({ unmatchedInputValue: e.target.value || undefined })
-                  }
-                  placeholder="sonstiges"
-                  value={step.unmatchedInputValue ?? ""}
-                />
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </>
-    );
+    return <ChoiceStepConfig step={step} update={update} />;
   }
 
   if (step.type === "free_text") {
@@ -345,6 +200,180 @@ const StepTypeConfig = ({
   }
 
   return null;
+};
+
+const ChoiceStepConfig = ({
+  step,
+  update,
+}: {
+  step: DialogStep;
+  update: (patch: Partial<DialogStep>) => void;
+}) => {
+  const optionsCount = (step.options ?? []).length;
+  const isListAtLimit =
+    step.type === "list" && optionsCount >= LIST_MAX_OPTIONS;
+
+  const updateOption = (index: number, patch: Partial<DialogAnswerOption>) => {
+    const options = [...(step.options ?? [])];
+    options[index] = { ...options[index], ...patch };
+    update({ options });
+  };
+
+  const removeOption = (index: number) => {
+    update({
+      options: (step.options ?? []).filter((_, i) => i !== index),
+    });
+  };
+
+  const addOption = () => {
+    const options = step.options ?? [];
+    if (step.type === "list" && options.length >= LIST_MAX_OPTIONS) {
+      return;
+    }
+    update({
+      options: [...options, { id: `opt_${Date.now()}`, label: "" }],
+    });
+  };
+
+  return (
+    <>
+      <Card>
+        <CardHeader>
+          <CardTitle>Antwortoptionen</CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-3">
+          {step.type === "list" && (
+            <>
+              <div className="grid gap-1.5">
+                <Label htmlFor="list-button-text">Button-Text der Liste</Label>
+                <Input
+                  id="list-button-text"
+                  onChange={(e) =>
+                    update({ listButtonText: e.target.value || undefined })
+                  }
+                  placeholder="Optionen anzeigen"
+                  value={step.listButtonText ?? ""}
+                />
+              </div>
+              <p className="text-muted-foreground text-xs">
+                WhatsApp erlaubt maximal {LIST_MAX_OPTIONS} Einträge pro Liste.
+                Aktuell: {optionsCount}/{LIST_MAX_OPTIONS}.
+              </p>
+            </>
+          )}
+          {(step.options ?? []).map((option, index) => (
+            <div
+              className="flex items-start gap-2 rounded-md border p-2"
+              key={option.id}
+            >
+              <div className="grid flex-1 gap-1.5">
+                <Input
+                  onChange={(e) => updateOption(index, { id: e.target.value })}
+                  placeholder="ID (auto)"
+                  value={option.id}
+                />
+                <Input
+                  onChange={(e) =>
+                    updateOption(index, { label: e.target.value })
+                  }
+                  placeholder="Label"
+                  value={option.label}
+                />
+                {step.type === "list" && (
+                  <Input
+                    onChange={(e) =>
+                      updateOption(index, {
+                        description: e.target.value || undefined,
+                      })
+                    }
+                    placeholder="Beschreibung (optional)"
+                    value={option.description ?? ""}
+                  />
+                )}
+              </div>
+              <div className="grid gap-1.5">
+                <Input
+                  className="w-20"
+                  onChange={(e) =>
+                    updateOption(index, {
+                      score: e.target.value
+                        ? Number(e.target.value)
+                        : undefined,
+                    })
+                  }
+                  placeholder="Score"
+                  type="number"
+                  value={option.score ?? ""}
+                />
+              </div>
+              <Button
+                onClick={() => removeOption(index)}
+                size="icon-sm"
+                type="button"
+                variant="ghost"
+              >
+                <Trash2 className="size-3.5 text-destructive" />
+              </Button>
+            </div>
+          ))}
+          <Button
+            disabled={isListAtLimit}
+            onClick={addOption}
+            size="sm"
+            type="button"
+            variant="outline"
+          >
+            Option hinzufügen
+          </Button>
+          {isListAtLimit && (
+            <p className="text-destructive text-xs">
+              Maximum von {LIST_MAX_OPTIONS} Listen-Optionen erreicht.
+            </p>
+          )}
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle>Unerwartete Eingabe</CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-4">
+          <div className="grid gap-1.5">
+            <Label htmlFor="step-unmatched">Verhalten</Label>
+            <Select
+              onValueChange={(val) =>
+                update({ unmatchedInputMode: val as UnmatchedInputMode })
+              }
+              value={step.unmatchedInputMode ?? "error"}
+            >
+              <SelectTrigger id="step-unmatched">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {UNMATCHED_MODES.map((mode) => (
+                  <SelectItem key={mode} value={mode}>
+                    {UNMATCHED_MODE_LABELS[mode]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          {step.unmatchedInputMode === "as_other" && (
+            <div className="grid gap-1.5">
+              <Label htmlFor="step-unmatched-value">Wert für Sonstiges</Label>
+              <Input
+                id="step-unmatched-value"
+                onChange={(e) =>
+                  update({ unmatchedInputValue: e.target.value || undefined })
+                }
+                placeholder="sonstiges"
+                value={step.unmatchedInputValue ?? ""}
+              />
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </>
+  );
 };
 
 const VideoStepConfig = ({

@@ -7,6 +7,7 @@ import { ChatArea } from "./chat-area";
 import { ChatInput } from "./chat-input";
 import { SessionPanel } from "./session-panel";
 import { useSimulatorStore } from "./simulator-store";
+import { useSimulatorMqtt } from "./use-simulator-mqtt";
 
 interface DialogSimulatorProps {
   definition: DialogDefinition;
@@ -16,6 +17,8 @@ export function DialogSimulator({ definition }: DialogSimulatorProps) {
   const status = useSimulatorStore((s) => s.status);
   const start = useSimulatorStore((s) => s.start);
   const reset = useSimulatorStore((s) => s.reset);
+
+  useSimulatorMqtt(definition);
 
   return (
     <div className="flex flex-col gap-3">

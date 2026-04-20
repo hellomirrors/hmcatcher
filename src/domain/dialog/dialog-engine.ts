@@ -108,7 +108,7 @@ export function handleDialogMessage(
       stepId: firstStep.id,
     });
 
-    return {
+    return chainOutputOnlyAdvances(definition, {
       responses: [response],
       session: {
         currentStepId: firstStep.id,
@@ -116,7 +116,7 @@ export function handleDialogMessage(
         score: 0,
         state: "active",
       },
-    };
+    });
   }
 
   const currentStep = findStep(definition, session.currentStepId);
@@ -381,7 +381,7 @@ export function processAnswer(
     to: actualNextStep.id,
   });
 
-  return {
+  return chainOutputOnlyAdvances(definition, {
     responses: [response],
     session: {
       currentStepId: actualNextStep.id,
@@ -395,7 +395,57 @@ export function processAnswer(
       answerLabel,
       scoreAdded,
     },
-  };
+  });
+}
+
+// --- Output-only chain advance ---
+
+/** Steps the user does not need to respond to for the flow to proceed. */
+const OUTPUT_ONLY_TYPES = new Set(["text", "qr", "video", "document"]);
+
+/**
+ * After a regular advance, keep moving past any output-only steps
+ * (text/qr/video/document) until we hit a step that needs the user
+ * (buttons/list/free_text), an mqtt-wait, or a terminal step. Without
+ * this, a session that reaches e.g. `qr-code` would sit there forever
+ * because no user reply ever arrives — the user just scans the code.
+ * All intermediate responses are appended to the result so every step's
+ * content still gets delivered.
+ */
+function chainOutputOnlyAdvances(
+  definition: DialogDefinition,
+  result: DialogEngineResult
+): DialogEngineResult {
+  let acc = result;
+  // Guard against cycles in mis-configured dialogs.
+  for (let i = 0; i < 20; i++) {
+    if (acc.session.state !== "active") {
+      return acc;
+    }
+    const step = findStep(definition, acc.session.currentStepId);
+    if (!step || step.transitions.length === 0) {
+      return acc;
+    }
+    if (!OUTPUT_ONLY_TYPES.has(step.type)) {
+      return acc;
+    }
+    const next = processAnswer(
+      definition,
+      step,
+      "",
+      acc.session.variables,
+      acc.session.score
+    );
+    acc = {
+      answer: acc.answer,
+      responses: [...acc.responses, ...next.responses],
+      session: next.session,
+    };
+  }
+  log.warn("chainOutputOnlyAdvances: reached max iterations", {
+    currentStepId: acc.session.currentStepId,
+  });
+  return acc;
 }
 
 // --- MQTT event advance ---
@@ -456,7 +506,7 @@ export function advanceFromMqttEvent(
     to: nextStep.id,
   });
 
-  return {
+  return chainOutputOnlyAdvances(definition, {
     responses: [response],
     session: {
       currentStepId: nextStep.id,
@@ -464,7 +514,7 @@ export function advanceFromMqttEvent(
       score,
       state: "active",
     },
-  };
+  });
 }
 
 // --- Transition evaluation ---

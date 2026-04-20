@@ -14,10 +14,13 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { deleteSessionAction } from "./action";
+import {
+  deleteAllSessionsForDialogAction,
+  deleteSessionAction,
+} from "./action";
 
 interface Answer {
   answerLabel: string | null;
@@ -97,16 +100,55 @@ export const SessionTable = ({
     await deleteSessionAction(sessionId);
   };
 
+  const handleDeleteAll = async () => {
+    await deleteAllSessionsForDialogAction(dialogId);
+  };
+
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2">
           <CardTitle>Sessions &mdash; {dialogName}</CardTitle>
-          <Link href={`/dialogs/${dialogId}`}>
-            <Button size="sm" variant="outline">
-              Zurück zum Dialog
-            </Button>
-          </Link>
+          <div className="flex items-center gap-2">
+            {sessions.length > 0 && (
+              <AlertDialog>
+                <AlertDialogTrigger
+                  className={buttonVariants({
+                    variant: "destructive",
+                    size: "sm",
+                  })}
+                >
+                  Alle Sessions löschen
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>
+                      Wirklich alle Sessions löschen?
+                    </AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Dies löscht {sessions.length} Session(s) und alle
+                      zugehörigen Antworten für den Dialog &quot;{dialogName}
+                      &quot; unwiderruflich.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                    <AlertDialogAction
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      onClick={handleDeleteAll}
+                    >
+                      Alle löschen
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+            <Link href={`/dialogs/${dialogId}`}>
+              <Button size="sm" variant="outline">
+                Zurück zum Dialog
+              </Button>
+            </Link>
+          </div>
         </div>
       </CardHeader>
       <CardContent>

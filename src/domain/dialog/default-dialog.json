@@ -948,7 +948,6 @@
         }
       ],
       "variableName": "bestandsgeraet",
-      "forceProvider": "gowa",
       "transitions": [
         {
           "conditions": [
@@ -1002,7 +1001,6 @@
       ],
       "listButtonText": "Auswählen",
       "variableName": "wettbewerber",
-      "forceProvider": "gowa",
       "transitions": [
         {
           "targetStepId": "wettbewerber-antwort"
@@ -1014,7 +1012,6 @@
       "type": "text",
       "phase": "Wettbewerbs Intel",
       "message": "Danke! Ihr nutzt also {{wettbewerber_label}}.\n\nFalls ihr Felix mal testen wollt, sprecht uns gerne am Stand an!",
-      "forceProvider": "gowa",
       "transitions": [
         {
           "targetStepId": "instagram"
@@ -1037,7 +1034,6 @@
         }
       ],
       "variableName": "instagram",
-      "forceProvider": "gowa",
       "transitions": [
         {
           "conditions": [
@@ -1059,7 +1055,6 @@
       "type": "text",
       "phase": "Retention",
       "message": "Alles klar hier könnt ihr uns folgen: https://www.instagram.com/hellomirrors/",
-      "forceProvider": "gowa",
       "transitions": [
         {
           "targetStepId": "kanal-opt-in"

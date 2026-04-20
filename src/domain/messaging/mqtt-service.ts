@@ -87,25 +87,52 @@ async function dispatchMqttEvent(
   topic: string,
   payload: Buffer
 ): Promise<void> {
+  const raw = payload.toString("utf8");
   const dialog = getActiveDialog();
   if (!dialog) {
+    log.warn("MQTT event ignored: no active dialog", {
+      topic,
+      payload: raw.slice(0, 200),
+    });
     return;
   }
 
   const sessions = getActiveSessionsByDialog(dialog.id);
+  log.info("MQTT event evaluating against active sessions", {
+    topic,
+    payload: raw.slice(0, 200),
+    activeSessions: sessions.length,
+    dialogId: dialog.id,
+  });
 
+  let matchedAny = false;
   for (const session of sessions) {
     const step = dialog.definition.steps.find(
       (s) => s.id === session.currentStepId
     );
     if (!step || step.type !== "mqtt" || step.mqttTopic !== topic) {
+      log.info("Session skipped: not on matching mqtt step", {
+        sessionId: session.sessionId,
+        currentStepId: session.currentStepId,
+        stepType: step?.type,
+        stepTopic: step?.mqttTopic,
+        eventTopic: topic,
+      });
       continue;
     }
     const match = matchPayload(step, payload, session.sessionId);
     if (!match.matched) {
+      log.info("Session skipped: payload did not match", {
+        sessionId: session.sessionId,
+        stepId: step.id,
+        matchMode: step.mqttMatchMode,
+        sessionIdKey: step.mqttSessionIdKey,
+        payloadSnippet: raw.slice(0, 200),
+      });
       continue;
     }
 
+    matchedAny = true;
     log.info("MQTT event matched session, advancing", {
       sessionId: session.sessionId,
       stepId: step.id,
@@ -160,30 +187,44 @@ async function dispatchMqttEvent(
       });
     }
   }
+  if (!matchedAny) {
+    log.warn("MQTT event matched no session", {
+      topic,
+      sessionsChecked: sessions.length,
+    });
+  }
 }
 
 function subscribeToConfiguredTopics(c: MqttClient): void {
   const dialog = getActiveDialog();
   if (!dialog) {
+    log.warn("Subscribe skipped: no active dialog");
     return;
   }
-  for (const step of dialog.definition.steps) {
-    if (
-      step.type === "mqtt" &&
-      step.mqttTopic &&
-      !subscribedTopics.has(step.mqttTopic)
-    ) {
-      c.subscribe(step.mqttTopic, (err) => {
-        if (err) {
-          log.error("Failed to subscribe to topic", err, {
-            topic: step.mqttTopic,
-          });
-          return;
-        }
-        subscribedTopics.add(step.mqttTopic as string);
-        log.info("Subscribed to MQTT topic", { topic: step.mqttTopic });
-      });
+  const mqttSteps = dialog.definition.steps.filter(
+    (s) => s.type === "mqtt" && s.mqttTopic
+  );
+  log.info("Subscribing to MQTT topics from active dialog", {
+    dialogId: dialog.id,
+    mqttSteps: mqttSteps.length,
+    topics: mqttSteps.map((s) => s.mqttTopic),
+  });
+  for (const step of mqttSteps) {
+    if (subscribedTopics.has(step.mqttTopic as string)) {
+      log.info("Already subscribed", { topic: step.mqttTopic });
+      continue;
     }
+    log.info("Subscribing to topic", { topic: step.mqttTopic });
+    c.subscribe(step.mqttTopic as string, (err) => {
+      if (err) {
+        log.error("Failed to subscribe to topic", err, {
+          topic: step.mqttTopic,
+        });
+        return;
+      }
+      subscribedTopics.add(step.mqttTopic as string);
+      log.info("Subscribed to MQTT topic", { topic: step.mqttTopic });
+    });
   }
 }
 
@@ -217,9 +258,22 @@ export function ensureMqttClient(): MqttClient | undefined {
   });
 
   client.on("message", (topic, payload) => {
+    log.info("MQTT message received", {
+      topic,
+      bytes: payload.length,
+      preview: payload.toString("utf8").slice(0, 200),
+    });
     dispatchMqttEvent(topic, payload).catch((err) => {
       log.error("MQTT event dispatch failed", err, { topic });
     });
+  });
+
+  client.on("close", () => {
+    log.warn("MQTT connection closed");
+  });
+
+  client.on("reconnect", () => {
+    log.info("MQTT reconnecting");
   });
 
   return client;
@@ -228,7 +282,15 @@ export function ensureMqttClient(): MqttClient | undefined {
 /** Called when a dialog is saved/activated to pick up new topics. */
 export function refreshMqttSubscriptions(): void {
   const c = ensureMqttClient();
-  if (c?.connected) {
-    subscribeToConfiguredTopics(c);
+  if (!c) {
+    log.warn("Refresh subscriptions: client unavailable (MQTT_URL missing?)");
+    return;
   }
+  if (!c.connected) {
+    log.info(
+      "Refresh subscriptions: client not yet connected — will subscribe on connect"
+    );
+    return;
+  }
+  subscribeToConfiguredTopics(c);
 }

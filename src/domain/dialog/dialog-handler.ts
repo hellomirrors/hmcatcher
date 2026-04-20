@@ -2,6 +2,7 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import { upsertLeadFromSession } from "@/domain/leads/lead-repository";
 import { logMessage } from "@/domain/messaging/message-log";
+import { refreshMqttSubscriptions } from "@/domain/messaging/mqtt-service";
 import { createMessagingProvider } from "@/domain/messaging/provider-factory";
 import { generateQrPng } from "@/domain/messaging/qr-service";
 import type { MessagingProvider } from "@/domain/types";
@@ -110,6 +111,16 @@ export async function handleDialogConversation(
     });
     sessionId = created.sessionId;
     sessionDbId = created.id;
+  }
+
+  // If the user just landed on an mqtt-wait step, make sure the broker
+  // client is alive and subscribed — without this an idle worker can sit
+  // disconnected and miss the slot-result reflow.
+  const newStep = dialog.definition.steps.find(
+    (s) => s.id === result.session.currentStepId
+  );
+  if (newStep?.type === "mqtt") {
+    refreshMqttSubscriptions();
   }
 
   // Lead capture: once consent is given (per dialog config), upsert a lead

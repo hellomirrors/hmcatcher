@@ -799,16 +799,18 @@
       "id": "kanal-opt-in",
       "type": "buttons",
       "phase": "Info-Kanal",
-      "message": "Dürfen wir dich weiterhin per WhatsApp kontaktieren?",
+      "message": "Noch kurz: Sollen wir dich auf dem Laufenden halten? Aktionen, Gewinnspiele und Infos rund um Felix, bequem per WhatsApp über unseren Hello Mirrors Channel.\nFreiwillig und jederzeit widerrufbar. Passt das?",
       "variableName": "kanal_opt_in",
       "options": [
         {
           "id": "kanal-ja",
-          "label": "Ja, gerne"
+          "label": "Ja, gerne!",
+          "score": 10
         },
         {
           "id": "kanal-nein",
-          "label": "Nein, danke"
+          "label": "Nein, danke",
+          "score": 0
         }
       ],
       "transitions": [
@@ -879,6 +881,7 @@
       "type": "text",
       "phase": "Nurturing",
       "message": "Übrigens, wusstest du schon?\n\nFelix ist das digitale Gesundheitsdisplay für stationäre Pflegeeinrichtungen.\n\n70+ Apps. 5.400+ Übungen. Sofort einsatzbereit.\n\nSprich uns am Stand an!",
+      "forceProvider": "gowa",
       "transitions": [
         {
           "targetStepId": "produkt-video"
@@ -890,6 +893,7 @@
       "type": "video",
       "phase": "Nurturing",
       "message": "Felix in Aktion: So sieht der Alltag mit Felix in einer Pflegeeinrichtung aus.",
+      "forceProvider": "gowa",
       "transitions": [
         {
           "targetStepId": "bestandsgeraet"
@@ -914,6 +918,7 @@
         }
       ],
       "variableName": "bestandsgeraet",
+      "forceProvider": "gowa",
       "transitions": [
         {
           "conditions": [
@@ -926,14 +931,7 @@
           "targetStepId": "wettbewerber"
         },
         {
-          "conditions": [
-            {
-              "field": "bestandsgeraet",
-              "operator": "eq",
-              "value": "bg-nein"
-            }
-          ],
-          "targetStepId": "werbe-opt-in"
+          "targetStepId": "instagram"
         }
       ]
     },
@@ -974,6 +972,7 @@
       ],
       "listButtonText": "Auswählen",
       "variableName": "wettbewerber",
+      "forceProvider": "gowa",
       "transitions": [
         {
           "targetStepId": "wettbewerber-antwort"
@@ -985,30 +984,7 @@
       "type": "text",
       "phase": "Wettbewerbs Intel",
       "message": "Danke! Ihr nutzt also {{wettbewerber_label}}.\n\nFalls ihr Felix mal testen wollt, sprecht uns gerne am Stand an!",
-      "transitions": [
-        {
-          "targetStepId": "werbe-opt-in"
-        }
-      ]
-    },
-    {
-      "id": "werbe-opt-in",
-      "type": "buttons",
-      "phase": "Retention",
-      "message": "Noch kurz: Sollen wir dich auf dem Laufenden halten? Aktionen, Gewinnspiele und Infos rund um Felix, bequem per WhatsApp über unseren Hello Mirrors Channel.\nFreiwillig und jederzeit widerrufbar. Passt das?",
-      "options": [
-        {
-          "id": "woi-ja",
-          "label": "Ja, gerne!",
-          "score": 10
-        },
-        {
-          "id": "woi-nein",
-          "label": "Nein, danke",
-          "score": 0
-        }
-      ],
-      "variableName": "werbe_opt_in",
+      "forceProvider": "gowa",
       "transitions": [
         {
           "targetStepId": "instagram"
@@ -1031,6 +1007,7 @@
         }
       ],
       "variableName": "instagram",
+      "forceProvider": "gowa",
       "transitions": [
         {
           "targetStepId": "abschluss"
@@ -1042,6 +1019,7 @@
       "type": "text",
       "phase": "Retention",
       "message": "Super, dann verpasst ihr nichts!\n\nDanke fürs Mitmachen und viel Spaß auf der Messe. Bis bald!",
+      "forceProvider": "gowa",
       "transitions": []
     }
   ],

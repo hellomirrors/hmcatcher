@@ -747,26 +747,32 @@
       "transitions": [
         {
           "conditions": [
-            { "field": "bucket", "operator": "eq", "value": "high" }
+            { "field": "trophy", "operator": "eq", "value": "jackpot" }
           ],
-          "targetStepId": "gewinn-high"
+          "targetStepId": "gewinn-jackpot"
         },
         {
           "conditions": [
-            { "field": "bucket", "operator": "eq", "value": "medium" }
+            { "field": "trophy", "operator": "eq", "value": "drink" }
           ],
-          "targetStepId": "gewinn-medium"
+          "targetStepId": "gewinn-drink"
         },
         {
-          "targetStepId": "gewinn-low"
+          "conditions": [
+            { "field": "trophy", "operator": "eq", "value": "candy" }
+          ],
+          "targetStepId": "gewinn-candy"
+        },
+        {
+          "targetStepId": "gewinn-niete"
         }
       ]
     },
     {
-      "id": "gewinn-high",
+      "id": "gewinn-jackpot",
       "type": "text",
       "phase": "Aktivierung",
-      "message": "Du hast gewonnen!\n\nDu erhältst unser Goldenes Ticket: 4 Wochen Felix für einmalig 100€.",
+      "message": "Hauptgewinn!\n\nDu erhältst unser Goldenes Ticket: 4 Wochen Felix für einmalig 100€.",
       "transitions": [
         {
           "targetStepId": "kanal-opt-in"
@@ -774,10 +780,10 @@
       ]
     },
     {
-      "id": "gewinn-medium",
+      "id": "gewinn-drink",
       "type": "text",
       "phase": "Aktivierung",
-      "message": "Du hast gewonnen!\n\nDu erhältst einen Preis. Viel Spaß damit.",
+      "message": "Du hast ein Getränk gewonnen!\n\nHol es dir direkt am Hellomirrors-Stand ab.",
       "transitions": [
         {
           "targetStepId": "kanal-opt-in"
@@ -785,10 +791,21 @@
       ]
     },
     {
-      "id": "gewinn-low",
+      "id": "gewinn-candy",
       "type": "text",
       "phase": "Aktivierung",
-      "message": "Danke für deine Teilnahme!\n\nViel Spaß mit deinem kleinen Preis.",
+      "message": "Du hast eine Süßigkeit gewonnen!\n\nGreif am Hellomirrors-Stand zu.",
+      "transitions": [
+        {
+          "targetStepId": "kanal-opt-in"
+        }
+      ]
+    },
+    {
+      "id": "gewinn-niete",
+      "type": "text",
+      "phase": "Aktivierung",
+      "message": "Knapp daneben – diesmal kein Gewinn.\n\nDanke fürs Mitspielen!",
       "transitions": [
         {
           "targetStepId": "kanal-opt-in"

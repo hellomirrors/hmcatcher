@@ -77,31 +77,16 @@ export async function handleDialogConversation(
     return;
   }
 
-  // Persist session state
+  // New sessions: create early so QR payloads and leads have a stable id.
+  // Existing sessions: DO NOT advance yet — we only persist the new state
+  // after every outgoing response has actually been accepted by its
+  // provider, so a GoWa/WhatsApp failure mid-chain leaves the user on the
+  // previous step and a retry can replay the same flow.
   let sessionId: string;
   let sessionDbId: number;
   if (existingSession) {
     sessionId = existingSession.sessionId;
     sessionDbId = existingSession.id;
-    if (result.answer) {
-      insertAnswer({
-        sessionId: existingSession.id,
-        stepId: result.answer.stepId,
-        answerValue: result.answer.answerValue,
-        answerLabel: result.answer.answerLabel,
-        scoreAdded: result.answer.scoreAdded,
-      });
-    }
-
-    if (result.session.state === "completed") {
-      completeSession(existingSession.id);
-    } else {
-      updateSession(existingSession.id, {
-        currentStepId: result.session.currentStepId,
-        variables: result.session.variables,
-        score: result.session.score,
-      });
-    }
   } else {
     const created = createSession({
       dialogId: dialog.id,
@@ -111,6 +96,108 @@ export async function handleDialogConversation(
     });
     sessionId = created.sessionId;
     sessionDbId = created.id;
+  }
+
+  // Send responses. Resolve the messaging provider per response so that
+  // steps with `forceProvider` (e.g. PDF must go via GoWa) can override
+  // the session's default provider. Errors are collected so we can decide
+  // whether to persist the session advance.
+  const providerCache = new Map<string, MessagingProvider>();
+
+  async function resolveProvider(name: string): Promise<MessagingProvider> {
+    let cached = providerCache.get(name);
+    if (!cached) {
+      cached = await createMessagingProvider(name);
+      providerCache.set(name, cached);
+    }
+    return cached;
+  }
+
+  const sendErrors: Array<{
+    type: string;
+    provider: string;
+    error: string;
+  }> = [];
+
+  for (const response of result.responses) {
+    const effectiveProvider = response.forceProvider ?? provider;
+    log.info("Delivering dialog response", {
+      type: response.type,
+      provider: effectiveProvider,
+      forceProvider: response.forceProvider,
+      buttonCount: response.buttons?.length,
+      listSections: response.list?.sections.length,
+      bodyLen: response.text?.length,
+      sessionId,
+      fromStep: existingSession?.currentStepId,
+      toStep: result.session.currentStepId,
+    });
+    try {
+      const messagingProvider = await resolveProvider(effectiveProvider);
+      await sendResponse(
+        messagingProvider,
+        userId,
+        response,
+        effectiveProvider,
+        { ...result.session, sessionId },
+        dialog.definition.scoreBuckets
+      );
+    } catch (error) {
+      const msg = (error as Error).message;
+      log.error("Failed to send dialog response", error, {
+        provider: effectiveProvider,
+        forceProvider: response.forceProvider,
+        userId,
+        sessionId,
+        currentStepId: existingSession?.currentStepId,
+        targetStepId: result.session.currentStepId,
+        type: response.type,
+      });
+      sendErrors.push({
+        type: response.type,
+        provider: effectiveProvider,
+        error: msg,
+      });
+    }
+  }
+
+  // If anything failed, freeze the session at its previous state so the
+  // user can retry (e.g. stale gowaDeviceId, expired token, provider
+  // outage). The engine is pure, so replaying the same inbound message
+  // re-runs the chain once the config is fixed.
+  if (sendErrors.length > 0) {
+    log.error("Dialog advance cancelled — send failures, session frozen", {
+      sessionId,
+      sessionDbId,
+      fromStep: existingSession?.currentStepId,
+      targetStep: result.session.currentStepId,
+      failures: sendErrors.length,
+      total: result.responses.length,
+      errors: sendErrors,
+    });
+    return;
+  }
+
+  // All sends accepted — persist the advance.
+  if (existingSession) {
+    if (result.answer) {
+      insertAnswer({
+        sessionId: existingSession.id,
+        stepId: result.answer.stepId,
+        answerValue: result.answer.answerValue,
+        answerLabel: result.answer.answerLabel,
+        scoreAdded: result.answer.scoreAdded,
+      });
+    }
+    if (result.session.state === "completed") {
+      completeSession(existingSession.id);
+    } else {
+      updateSession(existingSession.id, {
+        currentStepId: result.session.currentStepId,
+        variables: result.session.variables,
+        score: result.session.score,
+      });
+    }
   }
 
   // If the user just landed on an mqtt-wait step, make sure the broker
@@ -137,41 +224,6 @@ export async function handleDialogConversation(
       state: result.session.state,
       definition: dialog.definition,
     });
-  }
-
-  // Send responses. Resolve the messaging provider per response so that
-  // steps with `forceProvider` (e.g. PDF must go via GoWa) can override
-  // the session's default provider.
-  const providerCache = new Map<string, MessagingProvider>();
-
-  async function resolveProvider(name: string): Promise<MessagingProvider> {
-    let cached = providerCache.get(name);
-    if (!cached) {
-      cached = await createMessagingProvider(name);
-      providerCache.set(name, cached);
-    }
-    return cached;
-  }
-
-  for (const response of result.responses) {
-    const effectiveProvider = response.forceProvider ?? provider;
-    try {
-      const messagingProvider = await resolveProvider(effectiveProvider);
-      await sendResponse(
-        messagingProvider,
-        userId,
-        response,
-        effectiveProvider,
-        { ...result.session, sessionId },
-        dialog.definition.scoreBuckets
-      );
-    } catch (error) {
-      log.error("Failed to send dialog response", error, {
-        provider: effectiveProvider,
-        userId,
-        type: response.type,
-      });
-    }
   }
 }
 

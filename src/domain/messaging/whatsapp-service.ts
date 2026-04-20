@@ -292,9 +292,22 @@ export class WhatsappService implements MessagingProvider {
 
   private async postMessage(body: unknown): Promise<string> {
     const url = `${API_BASE}/${this.config.phoneNumberId}/messages`;
+    const b = body as {
+      type?: string;
+      interactive?: {
+        type?: string;
+        action?: { buttons?: unknown[]; sections?: unknown[] };
+        body?: { text?: string };
+      };
+    };
     log.info("Sending message", {
       url,
       phoneNumberId: this.config.phoneNumberId,
+      type: b.type,
+      interactiveType: b.interactive?.type,
+      buttonCount: b.interactive?.action?.buttons?.length,
+      sectionCount: b.interactive?.action?.sections?.length,
+      bodyLen: b.interactive?.body?.text?.length,
     });
 
     const res = await fetch(url, {
@@ -308,10 +321,21 @@ export class WhatsappService implements MessagingProvider {
 
     const data = await this.parseResponse(res, "send message");
     if (!res.ok || data.error) {
+      log.error("WhatsApp message failed", undefined, {
+        status: res.status,
+        error: data.error,
+        requestType: b.type,
+        interactiveType: b.interactive?.type,
+      });
       throw new Error(
         `WhatsApp message failed: ${data.error?.message ?? res.statusText}`
       );
     }
+    log.info("Message accepted by WhatsApp", {
+      messageId: data.messages?.[0]?.id,
+      type: b.type,
+      interactiveType: b.interactive?.type,
+    });
     return data.messages[0].id;
   }
 

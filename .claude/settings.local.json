@@ -16,7 +16,10 @@
       "Bash(ls migrations/)",
       "Bash(cat drizzle.config.ts)",
       "Bash(cat drizzle.config.js)",
-      "Bash(yes \"\")"
+      "Bash(yes \"\")",
+      "Bash(cat next.config.ts)",
+      "Bash(cat next.config.js)",
+      "Bash(cat next.config.mjs)"
     ]
   }
 }

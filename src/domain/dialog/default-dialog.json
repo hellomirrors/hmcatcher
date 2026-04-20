@@ -13,7 +13,6 @@
       "type": "buttons",
       "phase": "Onboarding",
       "message": "Willkommen beim Felix Jackpot!\n\nWenn du mitmachen möchtest, bestätige mit 'Ja, teilnehmen' und nimm automatisch an unserer Slotmaschine teil.\n\nMit deiner Teilnahme akzeptierst du unsere Teilnahmebedingungen und Datenschutzhinweise:\nhellomirrors.com/essen",
-      "variableName": "teilnahme",
       "options": [
         {
           "id": "welcome-ja",
@@ -24,6 +23,7 @@
           "label": "Nein, danke"
         }
       ],
+      "variableName": "teilnahme",
       "transitions": [
         {
           "conditions": [
@@ -94,7 +94,6 @@
       "type": "buttons",
       "phase": "Lead Erfassung",
       "message": "Bist du bereits Kunde bei Hello Mirrors?",
-      "variableName": "alreadyCustomer",
       "options": [
         {
           "id": "ac-ja",
@@ -106,6 +105,7 @@
           "label": "Nein"
         }
       ],
+      "variableName": "alreadyCustomer",
       "transitions": [
         {
           "targetStepId": "arbeitsbereich"
@@ -747,19 +747,31 @@
       "transitions": [
         {
           "conditions": [
-            { "field": "trophy", "operator": "eq", "value": "jackpot" }
+            {
+              "field": "trophy",
+              "operator": "eq",
+              "value": "jackpot"
+            }
           ],
           "targetStepId": "gewinn-jackpot"
         },
         {
           "conditions": [
-            { "field": "trophy", "operator": "eq", "value": "drink" }
+            {
+              "field": "trophy",
+              "operator": "eq",
+              "value": "drink"
+            }
           ],
           "targetStepId": "gewinn-drink"
         },
         {
           "conditions": [
-            { "field": "trophy", "operator": "eq", "value": "candy" }
+            {
+              "field": "trophy",
+              "operator": "eq",
+              "value": "candy"
+            }
           ],
           "targetStepId": "gewinn-candy"
         },
@@ -775,7 +787,7 @@
       "message": "Hauptgewinn!\n\nDu erhältst unser Goldenes Ticket: 4 Wochen Felix für einmalig 100€.",
       "transitions": [
         {
-          "targetStepId": "kanal-opt-in"
+          "targetStepId": "bestandsgeraet"
         }
       ]
     },
@@ -786,7 +798,7 @@
       "message": "Du hast ein Getränk gewonnen!\n\nHol es dir direkt am Hellomirrors-Stand ab.",
       "transitions": [
         {
-          "targetStepId": "kanal-opt-in"
+          "targetStepId": "bestandsgeraet"
         }
       ]
     },
@@ -797,7 +809,7 @@
       "message": "Du hast eine Süßigkeit gewonnen!\n\nGreif am Hellomirrors-Stand zu.",
       "transitions": [
         {
-          "targetStepId": "kanal-opt-in"
+          "targetStepId": "bestandsgeraet"
         }
       ]
     },
@@ -808,7 +820,7 @@
       "message": "Knapp daneben – diesmal kein Gewinn.\n\nDanke fürs Mitspielen!",
       "transitions": [
         {
-          "targetStepId": "kanal-opt-in"
+          "targetStepId": "bestandsgeraet"
         }
       ]
     },
@@ -817,7 +829,6 @@
       "type": "buttons",
       "phase": "Info-Kanal",
       "message": "Noch kurz: Sollen wir dich auf dem Laufenden halten? Aktionen, Gewinnspiele und Infos rund um Felix, bequem per WhatsApp über unseren Hello Mirrors Channel.\nFreiwillig und jederzeit widerrufbar. Passt das?",
-      "variableName": "kanal_opt_in",
       "options": [
         {
           "id": "kanal-ja",
@@ -830,6 +841,7 @@
           "score": 0
         }
       ],
+      "variableName": "kanal_opt_in",
       "transitions": [
         {
           "conditions": [
@@ -885,7 +897,7 @@
       "type": "video",
       "phase": "Info-Kanal",
       "message": "Schau dir auch unser kurzes Video an:",
-      "videoUrl": "https://youtu.be/ou_qajvNTCI?si=gfB-pYiDiNGDChGW",
+      "videoUrl": "https://youtube.com/shorts/YLr7RJrKvaE",
       "forceProvider": "gowa",
       "transitions": [
         {
@@ -910,10 +922,11 @@
       "type": "video",
       "phase": "Nurturing",
       "message": "Felix in Aktion: So sieht der Alltag mit Felix in einer Pflegeeinrichtung aus.",
+      "videoUrl": "https://youtu.be/ou_qajvNTCI?si=gfB-pYiDiNGDChGW",
       "forceProvider": "gowa",
       "transitions": [
         {
-          "targetStepId": "bestandsgeraet"
+          "targetStepId": "abschluss"
         }
       ]
     },
@@ -1027,7 +1040,29 @@
       "forceProvider": "gowa",
       "transitions": [
         {
-          "targetStepId": "abschluss"
+          "conditions": [
+            {
+              "field": "instagram",
+              "operator": "eq",
+              "value": "ig-nein"
+            }
+          ],
+          "targetStepId": "instagram-link"
+        },
+        {
+          "targetStepId": "kanal-opt-in"
+        }
+      ]
+    },
+    {
+      "id": "instagram-link",
+      "type": "text",
+      "phase": "Retention",
+      "message": "Hier folgen: https://www.instagram.com/hellomirrors/",
+      "forceProvider": "gowa",
+      "transitions": [
+        {
+          "targetStepId": "kanal-opt-in"
         }
       ]
     },

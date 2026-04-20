@@ -585,7 +585,13 @@ export function renderStep(
 
   switch (step.type) {
     case "text": {
-      return { type: "text", text, header, footer };
+      return {
+        type: "text",
+        text,
+        header,
+        footer,
+        forceProvider: step.forceProvider,
+      };
     }
 
     case "buttons": {
@@ -593,7 +599,14 @@ export function renderStep(
         id: opt.id,
         title: opt.label,
       }));
-      return { type: "buttons", text, header, footer, buttons };
+      return {
+        type: "buttons",
+        text,
+        header,
+        footer,
+        buttons,
+        forceProvider: step.forceProvider,
+      };
     }
 
     case "list": {

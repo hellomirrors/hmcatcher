@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { and, eq, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { dialogAnswers, dialogSessions, dialogs } from "@/lib/db/schema";
+import { dialogAnswers, dialogSessions, dialogs, leads } from "@/lib/db/schema";
 import { createLogger } from "@/lib/logger";
 import { type DialogDefinition, dialogDefinitionSchema } from "./dialog-schema";
 
@@ -295,6 +295,12 @@ export function deleteDialog(id: number): void {
         .where(eq(dialogAnswers.sessionId, session.id))
         .run();
     }
+
+    // Leads outlive sessions/dialogs: drop FK links instead of deleting them.
+    db.update(leads)
+      .set({ sessionId: null, dialogId: null })
+      .where(eq(leads.dialogId, id))
+      .run();
 
     db.delete(dialogSessions).where(eq(dialogSessions.dialogId, id)).run();
 

@@ -94,7 +94,6 @@ export async function resolveSettings(): Promise<ResolvedSettings> {
   return {
     whatsappProvider: s.whatsappProvider,
     whatsappPhoneMode: s.whatsappPhoneMode,
-    conversationMode: s.conversationMode,
     showTelegramQr: s.showTelegramQr,
     telegramBotToken: s.telegramBotToken ?? "",
     telegramBotUsername: s.telegramBotUsername || "hmcatcher_bot",

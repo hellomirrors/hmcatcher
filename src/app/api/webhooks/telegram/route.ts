@@ -1,4 +1,4 @@
-import { handleConversationMessage } from "@/domain/conversation/conversation-handler";
+import { handleDialogConversation } from "@/domain/dialog/dialog-handler";
 import { logMessage } from "@/domain/messaging/message-log";
 import { telegramUpdateSchema } from "@/domain/schema";
 import { createLogger } from "@/lib/logger";
@@ -36,10 +36,10 @@ export async function POST(request: Request): Promise<Response> {
     });
 
     try {
-      await handleConversationMessage("telegram", chatId, msg.text);
-      log.info("Conversation handled", { chatId });
+      await handleDialogConversation("telegram", chatId, msg.text);
+      log.info("Dialog handled", { chatId });
     } catch (error) {
-      log.error("Conversation failed", error, { chatId, text: msg.text });
+      log.error("Dialog failed", error, { chatId, text: msg.text });
     }
   }
 
@@ -61,7 +61,7 @@ export async function POST(request: Request): Promise<Response> {
     });
 
     try {
-      await handleConversationMessage("telegram", chatId, cb.data);
+      await handleDialogConversation("telegram", chatId, cb.data);
       log.info("Callback handled", { chatId });
     } catch (error) {
       log.error("Callback failed", error, { chatId, data: cb.data });

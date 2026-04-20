@@ -1060,5 +1060,9 @@
       "label": "High",
       "minScore": 110
     }
-  ]
+  ],
+  "leadConsentTrigger": {
+    "variable": "teilnahme",
+    "value": "welcome-ja"
+  }
 }

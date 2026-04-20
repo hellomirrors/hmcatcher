@@ -1,5 +1,6 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
+import { upsertLeadFromSession } from "@/domain/leads/lead-repository";
 import { logMessage } from "@/domain/messaging/message-log";
 import { createMessagingProvider } from "@/domain/messaging/provider-factory";
 import { generateQrPng } from "@/domain/messaging/qr-service";
@@ -15,7 +16,20 @@ import {
   insertAnswer,
   updateSession,
 } from "./dialog-repository";
+import type { DialogDefinition } from "./dialog-schema";
 import { resolveBucket } from "./score-buckets";
+
+function shouldRecordLead(
+  definition: DialogDefinition,
+  variables: Record<string, string>
+): boolean {
+  const trigger = definition.leadConsentTrigger;
+  if (!trigger) {
+    // No trigger configured → record once any variable is captured.
+    return Object.keys(variables).length > 0;
+  }
+  return variables[trigger.variable] === trigger.value;
+}
 
 const log = createLogger("dialog-handler");
 
@@ -64,8 +78,10 @@ export async function handleDialogConversation(
 
   // Persist session state
   let sessionId: string;
+  let sessionDbId: number;
   if (existingSession) {
     sessionId = existingSession.sessionId;
+    sessionDbId = existingSession.id;
     if (result.answer) {
       insertAnswer({
         sessionId: existingSession.id,
@@ -93,6 +109,23 @@ export async function handleDialogConversation(
       currentStepId: result.session.currentStepId,
     });
     sessionId = created.sessionId;
+    sessionDbId = created.id;
+  }
+
+  // Lead capture: once consent is given (per dialog config), upsert a lead
+  // row that mirrors the session — variables, score and bucket grow as the
+  // user progresses, including the bucket reflowed via MQTT slot result.
+  if (shouldRecordLead(dialog.definition, result.session.variables)) {
+    upsertLeadFromSession({
+      sessionDbId,
+      dialogDbId: dialog.id,
+      provider,
+      contact: userId,
+      variables: result.session.variables,
+      score: result.session.score,
+      state: result.session.state,
+      definition: dialog.definition,
+    });
   }
 
   // Send responses. Resolve the messaging provider per response so that

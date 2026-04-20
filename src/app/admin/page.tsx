@@ -1,24 +1,40 @@
 import {
   Activity,
   FileText,
+  GitCompare,
   LogOut,
   MessageSquare,
   Phone,
   Settings,
-  Sliders,
   Trophy,
+  Users,
 } from "lucide-react";
 import Link from "next/link";
 import { logoutAction } from "@/app/login/action";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
-const tiles = [
+interface Tile {
+  badge?: { text: string; variant: "secondary" | "outline" };
+  description: string;
+  href: string;
+  icon: typeof FileText;
+  label: string;
+}
+
+const tiles: Tile[] = [
   {
     href: "/dialogs",
     icon: FileText,
     label: "Dialoge",
     description: "Dialogabläufe verwalten",
+  },
+  {
+    href: "/leads",
+    icon: Users,
+    label: "Leads",
+    description: "Erfasste Kontakte aus Dialogen",
   },
   {
     href: "/conversations",
@@ -33,12 +49,6 @@ const tiles = [
     description: "App-Einstellungen",
   },
   {
-    href: "/configuration",
-    icon: Sliders,
-    label: "Konfiguration",
-    description: "Systemkonfiguration",
-  },
-  {
     href: "/status",
     icon: Activity,
     label: "Status",
@@ -48,19 +58,22 @@ const tiles = [
     href: "/watest",
     icon: Phone,
     label: "WhatsApp Test",
-    description: "Nachrichten testen",
+    description: "Nachrichten manuell testen",
   },
   {
-    href: "/contact",
-    icon: MessageSquare,
-    label: "Kontakt",
-    description: "Kontaktformular",
+    href: "/comparison",
+    icon: GitCompare,
+    label: "Provider-Vergleich",
+    description:
+      "Capability-Übersicht der Messaging-Provider (Cloud API / GoWa / Telegram)",
+    badge: { text: "Info", variant: "outline" },
   },
   {
     href: "/slotmachine",
     icon: Trophy,
     label: "Slotmachine",
-    description: "Kontaktdaten-Eingabe",
+    description: "Standalone-Kontaktformular — noch nicht fertig",
+    badge: { text: "WIP", variant: "secondary" },
   },
 ];
 
@@ -83,7 +96,14 @@ export default function AdminPage() {
               <CardContent className="flex items-start gap-4 pt-6">
                 <tile.icon className="mt-0.5 size-6 shrink-0 text-muted-foreground" />
                 <div>
-                  <p className="font-medium">{tile.label}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium">{tile.label}</p>
+                    {tile.badge && (
+                      <Badge variant={tile.badge.variant}>
+                        {tile.badge.text}
+                      </Badge>
+                    )}
+                  </div>
                   <p className="text-muted-foreground text-sm">
                     {tile.description}
                   </p>

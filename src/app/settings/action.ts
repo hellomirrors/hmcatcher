@@ -38,9 +38,6 @@ export async function updateSettingsAction(
       whatsappPhoneMode: formData.get(
         "whatsappPhoneMode"
       ) as Settings["whatsappPhoneMode"],
-      conversationMode: formData.get(
-        "conversationMode"
-      ) as Settings["conversationMode"],
       showTelegramQr: formData.get("showTelegramQr") === "on",
     };
 

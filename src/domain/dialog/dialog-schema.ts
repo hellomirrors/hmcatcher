@@ -139,6 +139,12 @@ export const dialogDefinitionSchema = z.object({
     .default("Bitte wähle eine der angebotenen Optionen."),
   steps: z.array(dialogStepSchema),
   scoreBuckets: z.array(scoreBucketSchema).optional(),
+  leadConsentTrigger: z
+    .object({
+      variable: z.string().min(1),
+      value: z.string().min(1),
+    })
+    .optional(),
 });
 
 export type DialogDefinition = z.infer<typeof dialogDefinitionSchema>;

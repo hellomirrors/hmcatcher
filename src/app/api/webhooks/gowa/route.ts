@@ -1,4 +1,4 @@
-import { handleConversationMessage } from "@/domain/conversation/conversation-handler";
+import { handleDialogConversation } from "@/domain/dialog/dialog-handler";
 import { logMessage } from "@/domain/messaging/message-log";
 import { gowaWebhookPayloadSchema } from "@/domain/schema";
 import { resolveSettings } from "@/domain/settings/settings-service";
@@ -58,10 +58,10 @@ export async function POST(request: Request): Promise<Response> {
   });
 
   try {
-    await handleConversationMessage("gowa", from, payload.body);
-    log.info("Conversation handled", { from });
+    await handleDialogConversation("gowa", from, payload.body);
+    log.info("Dialog handled", { from });
   } catch (error) {
-    log.error("Conversation failed", error, { from, text: payload.body });
+    log.error("Dialog failed", error, { from, text: payload.body });
   }
 
   return Response.json({ ok: true }, { status: 200 });

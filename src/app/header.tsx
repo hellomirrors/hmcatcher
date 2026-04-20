@@ -16,15 +16,15 @@ export function Header() {
           </Link>
           <Link
             className="text-muted-foreground text-sm hover:text-foreground"
-            href="/conversations"
+            href="/leads"
           >
-            Unterhaltungen
+            Leads
           </Link>
           <Link
             className="text-muted-foreground text-sm hover:text-foreground"
-            href="/configuration"
+            href="/conversations"
           >
-            Konfiguration
+            Unterhaltungen
           </Link>
           <Link
             className="text-muted-foreground text-sm hover:text-foreground"

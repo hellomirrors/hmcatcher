@@ -140,26 +140,6 @@ export function SettingsForm({
               </Select>
             </div>
 
-            <div className="grid gap-1.5">
-              <Label htmlFor="conversationMode">Konversationsmodus</Label>
-              <Select defaultValue={s.conversationMode} name="conversationMode">
-                <SelectTrigger id="conversationMode">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="chat">
-                    Chat (Datenerfassung im Chat)
-                  </SelectItem>
-                  <SelectItem value="webform">
-                    Webformular (Link zum Formular)
-                  </SelectItem>
-                  <SelectItem value="dialog">
-                    Dialog (Konfigurierbare Flows)
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
             <div className="flex items-center justify-between rounded-md border p-3">
               <div className="grid gap-0.5">
                 <Label htmlFor="showTelegramQr">

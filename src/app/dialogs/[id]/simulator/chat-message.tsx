@@ -1,6 +1,6 @@
 "use client";
 
-import { Code, Pencil } from "lucide-react";
+import { Code, Pencil, Radio } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -198,6 +198,16 @@ export function ChatMessage({
 
 const MESSE_QR_SEPARATOR = "1a2b3c4d5e6f7g8h9i";
 
+function publishIconClass(s: "idle" | "ok" | "error"): string {
+  if (s === "ok") {
+    return "size-3 text-green-600";
+  }
+  if (s === "error") {
+    return "size-3 text-red-600";
+  }
+  return "size-3";
+}
+
 function buildSessionDataJson(
   variables: Record<string, string>,
   score: number,
@@ -275,9 +285,59 @@ function SimulatorQrCode({
     });
   }, [qrContent]);
 
+  const [publishing, setPublishing] = useState(false);
+  const [publishStatus, setPublishStatus] = useState<"idle" | "ok" | "error">(
+    "idle"
+  );
+
+  const handlePublishHmspin = async () => {
+    if (!qrContent || publishing) {
+      return;
+    }
+    setPublishing(true);
+    setPublishStatus("idle");
+    try {
+      const res = await fetch("/api/mqtt/publish", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ topic: "hmspin", payload: qrContent }),
+      });
+      setPublishStatus(res.ok ? "ok" : "error");
+    } catch {
+      setPublishStatus("error");
+    } finally {
+      setPublishing(false);
+      setTimeout(() => setPublishStatus("idle"), 2000);
+    }
+  };
+
   return (
-    <div className="mt-2">
-      <div className="relative inline-block">
+    <div className="mt-2 inline-block">
+      {qrContent && (
+        <div className="mb-1 flex items-center gap-1">
+          <Button
+            onClick={() => setShowRaw(true)}
+            size="icon-xs"
+            title="Rohdaten anzeigen"
+            type="button"
+            variant="ghost"
+          >
+            <Code className="size-3" />
+          </Button>
+          <Button
+            disabled={publishing}
+            onClick={handlePublishHmspin}
+            size="icon-xs"
+            title="An MQTT-Topic 'hmspin' senden"
+            type="button"
+            variant="ghost"
+          >
+            <Radio className={publishIconClass(publishStatus)} />
+          </Button>
+        </div>
+      )}
+
+      <div>
         {dataUrl ? (
           <Image
             alt="QR Code"
@@ -291,20 +351,6 @@ function SimulatorQrCode({
           <div className="flex h-[200px] w-[200px] items-center justify-center rounded-lg border-2 border-gray-300 border-dashed bg-gray-50 text-gray-400 text-xs">
             Generiere QR...
           </div>
-        )}
-
-        {/* Raw data popup trigger */}
-        {qrContent && (
-          <Button
-            className="absolute top-1 right-1 opacity-70 hover:opacity-100"
-            onClick={() => setShowRaw(true)}
-            size="icon-xs"
-            title="Rohdaten anzeigen"
-            type="button"
-            variant="secondary"
-          >
-            <Code className="size-2.5" />
-          </Button>
         )}
       </div>
 

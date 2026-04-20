@@ -4,7 +4,6 @@ export const settingsSchema = z.object({
   // Behavior
   whatsappProvider: z.enum(["gowa", "whatsapp"]).default("gowa"),
   whatsappPhoneMode: z.enum(["live", "test"]).default("live"),
-  conversationMode: z.enum(["chat", "webform", "dialog"]).default("chat"),
 
   // Feature flags
   showTelegramQr: z.boolean().default(true),
@@ -40,7 +39,6 @@ export type Settings = z.infer<typeof settingsSchema>;
 /** Settings with all optional values resolved (env defaults applied). */
 export interface ResolvedSettings {
   appBaseUrl: string;
-  conversationMode: "chat" | "dialog" | "webform";
   gowaBaseUrl: string;
   gowaDeviceId: string;
   gowaPassword: string;

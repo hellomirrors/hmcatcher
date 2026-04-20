@@ -1,4 +1,4 @@
-import { handleConversationMessage } from "@/domain/conversation/conversation-handler";
+import { handleDialogConversation } from "@/domain/dialog/dialog-handler";
 import { logMessage } from "@/domain/messaging/message-log";
 import {
   type WhatsappWebhookPayload,
@@ -51,10 +51,10 @@ async function processInboundMessage(msg: WhatsappMessage): Promise<void> {
   });
 
   try {
-    await handleConversationMessage("whatsapp", msg.from, text);
-    log.info("Conversation handled", { from: msg.from });
+    await handleDialogConversation("whatsapp", msg.from, text);
+    log.info("Dialog handled", { from: msg.from });
   } catch (error) {
-    log.error("Conversation failed", error, { from: msg.from, text });
+    log.error("Dialog failed", error, { from: msg.from, text });
   }
 }
 

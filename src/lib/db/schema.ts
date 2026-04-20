@@ -2,9 +2,26 @@ import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 export const leads = sqliteTable("leads", {
   id: integer("id").primaryKey({ autoIncrement: true }),
-  name: text("name").notNull(),
-  phone: text("phone").notNull(),
+  sessionId: integer("session_id").references(() => dialogSessions.id),
+  dialogId: integer("dialog_id").references(() => dialogs.id),
+  provider: text("provider").notNull(),
+  contact: text("contact").notNull(),
+  vorname: text("vorname"),
+  nachname: text("nachname"),
+  email: text("email"),
+  plz: text("plz"),
+  score: integer("score").notNull().default(0),
+  bucket: text("bucket"),
+  variables: text("variables").notNull().default("{}"),
+  state: text("state").notNull().default("active"), // active | completed
+  consentAt: integer("consent_at", { mode: "timestamp" })
+    .notNull()
+    .$defaultFn(() => new Date()),
+  completedAt: integer("completed_at", { mode: "timestamp" }),
   createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .$defaultFn(() => new Date()),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
     .notNull()
     .$defaultFn(() => new Date()),
 });

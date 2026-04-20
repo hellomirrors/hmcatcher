@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { resolveSettings } from "@/domain/settings/settings-service";
+import { RevealLink } from "./reveal-link";
 
 export const dynamic = "force-dynamic";
 
@@ -42,14 +43,7 @@ export default async function CompetitionPage() {
             <p className="max-w-xs text-center text-muted-foreground text-sm">
               Öffne Telegram und chatte mit unserem Bot
             </p>
-            <a
-              className="break-all text-primary text-xs hover:underline"
-              href={telegramLink}
-              rel="noopener noreferrer"
-              target="_blank"
-            >
-              {telegramLink}
-            </a>
+            <RevealLink href={telegramLink} />
           </div>
         )}
 
@@ -68,14 +62,7 @@ export default async function CompetitionPage() {
             <p className="max-w-xs text-center text-muted-foreground text-sm">
               Öffne WhatsApp und starte die Unterhaltung
             </p>
-            <a
-              className="break-all text-primary text-xs hover:underline"
-              href={whatsappLink}
-              rel="noopener noreferrer"
-              target="_blank"
-            >
-              {whatsappLink}
-            </a>
+            <RevealLink href={whatsappLink} />
           </div>
         )}
 

@@ -20,6 +20,7 @@ import type {
   DialogStepType,
   DialogTransition,
   DialogValidationType,
+  MessagingProviderName,
   MqttMatchMode,
   UnmatchedInputMode,
 } from "@/domain/dialog/dialog-schema";
@@ -66,6 +67,16 @@ const UNMATCHED_MODE_LABELS: Record<UnmatchedInputMode, string> = {
 const UNMATCHED_MODES = Object.keys(
   UNMATCHED_MODE_LABELS
 ) as UnmatchedInputMode[];
+
+const PROVIDER_OPTIONS: {
+  value: MessagingProviderName | "default";
+  label: string;
+}[] = [
+  { value: "default", label: "Session-Provider (Standard)" },
+  { value: "whatsapp", label: "WhatsApp (Cloud API)" },
+  { value: "gowa", label: "GoWa" },
+  { value: "telegram", label: "Telegram" },
+];
 
 const LIST_MAX_OPTIONS = 10;
 
@@ -620,6 +631,39 @@ export const StepForm = ({
               placeholder="z.B. vorname, email, position"
               value={step.variableName ?? ""}
             />
+          </div>
+
+          <div className="grid gap-1.5">
+            <Label htmlFor="step-force-provider">
+              Versand-Provider (Override)
+            </Label>
+            <Select
+              onValueChange={(val) =>
+                update({
+                  forceProvider:
+                    val === "default"
+                      ? undefined
+                      : (val as MessagingProviderName),
+                })
+              }
+              value={step.forceProvider ?? "default"}
+            >
+              <SelectTrigger id="step-force-provider">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {PROVIDER_OPTIONS.map((o) => (
+                  <SelectItem key={o.value} value={o.value}>
+                    {o.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-muted-foreground text-xs">
+              Überschreibt den Session-Provider nur für diesen Schritt. Nützlich
+              z.B. um PDF oder Info-Kanal-Nachrichten zwingend über GoWa zu
+              versenden.
+            </p>
           </div>
         </CardContent>
       </Card>

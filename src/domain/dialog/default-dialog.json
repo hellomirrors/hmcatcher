@@ -1058,7 +1058,7 @@
       "id": "instagram-link",
       "type": "text",
       "phase": "Retention",
-      "message": "Hier folgen: https://www.instagram.com/hellomirrors/",
+      "message": "Alles klar hier könnt ihr uns folgen: https://www.instagram.com/hellomirrors/",
       "forceProvider": "gowa",
       "transitions": [
         {

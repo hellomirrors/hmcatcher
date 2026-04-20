@@ -80,36 +80,45 @@ export type DialogStepType = z.infer<typeof dialogStepTypeSchema>;
 
 // --- Single step ---
 
-export const dialogStepSchema = z.object({
-  id: z.string().min(1),
-  type: dialogStepTypeSchema,
-  phase: z.string().optional(),
-  message: z.string().min(1),
-  header: z.string().optional(),
-  footer: z.string().optional(),
-  options: z.array(dialogAnswerOptionSchema).optional(),
-  listButtonText: z.string().optional(),
-  listSections: z.array(dialogListSectionSchema).optional(),
-  variableName: z.string().optional(),
-  validation: dialogValidationSchema.optional(),
-  validationMessage: z.string().optional(),
-  unmatchedInputMode: unmatchedInputModeSchema.optional(),
-  unmatchedInputValue: z.string().optional(),
-  qrMode: z.enum(["template", "session-data", "messe"]).optional(),
-  qrTemplate: z.string().optional(),
-  qrCaption: z.string().optional(),
-  videoUrl: z.string().optional(),
-  mqttTopic: z.string().optional(),
-  mqttMatchMode: mqttMatchModeSchema.optional(),
-  mqttMatchString: z.string().optional(),
-  mqttJsonKey: z.string().optional(),
-  mqttSessionIdKey: z.string().optional(),
-  documentPath: z.string().optional(),
-  documentFilename: z.string().optional(),
-  documentMimeType: z.string().optional(),
-  forceProvider: messagingProviderSchema.optional(),
-  transitions: z.array(dialogTransitionSchema),
-});
+export const dialogStepSchema = z
+  .object({
+    id: z.string().min(1),
+    type: dialogStepTypeSchema,
+    phase: z.string().optional(),
+    message: z.string().min(1),
+    header: z.string().optional(),
+    footer: z.string().optional(),
+    options: z.array(dialogAnswerOptionSchema).optional(),
+    listButtonText: z.string().optional(),
+    listSections: z.array(dialogListSectionSchema).optional(),
+    variableName: z.string().optional(),
+    validation: dialogValidationSchema.optional(),
+    validationMessage: z.string().optional(),
+    unmatchedInputMode: unmatchedInputModeSchema.optional(),
+    unmatchedInputValue: z.string().optional(),
+    qrMode: z.enum(["template", "session-data", "messe"]).optional(),
+    qrTemplate: z.string().optional(),
+    qrCaption: z.string().optional(),
+    videoUrl: z.string().optional(),
+    mqttTopic: z.string().optional(),
+    mqttMatchMode: mqttMatchModeSchema.optional(),
+    mqttMatchString: z.string().optional(),
+    mqttJsonKey: z.string().optional(),
+    mqttSessionIdKey: z.string().optional(),
+    documentPath: z.string().optional(),
+    documentFilename: z.string().optional(),
+    documentMimeType: z.string().optional(),
+    forceProvider: messagingProviderSchema.optional(),
+    transitions: z.array(dialogTransitionSchema),
+  })
+  .refine(
+    (step) => step.type !== "buttons" || (step.options?.length ?? 0) <= 3,
+    {
+      message:
+        "Buttons-Schritte dürfen maximal 3 Optionen haben. Für mehr nutze Liste.",
+      path: ["options"],
+    }
+  );
 
 export type DialogStep = z.infer<typeof dialogStepSchema>;
 

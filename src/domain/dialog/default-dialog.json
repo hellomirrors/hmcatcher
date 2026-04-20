@@ -282,7 +282,7 @@
     },
     {
       "id": "betten-stationaer",
-      "type": "buttons",
+      "type": "list",
       "phase": "Qualifizierung",
       "message": "Wie viele Betten hat die Einrichtung?",
       "options": [
@@ -307,6 +307,7 @@
           "score": 30
         }
       ],
+      "listButtonText": "Auswählen",
       "variableName": "betten",
       "transitions": [
         {

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Outfit } from "next/font/google";
 import "./globals.css";
+import { AdminCrumb } from "@/components/admin-crumb";
 import { cn } from "@/lib/utils";
 import { Providers } from "./providers";
 
@@ -26,6 +27,7 @@ export default function RootLayout({
       <body>
         <Providers>
           <div className="flex min-h-screen flex-col">
+            <AdminCrumb />
             <main className="flex-1">{children}</main>
           </div>
         </Providers>

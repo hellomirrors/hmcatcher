@@ -112,4 +112,10 @@ Write code that is **accessible, performant, type-safe, and maintainable**. Focu
 
 ---
 
+## Lessons Learned
+
+- **SQLite + drizzle: integer division with bound parameters** — In `sql` template expressions like `(${col} / ${n}) * ${n}`, drizzle binds `n` as a parameter (`?`). SQLite treats `?` as affinity-less and promotes the division to REAL, so `(x / ?) * ?` evaluates to `x` (never aligned to a bucket). Fix: wrap the quotient in `cast(... as integer)` — e.g. `cast(${col} / ${n} as integer) * ${n}` — or inline the divisor as a literal. Applies to any bucketing / flooring arithmetic in the stats layer.
+
+---
+
 Most formatting and common issues are automatically fixed by Biome. Run `pnpm exec ultracite fix` before committing to ensure compliance.

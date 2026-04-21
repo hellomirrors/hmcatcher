@@ -189,15 +189,21 @@ export function getLeadsTimeSeries(filter: StatsFilter): TimeSeriesPoint[] {
       where.push(gte(leads.consentAt, start));
     }
 
+    // SQLite performs REAL division when the divisor is a bound parameter,
+    // so we explicitly CAST the quotient to INTEGER before multiplying back
+    // up to the bucket boundary. Without this every row lands in its own
+    // "bucket" (= its own timestamp) and the dashboard chart stays flat.
+    const bucketExpr = sql<number>`cast(${leads.consentAt} / ${bucketSec} as integer) * ${bucketSec}`;
+
     const rows = db
       .select({
-        bucketSec: sql<number>`(${leads.consentAt} / ${bucketSec}) * ${bucketSec}`,
+        bucketSec: bucketExpr,
         count: sql<number>`count(*)`,
       })
       .from(leads)
       .where(where.length > 0 ? and(...where) : sql`1=1`)
-      .groupBy(sql`1`)
-      .orderBy(sql`1`)
+      .groupBy(bucketExpr)
+      .orderBy(bucketExpr)
       .all();
 
     const byBucket = new Map<number, number>();
@@ -256,15 +262,17 @@ export function getVariableDistribution(
     }
 
     const path = `$.${variableKey}`;
+    const keyExpr = sql<string>`coalesce(json_extract(${leads.variables}, ${path}), '')`;
+    const countExpr = sql<number>`count(*)`;
     const rows = db
       .select({
-        key: sql<string>`coalesce(json_extract(${leads.variables}, ${path}), '')`,
-        count: sql<number>`count(*)`,
+        key: keyExpr,
+        count: countExpr,
       })
       .from(leads)
       .where(where.length > 0 ? and(...where) : sql`1=1`)
-      .groupBy(sql`1`)
-      .orderBy(desc(sql`2`))
+      .groupBy(keyExpr)
+      .orderBy(desc(countExpr))
       .all();
 
     return rows
@@ -292,15 +300,17 @@ export function getBucketDistribution(
       where.push(gte(leads.consentAt, start));
     }
 
+    const keyExpr = sql<string>`coalesce(${leads.bucket}, 'none')`;
+    const countExpr = sql<number>`count(*)`;
     const rows = db
       .select({
-        key: sql<string>`coalesce(${leads.bucket}, 'none')`,
-        count: sql<number>`count(*)`,
+        key: keyExpr,
+        count: countExpr,
       })
       .from(leads)
       .where(where.length > 0 ? and(...where) : sql`1=1`)
-      .groupBy(sql`1`)
-      .orderBy(desc(sql`2`))
+      .groupBy(keyExpr)
+      .orderBy(desc(countExpr))
       .all();
 
     return rows.map((r) => ({

@@ -6,9 +6,10 @@ import {
   getActiveSessionsByDialog,
   updateSession,
 } from "@/domain/dialog/dialog-repository";
+import { sendResponse } from "@/domain/dialog/dialog-response-sender";
 import type { DialogStep } from "@/domain/dialog/dialog-schema";
+import type { MessagingProvider } from "@/domain/types";
 import { createLogger } from "@/lib/logger";
-import { logMessage } from "./message-log";
 import { createMessagingProvider } from "./provider-factory";
 
 const log = createLogger("mqtt-service");
@@ -165,26 +166,34 @@ async function dispatchMqttEvent(
       continue;
     }
 
-    try {
-      const provider = await createMessagingProvider(session.provider);
-      for (const response of result.responses) {
-        const sent = await provider.sendText({
-          to: session.contact,
-          body: response.text,
-        });
-        logMessage({
-          provider: session.provider,
-          direction: "out",
-          contact: session.contact,
-          kind: "text",
-          body: response.text,
-          externalId: sent.messageId,
+    const providerCache = new Map<string, MessagingProvider>();
+    for (const response of result.responses) {
+      const effectiveProvider = response.forceProvider ?? session.provider;
+      try {
+        let msgProvider = providerCache.get(effectiveProvider);
+        if (!msgProvider) {
+          msgProvider = await createMessagingProvider(effectiveProvider);
+          providerCache.set(effectiveProvider, msgProvider);
+        }
+        await sendResponse(
+          msgProvider,
+          session.contact,
+          response,
+          session.provider,
+          {
+            variables: result.session.variables,
+            score: result.session.score,
+            sessionId: session.sessionId,
+          },
+          dialog.definition.scoreBuckets
+        );
+      } catch (error) {
+        log.error("Failed to send MQTT-triggered response", error, {
+          sessionId: session.id,
+          type: response.type,
+          provider: effectiveProvider,
         });
       }
-    } catch (error) {
-      log.error("Failed to send MQTT-triggered response", error, {
-        sessionId: session.id,
-      });
     }
   }
   if (!matchedAny) {

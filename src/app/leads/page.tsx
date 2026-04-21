@@ -94,6 +94,17 @@ function buildFilters(params: SearchParams): LeadFilters {
   return filters;
 }
 
+function buildExportHref(params: SearchParams): string {
+  const qs = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value && value !== "all") {
+      qs.set(key, value);
+    }
+  }
+  const suffix = qs.toString();
+  return suffix ? `/api/leads/export?${suffix}` : "/api/leads/export";
+}
+
 export default async function LeadsPage(props: {
   searchParams: Promise<SearchParams>;
 }) {
@@ -101,15 +112,25 @@ export default async function LeadsPage(props: {
   const filters = buildFilters(searchParams);
   const leads = listLeads(filters);
   const dialogOptions = getDistinctDialogIds();
+  const exportHref = buildExportHref(searchParams);
 
   return (
     <div className="mx-auto w-full max-w-6xl p-4">
       <Card>
-        <CardHeader>
-          <CardTitle>Leads</CardTitle>
-          <CardDescription>
-            Erfasste Kontakte aus laufenden und abgeschlossenen Dialogen.
-          </CardDescription>
+        <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
+          <div className="space-y-1.5">
+            <CardTitle>Leads</CardTitle>
+            <CardDescription>
+              Erfasste Kontakte aus laufenden und abgeschlossenen Dialogen.
+            </CardDescription>
+          </div>
+          <a
+            className={buttonVariants({ variant: "outline", size: "sm" })}
+            download
+            href={exportHref}
+          >
+            Export JSON
+          </a>
         </CardHeader>
         <CardContent>
           <form

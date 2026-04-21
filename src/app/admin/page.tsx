@@ -1,5 +1,6 @@
 import {
   Activity,
+  BarChart3,
   FileText,
   GitCompare,
   LogOut,
@@ -35,6 +36,12 @@ const tiles: Tile[] = [
     icon: Users,
     label: "Leads",
     description: "Erfasste Kontakte aus Dialogen",
+  },
+  {
+    href: "/leads/dashboard",
+    icon: BarChart3,
+    label: "Lead-Dashboard",
+    description: "Live-Monitor mit Charts und Ton",
   },
   {
     href: "/conversations",

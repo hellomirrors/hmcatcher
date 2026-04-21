@@ -124,13 +124,21 @@ export default async function LeadsPage(props: {
               Erfasste Kontakte aus laufenden und abgeschlossenen Dialogen.
             </CardDescription>
           </div>
-          <a
-            className={buttonVariants({ variant: "outline", size: "sm" })}
-            download
-            href={exportHref}
-          >
-            Export JSON
-          </a>
+          <div className="flex items-center gap-2">
+            <Link
+              className={buttonVariants({ variant: "outline", size: "sm" })}
+              href="/leads/dashboard"
+            >
+              Dashboard
+            </Link>
+            <a
+              className={buttonVariants({ variant: "outline", size: "sm" })}
+              download
+              href={exportHref}
+            >
+              Export JSON
+            </a>
+          </div>
         </CardHeader>
         <CardContent>
           <form

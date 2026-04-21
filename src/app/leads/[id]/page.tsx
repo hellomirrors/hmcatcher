@@ -14,6 +14,7 @@ import {
   getDialogById,
 } from "@/domain/dialog/dialog-repository";
 import { getLeadById } from "@/domain/leads/lead-repository";
+import { DeleteLeadButton } from "./delete-lead-button";
 
 export const dynamic = "force-dynamic";
 
@@ -54,12 +55,15 @@ export default async function LeadDetailPage(props: {
     <div className="mx-auto w-full max-w-4xl space-y-4 p-4">
       <div className="flex items-center justify-between">
         <h1 className="font-semibold text-2xl">{fullName}</h1>
-        <Link
-          className={buttonVariants({ variant: "outline", size: "sm" })}
-          href="/leads"
-        >
-          Zurück
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            className={buttonVariants({ variant: "outline", size: "sm" })}
+            href="/leads"
+          >
+            Zurück
+          </Link>
+          <DeleteLeadButton leadId={lead.id} leadName={fullName} />
+        </div>
       </div>
 
       <Card>

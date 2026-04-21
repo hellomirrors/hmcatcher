@@ -28,7 +28,8 @@ import { FunnelCard } from "./charts/funnel-card";
 import { KpiTile } from "./charts/kpi-tile";
 import { TimeSeriesCard } from "./charts/time-series-card";
 import { TopWinsTable } from "./charts/top-wins-table";
-import { primeAudio, useLeadPing } from "./use-lead-ping";
+import { useLeadPing } from "./use-lead-ping";
+import { primeAudio } from "./win-audio";
 
 export interface DashboardPayload {
   bucket: DistributionBucket[];
@@ -50,6 +51,12 @@ interface DashboardClientProps {
 }
 
 const RANGE_LABELS: Record<StatsRange, string> = {
+  "1h": "1 Stunde",
+  "2h": "2 Stunden",
+  "4h": "4 Stunden",
+  "8h": "8 Stunden",
+  "12h": "12 Stunden",
+  "16h": "16 Stunden",
   "24h": "24 Stunden",
   "7d": "7 Tage",
   "30d": "30 Tage",

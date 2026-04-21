@@ -6,7 +6,17 @@ import { createLogger } from "@/lib/logger";
 
 const log = createLogger("lead-stats");
 
-export type StatsRange = "24h" | "7d" | "30d" | "all";
+export type StatsRange =
+  | "1h"
+  | "2h"
+  | "4h"
+  | "8h"
+  | "12h"
+  | "16h"
+  | "24h"
+  | "7d"
+  | "30d"
+  | "all";
 
 export interface StatsFilter {
   dialogId?: number;
@@ -16,24 +26,35 @@ export interface StatsFilter {
 const HOUR_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * HOUR_MS;
 
+const RANGE_MS: Record<Exclude<StatsRange, "all">, number> = {
+  "1h": HOUR_MS,
+  "2h": 2 * HOUR_MS,
+  "4h": 4 * HOUR_MS,
+  "8h": 8 * HOUR_MS,
+  "12h": 12 * HOUR_MS,
+  "16h": 16 * HOUR_MS,
+  "24h": 24 * HOUR_MS,
+  "7d": 7 * DAY_MS,
+  "30d": 30 * DAY_MS,
+};
+
 function rangeStart(range: StatsRange): Date | null {
-  const now = Date.now();
-  switch (range) {
-    case "24h":
-      return new Date(now - 24 * HOUR_MS);
-    case "7d":
-      return new Date(now - 7 * DAY_MS);
-    case "30d":
-      return new Date(now - 30 * DAY_MS);
-    default:
-      return null;
+  if (range === "all") {
+    return null;
   }
+  return new Date(Date.now() - RANGE_MS[range]);
 }
 
-type BucketUnit = "hour" | "day" | "week";
+type BucketUnit = "min5" | "min15" | "hour" | "day" | "week";
 
 function bucketUnit(range: StatsRange): BucketUnit {
-  if (range === "24h") {
+  if (range === "1h" || range === "2h") {
+    return "min5";
+  }
+  if (range === "4h" || range === "8h") {
+    return "min15";
+  }
+  if (range === "12h" || range === "16h" || range === "24h") {
     return "hour";
   }
   if (range === "all") {
@@ -42,43 +63,19 @@ function bucketUnit(range: StatsRange): BucketUnit {
   return "day";
 }
 
-function bucketStepMs(unit: BucketUnit): number {
-  if (unit === "hour") {
-    return HOUR_MS;
+function bucketSeconds(unit: BucketUnit): number {
+  switch (unit) {
+    case "min5":
+      return 5 * 60;
+    case "min15":
+      return 15 * 60;
+    case "hour":
+      return 60 * 60;
+    case "day":
+      return 24 * 60 * 60;
+    default:
+      return 7 * 24 * 60 * 60;
   }
-  if (unit === "day") {
-    return DAY_MS;
-  }
-  return 7 * DAY_MS;
-}
-
-/** SQLite strftime format per bucket unit. */
-function bucketFormat(unit: BucketUnit): string {
-  if (unit === "hour") {
-    return "%Y-%m-%d %H:00:00";
-  }
-  if (unit === "day") {
-    return "%Y-%m-%d 00:00:00";
-  }
-  // %W = ISO week (00..53) — stable bucket key
-  return "%Y-%W";
-}
-
-function truncateToBucket(date: Date, unit: BucketUnit): Date {
-  const d = new Date(date.getTime());
-  d.setUTCMinutes(0, 0, 0);
-  if (unit === "hour") {
-    return d;
-  }
-  d.setUTCHours(0, 0, 0, 0);
-  if (unit === "day") {
-    return d;
-  }
-  // Align to Monday
-  const day = d.getUTCDay();
-  const diff = (day + 6) % 7;
-  d.setUTCDate(d.getUTCDate() - diff);
-  return d;
 }
 
 // ---------------------------------------------------------------------------
@@ -181,8 +178,8 @@ export interface TimeSeriesPoint {
 export function getLeadsTimeSeries(filter: StatsFilter): TimeSeriesPoint[] {
   try {
     const unit = bucketUnit(filter.range);
+    const bucketSec = bucketSeconds(unit);
     const start = rangeStart(filter.range);
-    const format = bucketFormat(unit);
 
     const where: SQL[] = [];
     if (filter.dialogId !== undefined) {
@@ -194,7 +191,7 @@ export function getLeadsTimeSeries(filter: StatsFilter): TimeSeriesPoint[] {
 
     const rows = db
       .select({
-        bucket: sql<string>`strftime(${format}, ${leads.consentAt}, 'unixepoch')`,
+        bucketSec: sql<number>`(${leads.consentAt} / ${bucketSec}) * ${bucketSec}`,
         count: sql<number>`count(*)`,
       })
       .from(leads)
@@ -203,54 +200,36 @@ export function getLeadsTimeSeries(filter: StatsFilter): TimeSeriesPoint[] {
       .orderBy(sql`1`)
       .all();
 
-    const byBucket = new Map<string, number>();
+    const byBucket = new Map<number, number>();
     for (const row of rows) {
-      byBucket.set(String(row.bucket), Number(row.count));
+      byBucket.set(Number(row.bucketSec), Number(row.count));
     }
 
     if (!start) {
       return rows.map((r) => ({
-        bucket: String(r.bucket),
+        bucket: new Date(Number(r.bucketSec) * 1000).toISOString(),
         count: Number(r.count),
       }));
     }
 
     const result: TimeSeriesPoint[] = [];
-    const step = bucketStepMs(unit);
-    const now = new Date();
-    let cursor = truncateToBucket(start, unit);
-    const end = truncateToBucket(now, unit);
-    while (cursor.getTime() <= end.getTime()) {
-      const key = bucketKey(cursor, unit);
+    const stepSec = bucketSec;
+    const startSec = Math.floor(start.getTime() / 1000);
+    const nowSec = Math.floor(Date.now() / 1000);
+    let cursor = Math.floor(startSec / stepSec) * stepSec;
+    const end = Math.floor(nowSec / stepSec) * stepSec;
+    while (cursor <= end) {
       result.push({
-        bucket: cursor.toISOString(),
-        count: byBucket.get(key) ?? 0,
+        bucket: new Date(cursor * 1000).toISOString(),
+        count: byBucket.get(cursor) ?? 0,
       });
-      cursor = new Date(cursor.getTime() + step);
+      cursor += stepSec;
     }
     return result;
   } catch (error) {
     log.error("Failed to get leads time series", error, { filter });
     return [];
   }
-}
-
-function bucketKey(date: Date, unit: BucketUnit): string {
-  const pad = (n: number) => String(n).padStart(2, "0");
-  const y = date.getUTCFullYear();
-  const m = pad(date.getUTCMonth() + 1);
-  const d = pad(date.getUTCDate());
-  const h = pad(date.getUTCHours());
-  if (unit === "hour") {
-    return `${y}-${m}-${d} ${h}:00:00`;
-  }
-  if (unit === "day") {
-    return `${y}-${m}-${d} 00:00:00`;
-  }
-  // ISO week number approximation matching sqlite %W
-  const start = new Date(Date.UTC(y, 0, 1));
-  const week = Math.floor((date.getTime() - start.getTime()) / (7 * DAY_MS));
-  return `${y}-${pad(week)}`;
 }
 
 // ---------------------------------------------------------------------------

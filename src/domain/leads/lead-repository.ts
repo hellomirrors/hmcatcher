@@ -2,7 +2,7 @@ import { and, desc, eq, gte, like, lte, or, type SQL, sql } from "drizzle-orm";
 import type { DialogDefinition } from "@/domain/dialog/dialog-schema";
 import { resolveBucket } from "@/domain/dialog/score-buckets";
 import { db } from "@/lib/db";
-import { dialogs, leads } from "@/lib/db/schema";
+import { dialogAnswers, dialogSessions, dialogs, leads } from "@/lib/db/schema";
 import { createLogger } from "@/lib/logger";
 
 const log = createLogger("lead-repository");
@@ -210,6 +210,39 @@ export function listLeads(filters: LeadFilters = {}): LeadListItem[] {
   } catch (error) {
     log.error("Failed to list leads", error);
     return [];
+  }
+}
+
+/**
+ * Hard-delete a lead and its owning dialog session, including all answers
+ * captured during the session. Leaves other leads untouched. Returns true if
+ * a row was deleted.
+ */
+export function deleteLeadById(id: number): boolean {
+  try {
+    const existing = db
+      .select({ id: leads.id, sessionId: leads.sessionId })
+      .from(leads)
+      .where(eq(leads.id, id))
+      .get();
+    if (!existing) {
+      return false;
+    }
+
+    if (existing.sessionId !== null) {
+      db.delete(dialogAnswers)
+        .where(eq(dialogAnswers.sessionId, existing.sessionId))
+        .run();
+      db.delete(dialogSessions)
+        .where(eq(dialogSessions.id, existing.sessionId))
+        .run();
+    }
+
+    db.delete(leads).where(eq(leads.id, id)).run();
+    return true;
+  } catch (error) {
+    log.error("Failed to delete lead", error, { id });
+    throw error;
   }
 }
 

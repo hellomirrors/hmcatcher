@@ -15,6 +15,12 @@ import {
 export const dynamic = "force-dynamic";
 
 const VALID_RANGES: ReadonlySet<StatsRange> = new Set<StatsRange>([
+  "1h",
+  "2h",
+  "4h",
+  "8h",
+  "12h",
+  "16h",
   "24h",
   "7d",
   "30d",

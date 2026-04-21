@@ -13,11 +13,11 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
-import type { TimeSeriesPoint } from "@/domain/leads/lead-stats";
+import type { StatsRange, TimeSeriesPoint } from "@/domain/leads/lead-stats";
 
 interface TimeSeriesCardProps {
   data: TimeSeriesPoint[];
-  range: "24h" | "7d" | "30d" | "all";
+  range: StatsRange;
 }
 
 const chartConfig = {
@@ -27,12 +27,32 @@ const chartConfig = {
   },
 };
 
-function formatTick(iso: string, range: TimeSeriesCardProps["range"]): string {
+const SUB_HOUR_RANGES: ReadonlySet<StatsRange> = new Set<StatsRange>([
+  "1h",
+  "2h",
+  "4h",
+  "8h",
+]);
+
+const HOUR_RANGES: ReadonlySet<StatsRange> = new Set<StatsRange>([
+  "12h",
+  "16h",
+  "24h",
+]);
+
+function formatTick(iso: string, range: StatsRange): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) {
     return iso;
   }
-  if (range === "24h") {
+  if (SUB_HOUR_RANGES.has(range)) {
+    return new Intl.DateTimeFormat("de-DE", {
+      hour: "2-digit",
+      minute: "2-digit",
+      timeZone: "Europe/Berlin",
+    }).format(date);
+  }
+  if (HOUR_RANGES.has(range)) {
     return new Intl.DateTimeFormat("de-DE", {
       hour: "2-digit",
       timeZone: "Europe/Berlin",

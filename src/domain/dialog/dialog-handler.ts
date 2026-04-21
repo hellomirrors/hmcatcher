@@ -138,7 +138,7 @@ export async function handleDialogConversation(
         messagingProvider,
         userId,
         response,
-        effectiveProvider,
+        provider,
         { ...result.session, sessionId },
         dialog.definition.scoreBuckets
       );
@@ -274,7 +274,9 @@ async function sendResponse(
   messagingProvider: Awaited<ReturnType<typeof createMessagingProvider>>,
   userId: string,
   response: DialogResponse,
-  provider: string,
+  // Session-Provider (inbound channel) — used for message-log grouping so
+  // forceProvider=gowa mid-flow does not split the UI conversation row.
+  sessionProvider: string,
   session: {
     variables: Record<string, string>;
     score: number;
@@ -293,7 +295,7 @@ async function sendResponse(
           footer: response.footer,
         });
         logMessage({
-          provider,
+          provider: sessionProvider,
           direction: "out",
           contact: userId,
           kind: "text",
@@ -314,7 +316,7 @@ async function sendResponse(
           sections: response.list.sections,
         });
         logMessage({
-          provider,
+          provider: sessionProvider,
           direction: "out",
           contact: userId,
           kind: "text",
@@ -331,7 +333,7 @@ async function sendResponse(
         body: response.text,
       });
       logMessage({
-        provider,
+        provider: sessionProvider,
         direction: "out",
         contact: userId,
         kind: "text",
@@ -342,7 +344,7 @@ async function sendResponse(
       const qrContent = buildQrContent(
         response,
         session,
-        provider,
+        sessionProvider,
         userId,
         scoreBuckets
       );
@@ -356,7 +358,7 @@ async function sendResponse(
         caption: qrCaption,
       });
       logMessage({
-        provider,
+        provider: sessionProvider,
         direction: "out",
         contact: userId,
         kind: "image",
@@ -375,7 +377,7 @@ async function sendResponse(
         body: videoText,
       });
       logMessage({
-        provider,
+        provider: sessionProvider,
         direction: "out",
         contact: userId,
         kind: "text",
@@ -408,7 +410,7 @@ async function sendResponse(
         caption: response.text,
       });
       logMessage({
-        provider,
+        provider: sessionProvider,
         direction: "out",
         contact: userId,
         kind: "image",
@@ -424,7 +426,7 @@ async function sendResponse(
         body: response.text,
       });
       logMessage({
-        provider,
+        provider: sessionProvider,
         direction: "out",
         contact: userId,
         kind: "text",

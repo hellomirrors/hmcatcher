@@ -83,10 +83,10 @@ const tiles: Tile[] = [
     description: "Kontaktformular mit QR-Versand per WhatsApp",
   },
   {
-    href: "/start-qr",
+    href: "/competition",
     icon: QrCode,
-    label: "Start-QR",
-    description: "GoWa-Joiner für den Stand (wa.me QR mit 'start')",
+    label: "Messe-QR",
+    description: "WhatsApp/Telegram-Start-QR für den Stand",
   },
 ];
 

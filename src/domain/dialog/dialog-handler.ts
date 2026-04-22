@@ -71,7 +71,10 @@ async function deliverResponses(
     if (await maybeWaitOnTimer(response, { sessionId: input.sessionId })) {
       continue;
     }
-    const effectiveProvider = response.forceProvider ?? input.provider;
+    const effectiveProvider =
+      response.forceProvider ??
+      input.dialog.definition.defaultProvider ??
+      input.provider;
     log.info("Delivering dialog response", {
       type: response.type,
       provider: effectiveProvider,

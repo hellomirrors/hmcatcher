@@ -29,6 +29,7 @@ import { Textarea } from "@/components/ui/textarea";
 import type {
   DialogDefinition,
   DialogStep,
+  MessagingProviderName,
   UnmatchedInputMode,
 } from "@/domain/dialog/dialog-schema";
 import { dialogDefinitionSchema } from "@/domain/dialog/dialog-schema";
@@ -62,6 +63,18 @@ const UNMATCHED_MODE_LABELS: Record<UnmatchedInputMode, string> = {
 const UNMATCHED_MODES = Object.keys(
   UNMATCHED_MODE_LABELS
 ) as UnmatchedInputMode[];
+
+const PROVIDER_LABELS: Record<MessagingProviderName, string> = {
+  whatsapp: "WhatsApp",
+  gowa: "GoWA",
+  telegram: "Telegram",
+};
+
+const PROVIDER_OPTIONS = Object.keys(
+  PROVIDER_LABELS
+) as MessagingProviderName[];
+
+const DEFAULT_PROVIDER_APP_VALUE = "__app_default__";
 
 export const DialogEditor = ({ dialog }: DialogEditorProps) => {
   const router = useRouter();
@@ -434,6 +447,44 @@ export const DialogEditor = ({ dialog }: DialogEditorProps) => {
                     rows={2}
                     value={definition.errorMessage}
                   />
+                </div>
+                <div className="grid gap-1.5">
+                  <Label htmlFor="dialog-default-provider">
+                    Standard-Sender
+                  </Label>
+                  <Select
+                    onValueChange={(val) =>
+                      updateDefinition({
+                        defaultProvider:
+                          val === DEFAULT_PROVIDER_APP_VALUE
+                            ? undefined
+                            : (val as MessagingProviderName),
+                      })
+                    }
+                    value={
+                      definition.defaultProvider ?? DEFAULT_PROVIDER_APP_VALUE
+                    }
+                  >
+                    <SelectTrigger id="dialog-default-provider">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={DEFAULT_PROVIDER_APP_VALUE}>
+                        App-Einstellung verwenden
+                      </SelectItem>
+                      {PROVIDER_OPTIONS.map((p) => (
+                        <SelectItem key={p} value={p}>
+                          {PROVIDER_LABELS[p]}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-muted-foreground text-xs">
+                    Überschreibt für diesen Dialog den Provider aus den
+                    App-Einstellungen. Einzelne Steps können mit
+                    <code className="mx-1">forceProvider</code>
+                    weiter überschreiben.
+                  </p>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-1.5">

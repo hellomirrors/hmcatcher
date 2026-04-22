@@ -149,6 +149,13 @@ export const dialogDefinitionSchema = z.object({
   errorMessage: z
     .string()
     .default("Bitte wähle eine der angebotenen Optionen."),
+  /**
+   * Overrides the messaging provider for all outgoing responses of this
+   * dialog. If unset, the session's provider (which mirrors the app-wide
+   * whatsappProvider setting) is used. Step-level `forceProvider` always
+   * wins over the dialog default.
+   */
+  defaultProvider: messagingProviderSchema.optional(),
   steps: z.array(dialogStepSchema),
   scoreBuckets: z.array(scoreBucketSchema).optional(),
   leadConsentTrigger: z

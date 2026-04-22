@@ -174,7 +174,10 @@ async function dispatchMqttEvent(
       if (await maybeWaitOnTimer(response, { sessionId: session.sessionId })) {
         continue;
       }
-      const effectiveProvider = response.forceProvider ?? session.provider;
+      const effectiveProvider =
+        response.forceProvider ??
+        dialog.definition.defaultProvider ??
+        session.provider;
       try {
         let msgProvider = providerCache.get(effectiveProvider);
         if (!msgProvider) {

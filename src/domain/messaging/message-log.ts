@@ -52,8 +52,15 @@ export interface ContactSummary {
   provider: string;
 }
 
-export function listContacts(): ContactSummary[] {
-  const rows = db
+interface ListContactsOptions {
+  limit?: number;
+  offset?: number;
+}
+
+export function listContacts(
+  options: ListContactsOptions = {}
+): ContactSummary[] {
+  const query = db
     .select({
       provider: messages.provider,
       contact: messages.contact,
@@ -72,10 +79,14 @@ export function listContacts(): ContactSummary[] {
     })
     .from(messages)
     .groupBy(messages.provider, messages.contact)
-    .orderBy(sql`MAX(${messages.createdAt}) DESC`)
-    .all();
+    .orderBy(sql`MAX(${messages.createdAt}) DESC`);
 
-  return rows.map((r) => ({
+  const withLimit =
+    options.limit === undefined ? query : query.limit(options.limit);
+  const finalQuery =
+    options.offset === undefined ? withLimit : withLimit.offset(options.offset);
+
+  return finalQuery.all().map((r) => ({
     provider: r.provider,
     contact: r.contact,
     lastBody: r.lastBody,
@@ -83,6 +94,21 @@ export function listContacts(): ContactSummary[] {
     lastAt: new Date(Number(r.lastAt) * 1000),
     count: Number(r.count),
   }));
+}
+
+export function countContacts(): number {
+  try {
+    const row = db
+      .select({
+        count: sql<number>`count(distinct ${messages.provider} || ':' || ${messages.contact})`,
+      })
+      .from(messages)
+      .get();
+    return Number(row?.count ?? 0);
+  } catch (error) {
+    log.error("Failed to count contacts", error);
+    return 0;
+  }
 }
 
 export interface ConversationMessage {

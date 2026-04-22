@@ -1,4 +1,8 @@
 import Link from "next/link";
+import {
+  PaginationControls,
+  parsePage,
+} from "@/components/pagination-controls";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -7,19 +11,33 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { listContacts } from "@/domain/messaging/message-log";
+import { countContacts, listContacts } from "@/domain/messaging/message-log";
+import { formatDateTime } from "@/lib/format-time";
 
 export const dynamic = "force-dynamic";
 
-function formatTime(date: Date): string {
-  return new Intl.DateTimeFormat("de-DE", {
-    dateStyle: "short",
-    timeStyle: "short",
-  }).format(date);
+const PAGE_SIZE = 25;
+
+interface ConversationsSearchParams {
+  page?: string;
+  [key: string]: string | undefined;
 }
 
-export default function ConversationsPage() {
-  const contacts = listContacts();
+export default async function ConversationsPage(props: {
+  searchParams: Promise<ConversationsSearchParams>;
+}) {
+  const searchParams = await props.searchParams;
+  const { page } = parsePage({
+    value: searchParams.page,
+    defaultPageSize: PAGE_SIZE,
+  });
+  const totalContacts = countContacts();
+  const totalPages = Math.max(1, Math.ceil(totalContacts / PAGE_SIZE));
+  const clampedPage = Math.min(Math.max(1, page), totalPages);
+  const contacts = listContacts({
+    limit: PAGE_SIZE,
+    offset: (clampedPage - 1) * PAGE_SIZE,
+  });
 
   return (
     <div className="mx-auto w-full max-w-3xl p-4">
@@ -31,7 +49,7 @@ export default function ConversationsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {contacts.length === 0 ? (
+          {totalContacts === 0 ? (
             <p className="text-muted-foreground text-sm">
               Noch keine Nachrichten vorhanden.
             </p>
@@ -55,13 +73,20 @@ export default function ConversationsPage() {
                       </p>
                     </div>
                     <span className="text-muted-foreground text-xs">
-                      {formatTime(c.lastAt)}
+                      {formatDateTime(c.lastAt)}
                     </span>
                   </Link>
                 </li>
               ))}
             </ul>
           )}
+          <PaginationControls
+            basePath="/conversations"
+            currentPage={clampedPage}
+            pageSize={PAGE_SIZE}
+            searchParams={searchParams}
+            totalItems={totalContacts}
+          />
         </CardContent>
       </Card>
     </div>

@@ -19,7 +19,17 @@
       "Bash(yes \"\")",
       "Bash(cat next.config.ts)",
       "Bash(cat next.config.js)",
-      "Bash(cat next.config.mjs)"
+      "Bash(cat next.config.mjs)",
+      "Read(//c/project/hellomirrors/next/hmexhibitions/hmslots/public/**)",
+      "Read(//c/project/hellomirrors/next/hmexhibitions/hmslots/src/**)",
+      "Bash(PORT=3099 pnpm dev *)",
+      "Bash(curl -sS -m 30 'http://localhost:3000/api/leads/stats?range=24h')",
+      "Bash(echo \"exit: $?\")",
+      "Bash(tasklist.exe)",
+      "Bash(wmic.exe process *)",
+      "Bash(taskkill.exe /PID 48044 /F)",
+      "Bash(cmd.exe *)",
+      "PowerShell(Stop-Process *)"
     ]
   }
 }

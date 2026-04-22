@@ -1,4 +1,8 @@
 import Link from "next/link";
+import {
+  PaginationControls,
+  parsePage,
+} from "@/components/pagination-controls";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { buttonVariants } from "@/components/ui/button-variants";
@@ -19,22 +23,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  countLeads,
   getDistinctDialogIds,
   type LeadFilters,
   listLeads,
 } from "@/domain/leads/lead-repository";
+import { formatDateTime } from "@/lib/format-time";
 
 export const dynamic = "force-dynamic";
-
-function formatTime(date: Date | null): string {
-  if (!date) {
-    return "—";
-  }
-  return new Intl.DateTimeFormat("de-DE", {
-    dateStyle: "short",
-    timeStyle: "short",
-  }).format(date);
-}
 
 function bucketVariant(bucket: string): "default" | "secondary" | "outline" {
   if (bucket === "high") {
@@ -57,10 +53,14 @@ interface SearchParams {
   bucket?: string;
   dialogId?: string;
   from?: string;
+  page?: string;
   search?: string;
   state?: string;
   to?: string;
+  [key: string]: string | undefined;
 }
+
+const PAGE_SIZE = 25;
 
 function buildFilters(params: SearchParams): LeadFilters {
   const filters: LeadFilters = {};
@@ -109,8 +109,19 @@ export default async function LeadsPage(props: {
   searchParams: Promise<SearchParams>;
 }) {
   const searchParams = await props.searchParams;
-  const filters = buildFilters(searchParams);
-  const leads = listLeads(filters);
+  const baseFilters = buildFilters(searchParams);
+  const { page } = parsePage({
+    value: searchParams.page,
+    defaultPageSize: PAGE_SIZE,
+  });
+  const totalLeads = countLeads(baseFilters);
+  const totalPages = Math.max(1, Math.ceil(totalLeads / PAGE_SIZE));
+  const clampedPage = Math.min(Math.max(1, page), totalPages);
+  const leads = listLeads({
+    ...baseFilters,
+    limit: PAGE_SIZE,
+    offset: (clampedPage - 1) * PAGE_SIZE,
+  });
   const dialogOptions = getDistinctDialogIds();
   const exportHref = buildExportHref(searchParams);
 
@@ -231,7 +242,7 @@ export default async function LeadsPage(props: {
             </div>
           </form>
 
-          {leads.length === 0 ? (
+          {totalLeads === 0 ? (
             <p className="text-muted-foreground text-sm">
               Keine Leads gefunden.
             </p>
@@ -279,7 +290,7 @@ export default async function LeadsPage(props: {
                         </Badge>
                       </td>
                       <td className="py-2 pr-3 text-xs">
-                        {formatTime(lead.consentAt)}
+                        {formatDateTime(lead.consentAt)}
                       </td>
                       <td className="py-2 text-right">
                         <Link
@@ -295,6 +306,13 @@ export default async function LeadsPage(props: {
               </table>
             </div>
           )}
+          <PaginationControls
+            basePath="/leads"
+            currentPage={clampedPage}
+            pageSize={PAGE_SIZE}
+            searchParams={searchParams}
+            totalItems={totalLeads}
+          />
         </CardContent>
       </Card>
     </div>

@@ -35,6 +35,8 @@ export interface LeadFilters {
   bucket?: string;
   dialogId?: number;
   fromDate?: Date;
+  limit?: number;
+  offset?: number;
   search?: string;
   state?: string;
   toDate?: Date;
@@ -161,47 +163,75 @@ export function getLeadById(id: number): LeadRow | undefined {
   }
 }
 
+function buildLeadWhere(filters: LeadFilters): SQL | undefined {
+  const where: SQL[] = [];
+  if (filters.dialogId !== undefined) {
+    where.push(eq(leads.dialogId, filters.dialogId));
+  }
+  if (filters.bucket) {
+    where.push(eq(leads.bucket, filters.bucket));
+  }
+  if (filters.state) {
+    where.push(eq(leads.state, filters.state));
+  }
+  if (filters.fromDate) {
+    where.push(gte(leads.consentAt, filters.fromDate));
+  }
+  if (filters.toDate) {
+    where.push(lte(leads.consentAt, filters.toDate));
+  }
+  if (filters.search) {
+    const needle = `%${filters.search}%`;
+    const search = or(
+      like(leads.vorname, needle),
+      like(leads.nachname, needle),
+      like(leads.email, needle),
+      like(leads.contact, needle)
+    );
+    if (search) {
+      where.push(search);
+    }
+  }
+  return where.length > 0 ? and(...where) : undefined;
+}
+
+export function countLeads(filters: LeadFilters = {}): number {
+  try {
+    const condition = buildLeadWhere(filters);
+    const row = db
+      .select({ count: sql<number>`count(*)` })
+      .from(leads)
+      .where(condition ?? sql`1=1`)
+      .get();
+    return Number(row?.count ?? 0);
+  } catch (error) {
+    log.error("Failed to count leads", error);
+    return 0;
+  }
+}
+
 export function listLeads(filters: LeadFilters = {}): LeadListItem[] {
   try {
-    const where: SQL[] = [];
-    if (filters.dialogId !== undefined) {
-      where.push(eq(leads.dialogId, filters.dialogId));
-    }
-    if (filters.bucket) {
-      where.push(eq(leads.bucket, filters.bucket));
-    }
-    if (filters.state) {
-      where.push(eq(leads.state, filters.state));
-    }
-    if (filters.fromDate) {
-      where.push(gte(leads.consentAt, filters.fromDate));
-    }
-    if (filters.toDate) {
-      where.push(lte(leads.consentAt, filters.toDate));
-    }
-    if (filters.search) {
-      const needle = `%${filters.search}%`;
-      const search = or(
-        like(leads.vorname, needle),
-        like(leads.nachname, needle),
-        like(leads.email, needle),
-        like(leads.contact, needle)
-      );
-      if (search) {
-        where.push(search);
-      }
-    }
+    const condition = buildLeadWhere(filters);
 
-    const rows = db
+    const query = db
       .select({
         lead: leads,
         dialogName: dialogs.name,
       })
       .from(leads)
       .leftJoin(dialogs, eq(leads.dialogId, dialogs.id))
-      .where(where.length > 0 ? and(...where) : sql`1=1`)
-      .orderBy(desc(leads.consentAt))
-      .all();
+      .where(condition ?? sql`1=1`)
+      .orderBy(desc(leads.consentAt));
+
+    const withLimit =
+      filters.limit === undefined ? query : query.limit(filters.limit);
+    const finalQuery =
+      filters.offset === undefined
+        ? withLimit
+        : withLimit.offset(filters.offset);
+
+    const rows = finalQuery.all();
 
     return rows.map((r) => ({
       ...rowToLead(r.lead),

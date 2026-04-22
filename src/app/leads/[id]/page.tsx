@@ -14,19 +14,10 @@ import {
   getDialogById,
 } from "@/domain/dialog/dialog-repository";
 import { getLeadById } from "@/domain/leads/lead-repository";
+import { formatDateTime } from "@/lib/format-time";
 import { DeleteLeadButton } from "./delete-lead-button";
 
 export const dynamic = "force-dynamic";
-
-function formatTime(date: Date | null): string {
-  if (!date) {
-    return "—";
-  }
-  return new Intl.DateTimeFormat("de-DE", {
-    dateStyle: "short",
-    timeStyle: "short",
-  }).format(date);
-}
 
 export default async function LeadDetailPage(props: {
   params: Promise<{ id: string }>;
@@ -114,11 +105,11 @@ export default async function LeadDetailPage(props: {
           </div>
           <div>
             <p className="text-muted-foreground text-xs">Consent</p>
-            <p>{formatTime(lead.consentAt)}</p>
+            <p>{formatDateTime(lead.consentAt)}</p>
           </div>
           <div>
             <p className="text-muted-foreground text-xs">Abgeschlossen</p>
-            <p>{formatTime(lead.completedAt)}</p>
+            <p>{formatDateTime(lead.completedAt)}</p>
           </div>
           <div>
             <p className="text-muted-foreground text-xs">Dialog</p>
@@ -180,7 +171,7 @@ export default async function LeadDetailPage(props: {
                 {answers.map((a) => (
                   <tr key={a.id}>
                     <td className="py-1.5 pr-3 text-muted-foreground text-xs">
-                      {formatTime(a.createdAt)}
+                      {formatDateTime(a.createdAt)}
                     </td>
                     <td className="py-1.5 pr-3 text-xs">
                       {stepLabel(a.stepId)}

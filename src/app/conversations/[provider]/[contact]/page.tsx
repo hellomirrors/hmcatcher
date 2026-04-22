@@ -2,15 +2,9 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getConversation } from "@/domain/messaging/message-log";
+import { formatDateTime } from "@/lib/format-time";
 
 export const dynamic = "force-dynamic";
-
-function formatTime(date: Date): string {
-  return new Intl.DateTimeFormat("de-DE", {
-    dateStyle: "short",
-    timeStyle: "short",
-  }).format(date);
-}
 
 export default async function ConversationDetailPage({
   params,
@@ -74,7 +68,7 @@ export default async function ConversationDetailPage({
                         <p className="mt-1 text-xs opacity-80">{m.caption}</p>
                       )}
                       <p className="mt-1 text-[10px] opacity-60">
-                        {formatTime(m.createdAt)}
+                        {formatDateTime(m.createdAt)}
                       </p>
                     </div>
                   </li>

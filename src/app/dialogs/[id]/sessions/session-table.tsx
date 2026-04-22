@@ -17,6 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { formatDateTime } from "@/lib/format-time";
 import {
   deleteAllSessionsForDialogAction,
   deleteSessionAction,
@@ -53,11 +54,7 @@ interface SessionTableProps {
   sessions: Session[];
 }
 
-const formatTime = (date: Date): string =>
-  new Intl.DateTimeFormat("de-DE", {
-    dateStyle: "short",
-    timeStyle: "short",
-  }).format(date);
+const formatTime = formatDateTime;
 
 const stateBadgeVariant = (
   state: string

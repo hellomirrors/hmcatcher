@@ -43,6 +43,7 @@ const STEP_TYPE_LABELS: Record<DialogStepType, string> = {
   video: "Video",
   mqtt: "MQTT-Trigger",
   document: "Dokument",
+  timer: "Timer",
 };
 
 const STEP_TYPES = Object.keys(STEP_TYPE_LABELS) as DialogStepType[];

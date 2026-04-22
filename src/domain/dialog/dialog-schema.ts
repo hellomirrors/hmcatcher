@@ -68,6 +68,7 @@ export const dialogStepTypeSchema = z.enum([
   "video",
   "mqtt",
   "document",
+  "timer",
 ]);
 
 export const messagingProviderSchema = z.enum(["whatsapp", "gowa", "telegram"]);
@@ -108,6 +109,8 @@ export const dialogStepSchema = z
     documentPath: z.string().optional(),
     documentFilename: z.string().optional(),
     documentMimeType: z.string().optional(),
+    /** Delay in seconds applied before the next response is sent (timer step). */
+    delaySeconds: z.number().positive().optional(),
     forceProvider: messagingProviderSchema.optional(),
     transitions: z.array(dialogTransitionSchema),
   })

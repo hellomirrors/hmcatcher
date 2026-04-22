@@ -6,7 +6,10 @@ import {
   getActiveSessionsByDialog,
   updateSession,
 } from "@/domain/dialog/dialog-repository";
-import { sendResponse } from "@/domain/dialog/dialog-response-sender";
+import {
+  maybeWaitOnTimer,
+  sendResponse,
+} from "@/domain/dialog/dialog-response-sender";
 import type { DialogStep } from "@/domain/dialog/dialog-schema";
 import type { MessagingProvider } from "@/domain/types";
 import { createLogger } from "@/lib/logger";
@@ -168,6 +171,9 @@ async function dispatchMqttEvent(
 
     const providerCache = new Map<string, MessagingProvider>();
     for (const response of result.responses) {
+      if (await maybeWaitOnTimer(response, { sessionId: session.sessionId })) {
+        continue;
+      }
       const effectiveProvider = response.forceProvider ?? session.provider;
       try {
         let msgProvider = providerCache.get(effectiveProvider);

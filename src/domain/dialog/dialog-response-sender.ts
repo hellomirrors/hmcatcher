@@ -12,6 +12,26 @@ const log = createLogger("dialog-response-sender");
 const LEADING_SLASHES = /^\/+/;
 const MESSE_QR_SEPARATOR = "1a2b3c4d5e6f7g8h9i";
 
+/**
+ * Pauses the outgoing response loop for the configured delay if the response
+ * is a timer step. Returns true when the response was consumed (caller should
+ * `continue`), false otherwise.
+ */
+export async function maybeWaitOnTimer(
+  response: DialogResponse,
+  logContext: Record<string, unknown>
+): Promise<boolean> {
+  if (response.type !== "timer") {
+    return false;
+  }
+  const delayMs = response.delayMs ?? 0;
+  log.info("Dialog timer pause", { delayMs, ...logContext });
+  if (delayMs > 0) {
+    await new Promise<void>((resolve) => setTimeout(resolve, delayMs));
+  }
+  return true;
+}
+
 function reverseString(value: string): string {
   return [...value].reverse().join("");
 }

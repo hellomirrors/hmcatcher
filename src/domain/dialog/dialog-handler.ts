@@ -12,7 +12,7 @@ import {
   insertAnswer,
   updateSession,
 } from "./dialog-repository";
-import { sendResponse } from "./dialog-response-sender";
+import { maybeWaitOnTimer, sendResponse } from "./dialog-response-sender";
 import type { DialogDefinition } from "./dialog-schema";
 
 function shouldRecordLead(
@@ -28,6 +28,90 @@ function shouldRecordLead(
 }
 
 const log = createLogger("dialog-handler");
+
+interface SendError {
+  error: string;
+  provider: string;
+  type: string;
+}
+
+interface DeliverResponsesInput {
+  dialog: {
+    definition: DialogDefinition;
+  };
+  fromStep: string | undefined;
+  provider: string;
+  responses: import("./dialog-engine").DialogResponse[];
+  sessionData: {
+    currentStepId: string;
+    score: number;
+    state: "active" | "completed";
+    variables: Record<string, string>;
+  };
+  sessionId: string;
+  toStep: string;
+  userId: string;
+}
+
+async function deliverResponses(
+  input: DeliverResponsesInput
+): Promise<SendError[]> {
+  const providerCache = new Map<string, MessagingProvider>();
+  const resolveProvider = async (name: string): Promise<MessagingProvider> => {
+    let cached = providerCache.get(name);
+    if (!cached) {
+      cached = await createMessagingProvider(name);
+      providerCache.set(name, cached);
+    }
+    return cached;
+  };
+
+  const errors: SendError[] = [];
+  for (const response of input.responses) {
+    if (await maybeWaitOnTimer(response, { sessionId: input.sessionId })) {
+      continue;
+    }
+    const effectiveProvider = response.forceProvider ?? input.provider;
+    log.info("Delivering dialog response", {
+      type: response.type,
+      provider: effectiveProvider,
+      forceProvider: response.forceProvider,
+      buttonCount: response.buttons?.length,
+      listSections: response.list?.sections.length,
+      bodyLen: response.text?.length,
+      sessionId: input.sessionId,
+      fromStep: input.fromStep,
+      toStep: input.toStep,
+    });
+    try {
+      const messagingProvider = await resolveProvider(effectiveProvider);
+      await sendResponse(
+        messagingProvider,
+        input.userId,
+        response,
+        input.provider,
+        { ...input.sessionData, sessionId: input.sessionId },
+        input.dialog.definition.scoreBuckets
+      );
+    } catch (error) {
+      log.error("Failed to send dialog response", error, {
+        provider: effectiveProvider,
+        forceProvider: response.forceProvider,
+        userId: input.userId,
+        sessionId: input.sessionId,
+        fromStep: input.fromStep,
+        toStep: input.toStep,
+        type: response.type,
+      });
+      errors.push({
+        type: response.type,
+        provider: effectiveProvider,
+        error: (error as Error).message,
+      });
+    }
+  }
+  return errors;
+}
 
 export async function handleDialogConversation(
   provider: string,
@@ -91,68 +175,16 @@ export async function handleDialogConversation(
     sessionDbId = created.id;
   }
 
-  // Send responses. Resolve the messaging provider per response so that
-  // steps with `forceProvider` (e.g. PDF must go via GoWa) can override
-  // the session's default provider. Errors are collected so we can decide
-  // whether to persist the session advance.
-  const providerCache = new Map<string, MessagingProvider>();
-
-  async function resolveProvider(name: string): Promise<MessagingProvider> {
-    let cached = providerCache.get(name);
-    if (!cached) {
-      cached = await createMessagingProvider(name);
-      providerCache.set(name, cached);
-    }
-    return cached;
-  }
-
-  const sendErrors: Array<{
-    type: string;
-    provider: string;
-    error: string;
-  }> = [];
-
-  for (const response of result.responses) {
-    const effectiveProvider = response.forceProvider ?? provider;
-    log.info("Delivering dialog response", {
-      type: response.type,
-      provider: effectiveProvider,
-      forceProvider: response.forceProvider,
-      buttonCount: response.buttons?.length,
-      listSections: response.list?.sections.length,
-      bodyLen: response.text?.length,
-      sessionId,
-      fromStep: existingSession?.currentStepId,
-      toStep: result.session.currentStepId,
-    });
-    try {
-      const messagingProvider = await resolveProvider(effectiveProvider);
-      await sendResponse(
-        messagingProvider,
-        userId,
-        response,
-        provider,
-        { ...result.session, sessionId },
-        dialog.definition.scoreBuckets
-      );
-    } catch (error) {
-      const msg = (error as Error).message;
-      log.error("Failed to send dialog response", error, {
-        provider: effectiveProvider,
-        forceProvider: response.forceProvider,
-        userId,
-        sessionId,
-        currentStepId: existingSession?.currentStepId,
-        targetStepId: result.session.currentStepId,
-        type: response.type,
-      });
-      sendErrors.push({
-        type: response.type,
-        provider: effectiveProvider,
-        error: msg,
-      });
-    }
-  }
+  const sendErrors = await deliverResponses({
+    responses: result.responses,
+    provider,
+    userId,
+    sessionId,
+    fromStep: existingSession?.currentStepId,
+    toStep: result.session.currentStepId,
+    sessionData: result.session,
+    dialog,
+  });
 
   // If anything failed, freeze the session at its previous state so the
   // user can retry (e.g. stale gowaDeviceId, expired token, provider

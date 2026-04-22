@@ -16,6 +16,8 @@ const log = createLogger("dialog-engine");
 
 export interface DialogResponse {
   buttons?: ButtonOption[];
+  /** Milliseconds to wait before sending the next response (timer step). */
+  delayMs?: number;
   document?: {
     path: string;
     filename: string;
@@ -37,7 +39,15 @@ export interface DialogResponse {
     mode: "template" | "session-data" | "messe";
   };
   text: string;
-  type: "text" | "buttons" | "list" | "qr" | "video" | "mqtt" | "document";
+  type:
+    | "text"
+    | "buttons"
+    | "list"
+    | "qr"
+    | "video"
+    | "mqtt"
+    | "document"
+    | "timer";
   videoUrl?: string;
 }
 
@@ -401,7 +411,7 @@ export function processAnswer(
 // --- Output-only chain advance ---
 
 /** Steps the user does not need to respond to for the flow to proceed. */
-const OUTPUT_ONLY_TYPES = new Set(["text", "qr", "video", "document"]);
+const OUTPUT_ONLY_TYPES = new Set(["text", "qr", "video", "document", "timer"]);
 
 /**
  * After a regular advance, keep moving past any output-only steps
@@ -571,6 +581,62 @@ export function evaluateCondition(
 
 // --- Step rendering ---
 
+function buildListSections(
+  step: DialogStep,
+  header: string | undefined
+): ListSection[] {
+  const options = step.options ?? [];
+  if (step.listSections && step.listSections.length > 0) {
+    return step.listSections.map((section) => {
+      const rows: ListSection["rows"] = [];
+      for (const optId of section.optionIds) {
+        const opt = options.find((o) => o.id === optId);
+        if (opt) {
+          rows.push({
+            id: opt.id,
+            title: opt.label,
+            description: opt.description,
+          });
+        }
+      }
+      return { title: section.title, rows };
+    });
+  }
+  return [
+    {
+      title: header ?? "Optionen",
+      rows: options.map((opt) => ({
+        id: opt.id,
+        title: opt.label,
+        description: opt.description,
+      })),
+    },
+  ];
+}
+
+function renderListStep(
+  step: DialogStep,
+  text: string,
+  header: string | undefined,
+  footer: string | undefined
+): DialogResponse {
+  const sections = buildListSections(step, header);
+  return {
+    type: "list",
+    text,
+    header,
+    footer,
+    forceProvider: step.forceProvider,
+    list: {
+      title: header ?? "",
+      body: text,
+      buttonText: step.listButtonText ?? "Auswählen",
+      footer,
+      sections,
+    },
+  };
+}
+
 export function renderStep(
   step: DialogStep,
   variables: Record<string, string>
@@ -610,51 +676,7 @@ export function renderStep(
     }
 
     case "list": {
-      const options = step.options ?? [];
-      let sections: ListSection[];
-
-      if (step.listSections && step.listSections.length > 0) {
-        sections = step.listSections.map((section) => {
-          const rows: ListSection["rows"] = [];
-          for (const optId of section.optionIds) {
-            const opt = options.find((o) => o.id === optId);
-            if (opt) {
-              rows.push({
-                id: opt.id,
-                title: opt.label,
-                description: opt.description,
-              });
-            }
-          }
-          return { title: section.title, rows };
-        });
-      } else {
-        sections = [
-          {
-            title: header ?? "Optionen",
-            rows: options.map((opt) => ({
-              id: opt.id,
-              title: opt.label,
-              description: opt.description,
-            })),
-          },
-        ];
-      }
-
-      return {
-        type: "list",
-        text,
-        header,
-        footer,
-        forceProvider: step.forceProvider,
-        list: {
-          title: header ?? "",
-          body: text,
-          buttonText: step.listButtonText ?? "Auswählen",
-          footer,
-          sections,
-        },
-      };
+      return renderListStep(step, text, header, footer);
     }
 
     case "free_text": {
@@ -724,6 +746,15 @@ export function renderStep(
               mimeType: step.documentMimeType ?? "application/pdf",
             }
           : undefined,
+      };
+    }
+
+    case "timer": {
+      return {
+        type: "timer",
+        text: "",
+        delayMs: Math.round((step.delaySeconds ?? 2) * 1000),
+        forceProvider: step.forceProvider,
       };
     }
 

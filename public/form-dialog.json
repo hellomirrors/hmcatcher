@@ -873,6 +873,18 @@
       "forceProvider": "gowa",
       "transitions": [
         {
+          "targetStepId": "timer-kanal-pdf"
+        }
+      ]
+    },
+    {
+      "id": "timer-kanal-pdf",
+      "type": "timer",
+      "phase": "Info-Kanal",
+      "message": "⏱",
+      "delaySeconds": 2,
+      "transitions": [
+        {
           "targetStepId": "kanal-pdf"
         }
       ]
@@ -888,6 +900,18 @@
       "forceProvider": "gowa",
       "transitions": [
         {
+          "targetStepId": "timer-kanal-video"
+        }
+      ]
+    },
+    {
+      "id": "timer-kanal-video",
+      "type": "timer",
+      "phase": "Info-Kanal",
+      "message": "⏱",
+      "delaySeconds": 3,
+      "transitions": [
+        {
           "targetStepId": "kanal-video"
         }
       ]
@@ -899,6 +923,18 @@
       "message": "Schau dir auch unser kurzes Video an:",
       "videoUrl": "https://youtube.com/shorts/YLr7RJrKvaE",
       "forceProvider": "gowa",
+      "transitions": [
+        {
+          "targetStepId": "timer-produkt-info"
+        }
+      ]
+    },
+    {
+      "id": "timer-produkt-info",
+      "type": "timer",
+      "phase": "Nurturing",
+      "message": "⏱",
+      "delaySeconds": 3,
       "transitions": [
         {
           "targetStepId": "produkt-info"
@@ -913,6 +949,18 @@
       "forceProvider": "gowa",
       "transitions": [
         {
+          "targetStepId": "timer-produkt-video"
+        }
+      ]
+    },
+    {
+      "id": "timer-produkt-video",
+      "type": "timer",
+      "phase": "Nurturing",
+      "message": "⏱",
+      "delaySeconds": 2,
+      "transitions": [
+        {
           "targetStepId": "produkt-video"
         }
       ]
@@ -924,6 +972,18 @@
       "message": "Felix in Aktion: So sieht der Alltag mit Felix in einer Pflegeeinrichtung aus.",
       "videoUrl": "https://youtu.be/ou_qajvNTCI?si=gfB-pYiDiNGDChGW",
       "forceProvider": "gowa",
+      "transitions": [
+        {
+          "targetStepId": "timer-abschluss"
+        }
+      ]
+    },
+    {
+      "id": "timer-abschluss",
+      "type": "timer",
+      "phase": "Retention",
+      "message": "⏱",
+      "delaySeconds": 3,
       "transitions": [
         {
           "targetStepId": "abschluss"

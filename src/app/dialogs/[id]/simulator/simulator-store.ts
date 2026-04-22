@@ -81,7 +81,9 @@ function responsesToMessages(
 
 /** Steps that produce output but don't require user input. */
 function isOutputOnlyStep(type: string): boolean {
-  return type === "text" || type === "qr" || type === "video";
+  return (
+    type === "text" || type === "qr" || type === "video" || type === "timer"
+  );
 }
 
 function parseJsonObject(raw: string): Record<string, unknown> | null {
@@ -153,10 +155,12 @@ function matchMqttPayload(
 /**
  * Steps that should auto-advance in the simulator. QR and video are
  * excluded because their visual content needs to be inspectable —
- * the user clicks "Weiter" to advance past them.
+ * the user clicks "Weiter" to advance past them. Timer steps just pace
+ * the live flow and have nothing for the user to review, so they auto
+ * advance too.
  */
 function shouldAutoAdvance(type: string): boolean {
-  return type === "text";
+  return type === "text" || type === "timer";
 }
 
 // ---------------------------------------------------------------------------

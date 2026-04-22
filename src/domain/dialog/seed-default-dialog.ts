@@ -29,17 +29,20 @@ const formDefinition = dialogDefinitionSchema.parse(formDialogJson);
  *
  * Insert-only: an existing dialog is never overwritten, so edits made via
  * the dialog editor UI (score weights, messages, transitions) survive
- * deploys and page reloads. The only reconciliation is to re-activate the
- * default dialog if it was deactivated.
+ * deploys and page reloads. Activation is only forced when NO dialog is
+ * currently active — otherwise an admin-chosen active dialog (e.g. the
+ * form-dialog variant) would get flipped back on every /dialogs visit.
  *
  * To force-load the bundled defaults over the stored definition, use
  * `resetDefaultDialog` (wired to the "Default laden" button).
  */
 export const seedDefaultDialog = (): void => {
-  const existing = listDialogs().find((d) => d.slug === DIALOG_SLUG);
+  const all = listDialogs();
+  const existing = all.find((d) => d.slug === DIALOG_SLUG);
+  const hasActive = all.some((d) => d.isActive === 1);
 
   if (existing) {
-    if (!existing.isActive) {
+    if (!hasActive) {
       setActiveDialog(existing.id);
     }
     return;
@@ -52,8 +55,10 @@ export const seedDefaultDialog = (): void => {
     description: DIALOG_DESCRIPTION,
     definition: defaultDefinition,
   });
-  setActiveDialog(id);
-  log.info("Default dialog seeded and activated", { dialogId: id });
+  if (!hasActive) {
+    setActiveDialog(id);
+  }
+  log.info("Default dialog seeded", { dialogId: id });
 };
 
 /**

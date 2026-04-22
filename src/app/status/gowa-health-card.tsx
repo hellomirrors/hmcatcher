@@ -28,12 +28,12 @@ function deviceIdLabel(status: GowaHealthStatus): string {
     return "Nicht prüfbar";
   }
   if (status.deviceIdValid && status.loggedIn) {
-    return "Gültig & eingeloggt";
+    return "Session aktiv, WhatsApp gekoppelt";
   }
   if (status.deviceIdValid) {
-    return "Gefunden, nicht eingeloggt";
+    return "Session aktiv, kein WhatsApp gekoppelt";
   }
-  return "Nicht gefunden";
+  return "Session unbekannt";
 }
 
 export function GowaHealthCard({ status }: { status: GowaHealthStatus }) {
@@ -46,8 +46,8 @@ export function GowaHealthCard({ status }: { status: GowaHealthStatus }) {
       <CardHeader>
         <CardTitle>GoWA — Device-Status</CardTitle>
         <CardDescription>
-          Prüft live, ob die gespeicherte Device-ID auf dem GoWA-Server
-          existiert und eingeloggt ist.
+          Prüft live, ob die konfigurierte Session-UUID vom GoWA-Server
+          akzeptiert wird und ob WhatsApp-Geräte gekoppelt sind.
         </CardDescription>
       </CardHeader>
       <CardContent className="grid gap-3">
@@ -80,7 +80,7 @@ export function GowaHealthCard({ status }: { status: GowaHealthStatus }) {
         {status.reachable && status.knownDevices.length > 0 && (
           <div className="grid gap-1.5">
             <span className="text-muted-foreground text-xs">
-              Auf Server registrierte Devices
+              Gekoppelte WhatsApp-Geräte
             </span>
             <ul className="grid gap-1">
               {status.knownDevices.map((d) => (
@@ -90,9 +90,6 @@ export function GowaHealthCard({ status }: { status: GowaHealthStatus }) {
                 >
                   <code className="break-all">{d.deviceId}</code>
                   <Badge variant="outline">{d.state}</Badge>
-                  {d.jid && (
-                    <span className="text-muted-foreground">{d.jid}</span>
-                  )}
                 </li>
               ))}
             </ul>

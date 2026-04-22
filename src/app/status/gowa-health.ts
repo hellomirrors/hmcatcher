@@ -14,9 +14,11 @@ export interface GowaHealthStatus {
 }
 
 interface GowaDevice {
+  device?: string;
   device_id?: string;
   id?: string;
   jid?: string;
+  name?: string;
   state?: string;
 }
 
@@ -48,11 +50,32 @@ export async function getGowaHealth(
   ).toString("base64")}`;
 
   try {
+    // GoWa scopes the /app/devices endpoint to the session behind the
+    // X-Device-Id header — without it, the request is treated as an
+    // anonymous probe and never lists the configured session. A 200 back
+    // means the device UUID is recognised and authenticated; the body is
+    // then the list of WhatsApp-linked devices, which we expose as an
+    // operational hint but NOT as the device-id check criterion (those
+    // linked-device IDs are WhatsApp JIDs, never the local UUID).
     const res = await fetch(`${baseUrl}/app/devices`, {
-      headers: { Authorization: authHeader },
+      headers: {
+        Authorization: authHeader,
+        "X-Device-Id": cfg.gowaDeviceId,
+      },
       // Keep the status page snappy — GoWa must respond quickly.
       signal: AbortSignal.timeout(5000),
     });
+    if (res.status === 401 || res.status === 403 || res.status === 404) {
+      return {
+        configured: true,
+        reachable: true,
+        deviceIdValid: false,
+        loggedIn: false,
+        configuredDeviceId: cfg.gowaDeviceId,
+        knownDevices: [],
+        error: `GoWa /app/devices HTTP ${res.status} ${res.statusText}`,
+      };
+    }
     if (!res.ok) {
       return {
         configured: true,
@@ -66,12 +89,12 @@ export async function getGowaHealth(
     }
     const data = (await res.json()) as unknown;
     const devices = extractDevices(data);
-    const match = devices.find((d) => d.deviceId === cfg.gowaDeviceId);
     return {
       configured: true,
       reachable: true,
-      deviceIdValid: !!match,
-      loggedIn: match?.state === "logged_in",
+      deviceIdValid: true,
+      // At least one linked WhatsApp device means the session is paired.
+      loggedIn: devices.length > 0,
       configuredDeviceId: cfg.gowaDeviceId,
       knownDevices: devices,
       error: null,
@@ -93,14 +116,15 @@ export async function getGowaHealth(
 function extractDevices(
   data: unknown
 ): { deviceId: string; state: string; jid?: string }[] {
-  // GoWa response shape: `{ results: [ { device_id, state, jid }, ... ] }`
-  // or a bare array — be defensive either way.
+  // GoWa response shape (by version): { results: [...] } with items that
+  // expose either `device`/`jid` (WhatsApp JID of the linked device),
+  // `device_id`/`id` (legacy), plus an optional `name` and `state`.
   const arr = pickDeviceArray(data);
   return arr
     .map((d) => ({
-      deviceId: d.device_id ?? d.id ?? "",
-      state: d.state ?? "unknown",
-      jid: d.jid,
+      deviceId: d.device_id ?? d.id ?? d.device ?? d.jid ?? "",
+      state: d.state ?? (d.device || d.jid ? "linked" : "unknown"),
+      jid: d.jid ?? d.device,
     }))
     .filter((d) => d.deviceId);
 }

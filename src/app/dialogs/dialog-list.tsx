@@ -13,13 +13,14 @@ import {
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import {
+  activateDialogFormAction,
   createNewDialogAction,
-  deactivateDialogAction,
-  deleteDialogAction,
-  duplicateDialogAction,
+  deactivateDialogFormAction,
+  deleteDialogFormAction,
+  duplicateDialogFormAction,
   loadDefaultDialogAction,
-  setActiveDialogAction,
-  setDialogLockedAction,
+  loadFormDialogAction,
+  toggleDialogLockFormAction,
 } from "./action";
 
 interface DialogListItem {
@@ -32,32 +33,6 @@ interface DialogListItem {
   slug: string;
   version: number;
 }
-
-const toggleLockAction = async (formData: FormData) => {
-  const id = Number(formData.get("id"));
-  const locked = formData.get("locked") === "1";
-  await setDialogLockedAction(id, !locked);
-};
-
-const activateAction = async (formData: FormData) => {
-  const id = Number(formData.get("id"));
-  await setActiveDialogAction(id);
-};
-
-const deactivateAction = async (formData: FormData) => {
-  const id = Number(formData.get("id"));
-  await deactivateDialogAction(id);
-};
-
-const duplicateAction = async (formData: FormData) => {
-  const id = Number(formData.get("id"));
-  await duplicateDialogAction(id);
-};
-
-const deleteAction = async (formData: FormData) => {
-  const id = Number(formData.get("id"));
-  await deleteDialogAction(id);
-};
 
 export function DialogList({ dialogs }: { dialogs: DialogListItem[] }) {
   return (
@@ -74,6 +49,11 @@ export function DialogList({ dialogs }: { dialogs: DialogListItem[] }) {
             <form action={loadDefaultDialogAction}>
               <Button size="sm" type="submit" variant="secondary">
                 Default laden
+              </Button>
+            </form>
+            <form action={loadFormDialogAction}>
+              <Button size="sm" type="submit" variant="secondary">
+                Form-Dialog laden
               </Button>
             </form>
             <form action={createNewDialogAction}>
@@ -127,13 +107,13 @@ export function DialogList({ dialogs }: { dialogs: DialogListItem[] }) {
                         Sessions
                       </Button>
                     </Link>
-                    <form action={duplicateAction}>
+                    <form action={duplicateDialogFormAction}>
                       <input name="id" type="hidden" value={dialog.id} />
                       <Button size="sm" type="submit" variant="ghost">
                         Duplizieren
                       </Button>
                     </form>
-                    <form action={toggleLockAction}>
+                    <form action={toggleDialogLockFormAction}>
                       <input name="id" type="hidden" value={dialog.id} />
                       <input
                         name="locked"
@@ -156,14 +136,14 @@ export function DialogList({ dialogs }: { dialogs: DialogListItem[] }) {
                     </form>
                     <Separator className="mx-1 h-4" orientation="vertical" />
                     {isActive ? (
-                      <form action={deactivateAction}>
+                      <form action={deactivateDialogFormAction}>
                         <input name="id" type="hidden" value={dialog.id} />
                         <Button size="sm" type="submit" variant="outline">
                           Deaktivieren
                         </Button>
                       </form>
                     ) : (
-                      <form action={activateAction}>
+                      <form action={activateDialogFormAction}>
                         <input name="id" type="hidden" value={dialog.id} />
                         <Button size="sm" type="submit" variant="outline">
                           Aktivieren
@@ -171,7 +151,7 @@ export function DialogList({ dialogs }: { dialogs: DialogListItem[] }) {
                       </form>
                     )}
                     {!(isActive || isLocked) && (
-                      <form action={deleteAction}>
+                      <form action={deleteDialogFormAction}>
                         <input name="id" type="hidden" value={dialog.id} />
                         <Button size="sm" type="submit" variant="destructive">
                           Löschen

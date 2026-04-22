@@ -7,6 +7,7 @@ import {
   updateDialog,
 } from "./dialog-repository";
 import { dialogDefinitionSchema } from "./dialog-schema";
+import formDialogJson from "./form-dialog.json" with { type: "json" };
 
 const log = createLogger("dialog-seed");
 
@@ -15,7 +16,13 @@ const DIALOG_NAME = "Felix Gewinnspiel — Altenpflege Essen 2026";
 const DIALOG_DESCRIPTION =
   "Interaktives Gewinnspiel für den Hello Mirrors Stand auf der Altenpflege Messe Essen 2026";
 
+const FORM_DIALOG_SLUG = "form-dialog";
+const FORM_DIALOG_NAME = "Felix Jackpot — Web-Formular";
+const FORM_DIALOG_DESCRIPTION =
+  "Dialog-Variante für das /slotmachine Web-Formular";
+
 const defaultDefinition = dialogDefinitionSchema.parse(defaultDialogJson);
+const formDefinition = dialogDefinitionSchema.parse(formDialogJson);
 
 /**
  * Seeds the default trade-fair dialog by slug if it does not yet exist.
@@ -81,4 +88,32 @@ export const resetDefaultDialog = (): void => {
     definition: defaultDefinition,
   });
   setActiveDialog(id);
+};
+
+/**
+ * Loads or reloads the bundled form-dialog.json under its own slug. Unlike
+ * the default loader, this does NOT auto-activate the dialog — the admin
+ * activates it from the list when they want to switch the /slotmachine
+ * form over to this definition.
+ */
+export const resetFormDialog = (): number => {
+  const existing = listDialogs().find((d) => d.slug === FORM_DIALOG_SLUG);
+  if (existing) {
+    log.info("Resetting form dialog to bundled seed", {
+      dialogId: existing.id,
+    });
+    updateDialog(existing.id, {
+      name: FORM_DIALOG_NAME,
+      description: FORM_DIALOG_DESCRIPTION,
+      definition: formDefinition,
+    });
+    return existing.id;
+  }
+  log.info("Seeding form dialog");
+  return createDialog({
+    name: FORM_DIALOG_NAME,
+    slug: FORM_DIALOG_SLUG,
+    description: FORM_DIALOG_DESCRIPTION,
+    definition: formDefinition,
+  });
 };

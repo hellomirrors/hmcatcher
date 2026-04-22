@@ -13,7 +13,10 @@ import {
 } from "@/domain/dialog/dialog-repository";
 import type { DialogDefinition } from "@/domain/dialog/dialog-schema";
 import { dialogDefinitionSchema } from "@/domain/dialog/dialog-schema";
-import { resetDefaultDialog } from "@/domain/dialog/seed-default-dialog";
+import {
+  resetDefaultDialog,
+  resetFormDialog,
+} from "@/domain/dialog/seed-default-dialog";
 
 const BLANK_DEFINITION: DialogDefinition = {
   version: 1,
@@ -185,6 +188,59 @@ export async function setDialogLockedAction(
   revalidatePath(`/dialogs/${id}`);
 }
 
+// ---------------------------------------------------------------------------
+// FormData-accepting actions — wired directly to <form action=…> so Next.js
+// handles the page refresh itself. Plain client wrappers don't trigger that
+// lifecycle, which is why the buttons previously appeared to do nothing.
+// ---------------------------------------------------------------------------
+
+function formIdFrom(formData: FormData): number {
+  const id = Number(formData.get("id"));
+  if (!Number.isFinite(id)) {
+    throw new Error("Ungültige Dialog-ID.");
+  }
+  return id;
+}
+
+export async function activateDialogFormAction(
+  formData: FormData
+): Promise<void> {
+  await Promise.resolve();
+  setActiveDialog(formIdFrom(formData));
+  revalidatePath("/dialogs");
+}
+
+export async function deactivateDialogFormAction(
+  formData: FormData
+): Promise<void> {
+  await Promise.resolve();
+  deactivateDialog(formIdFrom(formData));
+  revalidatePath("/dialogs");
+}
+
+export async function duplicateDialogFormAction(
+  formData: FormData
+): Promise<void> {
+  await duplicateDialogAction(formIdFrom(formData));
+}
+
+export async function deleteDialogFormAction(
+  formData: FormData
+): Promise<void> {
+  await deleteDialogAction(formIdFrom(formData));
+}
+
+export async function toggleDialogLockFormAction(
+  formData: FormData
+): Promise<void> {
+  await Promise.resolve();
+  const id = formIdFrom(formData);
+  const isLocked = formData.get("locked") === "1";
+  setDialogLocked(id, !isLocked);
+  revalidatePath("/dialogs");
+  revalidatePath(`/dialogs/${id}`);
+}
+
 export async function importDialogAction(
   _prev: DialogActionState,
   formData: FormData
@@ -222,6 +278,12 @@ export async function importDialogAction(
 export async function loadDefaultDialogAction(): Promise<void> {
   await Promise.resolve();
   resetDefaultDialog();
+  revalidatePath("/dialogs");
+}
+
+export async function loadFormDialogAction(): Promise<void> {
+  await Promise.resolve();
+  resetFormDialog();
   revalidatePath("/dialogs");
 }
 

@@ -6,6 +6,7 @@ import {
   LogOut,
   MessageSquare,
   Phone,
+  QrCode,
   Settings,
   Trophy,
   Users,
@@ -80,6 +81,12 @@ const tiles: Tile[] = [
     icon: Trophy,
     label: "Slotmachine",
     description: "Kontaktformular mit QR-Versand per WhatsApp",
+  },
+  {
+    href: "/start-qr",
+    icon: QrCode,
+    label: "Start-QR",
+    description: "GoWa-Joiner für den Stand (wa.me QR mit 'start')",
   },
 ];
 

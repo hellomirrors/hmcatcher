@@ -1,0 +1,1094 @@
+{
+  "version": 1,
+  "triggerKeywords": ["start", "hallo", "hi", "hello"],
+  "timeoutMinutes": 60,
+  "reminderAfterMinutes": 30,
+  "reminderMessage": "Hey! Du bist noch mittendrin im Gewinnspiel. Schreib einfach weiter, um teilzunehmen!",
+  "timeoutMessage": "Deine Gewinnspiel-Session ist leider abgelaufen. Schreib 'start' um neu zu beginnen!",
+  "unmatchedInputMode": "error",
+  "errorMessage": "Bitte wähle eine der angebotenen Optionen.",
+  "steps": [
+    {
+      "id": "welcome",
+      "type": "buttons",
+      "phase": "Onboarding",
+      "message": "Willkommen beim Felix Jackpot!\n\nWenn du mitmachen möchtest, bestätige mit 'Ja, teilnehmen' und nimm automatisch an unserer Slotmaschine teil.\n\nMit deiner Teilnahme akzeptierst du unsere Teilnahmebedingungen und Datenschutzhinweise:\nhellomirrors.com/essen",
+      "options": [
+        {
+          "id": "welcome-ja",
+          "label": "Ja, teilnehmen"
+        },
+        {
+          "id": "welcome-nein",
+          "label": "Nein, danke"
+        }
+      ],
+      "variableName": "teilnahme",
+      "transitions": [
+        {
+          "conditions": [
+            {
+              "field": "teilnahme",
+              "operator": "eq",
+              "value": "welcome-nein"
+            }
+          ],
+          "targetStepId": "abschied"
+        },
+        {
+          "targetStepId": "vorname"
+        }
+      ]
+    },
+    {
+      "id": "abschied",
+      "type": "text",
+      "phase": "Onboarding",
+      "message": "Schade, dann vielleicht beim nächsten Mal!",
+      "transitions": []
+    },
+    {
+      "id": "vorname",
+      "type": "free_text",
+      "phase": "Lead Erfassung",
+      "message": "Super, freut uns!\n\nWie heißt du mit Vornamen?",
+      "variableName": "vorname",
+      "validation": "nonempty",
+      "validationMessage": "Bitte gib deinen Vornamen ein.",
+      "transitions": [
+        {
+          "targetStepId": "nachname"
+        }
+      ]
+    },
+    {
+      "id": "nachname",
+      "type": "free_text",
+      "phase": "Lead Erfassung",
+      "message": "Und dein Nachname?",
+      "variableName": "nachname",
+      "validation": "nonempty",
+      "validationMessage": "Bitte gib deinen Nachnamen ein.",
+      "transitions": [
+        {
+          "targetStepId": "email"
+        }
+      ]
+    },
+    {
+      "id": "email",
+      "type": "free_text",
+      "phase": "Lead Erfassung",
+      "message": "Wie lautet deine E-Mail-Adresse?",
+      "variableName": "email",
+      "validation": "email",
+      "validationMessage": "Bitte gib eine gültige E-Mail-Adresse ein.",
+      "transitions": [
+        {
+          "targetStepId": "alreadyCustomer"
+        }
+      ]
+    },
+    {
+      "id": "alreadyCustomer",
+      "type": "buttons",
+      "phase": "Lead Erfassung",
+      "message": "Bist du bereits Kunde bei Hello Mirrors?",
+      "options": [
+        {
+          "id": "ac-ja",
+          "label": "Ja",
+          "score": -30
+        },
+        {
+          "id": "ac-nein",
+          "label": "Nein"
+        }
+      ],
+      "variableName": "alreadyCustomer",
+      "transitions": [
+        {
+          "targetStepId": "arbeitsbereich"
+        }
+      ]
+    },
+    {
+      "id": "arbeitsbereich",
+      "type": "list",
+      "phase": "Qualifizierung",
+      "message": "In welchem Bereich arbeitest du?",
+      "options": [
+        {
+          "id": "ab-stationaer",
+          "label": "Stationäre Pflege",
+          "score": 30
+        },
+        {
+          "id": "ab-ambulant",
+          "label": "Ambulante Pflege",
+          "score": 0
+        },
+        {
+          "id": "ab-bildung",
+          "label": "Bildungseinrichtung",
+          "score": 0
+        },
+        {
+          "id": "ab-medizinisch",
+          "label": "Medizinisch",
+          "score": 0
+        },
+        {
+          "id": "ab-sonstiges",
+          "label": "Sonstiges",
+          "score": 0
+        }
+      ],
+      "listButtonText": "Auswählen",
+      "variableName": "arbeitsbereich",
+      "transitions": [
+        {
+          "conditions": [
+            {
+              "field": "arbeitsbereich",
+              "operator": "eq",
+              "value": "ab-stationaer"
+            }
+          ],
+          "targetStepId": "rolle-stationaer"
+        },
+        {
+          "conditions": [
+            {
+              "field": "arbeitsbereich",
+              "operator": "eq",
+              "value": "ab-ambulant"
+            }
+          ],
+          "targetStepId": "rolle-ambulant"
+        },
+        {
+          "conditions": [
+            {
+              "field": "arbeitsbereich",
+              "operator": "eq",
+              "value": "ab-bildung"
+            }
+          ],
+          "targetStepId": "rolle-bildung"
+        },
+        {
+          "conditions": [
+            {
+              "field": "arbeitsbereich",
+              "operator": "eq",
+              "value": "ab-medizinisch"
+            }
+          ],
+          "targetStepId": "rolle-medizinisch"
+        },
+        {
+          "conditions": [
+            {
+              "field": "arbeitsbereich",
+              "operator": "eq",
+              "value": "ab-sonstiges"
+            }
+          ],
+          "targetStepId": "typ-sonstiges"
+        }
+      ]
+    },
+    {
+      "id": "rolle-stationaer",
+      "type": "list",
+      "phase": "Qualifizierung",
+      "message": "Welche Rolle hast du in deiner Einrichtung?",
+      "options": [
+        {
+          "id": "rs-el",
+          "label": "Einrichtungsleitung",
+          "score": 60
+        },
+        {
+          "id": "rs-stel",
+          "label": "Stellv. Leitung",
+          "score": 60
+        },
+        {
+          "id": "rs-pdl",
+          "label": "PDL",
+          "score": 60
+        },
+        {
+          "id": "rs-lsb",
+          "label": "Soziale Betreuung",
+          "score": 60
+        },
+        {
+          "id": "rs-qm",
+          "label": "Qualitätsmanagement",
+          "score": 10
+        },
+        {
+          "id": "rs-wbl",
+          "label": "Wohnbereichsleitung",
+          "score": 10
+        },
+        {
+          "id": "rs-vl",
+          "label": "Verwaltungsleitung",
+          "score": 10
+        },
+        {
+          "id": "rs-43b",
+          "label": "Betreuungskraft ",
+          "score": 10
+        },
+        {
+          "id": "rs-111",
+          "label": "Geschäftsführung",
+          "score": 60
+        },
+        {
+          "id": "opt_1776354610796",
+          "label": "Azubi",
+          "score": 10
+        }
+      ],
+      "listButtonText": "Auswählen",
+      "variableName": "rolle",
+      "unmatchedInputMode": "as_other",
+      "unmatchedInputValue": "Sonstiges",
+      "transitions": [
+        {
+          "targetStepId": "einrichtung-stationaer"
+        }
+      ]
+    },
+    {
+      "id": "einrichtung-stationaer",
+      "type": "free_text",
+      "phase": "Qualifizierung",
+      "message": "Wie heißt deine Einrichtung?",
+      "variableName": "einrichtung",
+      "validation": "nonempty",
+      "validationMessage": "Bitte gib den Namen deiner Einrichtung ein.",
+      "transitions": [
+        {
+          "targetStepId": "betten-stationaer"
+        }
+      ]
+    },
+    {
+      "id": "betten-stationaer",
+      "type": "list",
+      "phase": "Qualifizierung",
+      "message": "Wie viele Betten hat die Einrichtung?",
+      "options": [
+        {
+          "id": "bs-u40",
+          "label": "Unter 20",
+          "score": 10
+        },
+        {
+          "id": "bs-40-80",
+          "label": "20 bis 60 Betten",
+          "score": 20
+        },
+        {
+          "id": "bs-ue80",
+          "label": "60 bis 80 Betten",
+          "score": 30
+        },
+        {
+          "id": "opt_1776354096179",
+          "label": "Über 80 Betten",
+          "score": 30
+        }
+      ],
+      "listButtonText": "Auswählen",
+      "variableName": "betten",
+      "transitions": [
+        {
+          "targetStepId": "traegerschaft-stationaer"
+        }
+      ]
+    },
+    {
+      "id": "traegerschaft-stationaer",
+      "type": "buttons",
+      "phase": "Qualifizierung",
+      "message": "Ist eure Einrichtung in privater oder öffentlicher Trägerschaft?",
+      "options": [
+        {
+          "id": "ts-priv",
+          "label": "Privat",
+          "score": 15
+        },
+        {
+          "id": "ts-oeff",
+          "label": "Öffentlich",
+          "score": 10
+        },
+        {
+          "id": "ts-frei",
+          "label": "Freigemeinnützig",
+          "score": 10
+        }
+      ],
+      "variableName": "traegerschaft",
+      "transitions": [
+        {
+          "targetStepId": "plz-stationaer"
+        }
+      ]
+    },
+    {
+      "id": "plz-stationaer",
+      "type": "free_text",
+      "phase": "Qualifizierung",
+      "message": "Was ist die Postleitzahl deiner Einrichtung?",
+      "variableName": "plz",
+      "validation": "plz",
+      "validationMessage": "Bitte gib eine gültige Postleitzahl ein.",
+      "transitions": [
+        {
+          "targetStepId": "qr-code"
+        }
+      ]
+    },
+    {
+      "id": "rolle-ambulant",
+      "type": "list",
+      "phase": "Qualifizierung",
+      "message": "Welche Rolle hast du in deinem Pflegedienst?",
+      "options": [
+        {
+          "id": "ra-gf",
+          "label": "Geschäftsführung",
+          "score": 50
+        },
+        {
+          "id": "ra-pdl",
+          "label": "PDL",
+          "score": 40
+        },
+        {
+          "id": "ra-spdl",
+          "label": "Stellv. PDL",
+          "score": 35
+        },
+        {
+          "id": "ra-qm",
+          "label": "Qualitätsmanagement",
+          "score": 30
+        },
+        {
+          "id": "ra-tl",
+          "label": "Teamleitung",
+          "score": 25
+        },
+        {
+          "id": "ra-bk",
+          "label": "Betreuungskraft",
+          "score": 10
+        },
+        {
+          "id": "ra-verw",
+          "label": "Verwaltung / Büro",
+          "score": 15
+        }
+      ],
+      "listButtonText": "Auswählen",
+      "variableName": "rolle",
+      "transitions": [
+        {
+          "targetStepId": "name-ambulant"
+        }
+      ]
+    },
+    {
+      "id": "name-ambulant",
+      "type": "free_text",
+      "phase": "Qualifizierung",
+      "message": "Wie heißt euer Pflegedienst?",
+      "variableName": "einrichtung",
+      "validation": "nonempty",
+      "validationMessage": "Bitte gib den Namen eures Pflegedienstes ein.",
+      "transitions": [
+        {
+          "targetStepId": "plz-ambulant"
+        }
+      ]
+    },
+    {
+      "id": "plz-ambulant",
+      "type": "free_text",
+      "phase": "Qualifizierung",
+      "message": "Was ist eure Postleitzahl?",
+      "variableName": "plz",
+      "validation": "plz",
+      "validationMessage": "Bitte gib eine gültige Postleitzahl ein.",
+      "transitions": [
+        {
+          "targetStepId": "qr-code"
+        }
+      ]
+    },
+    {
+      "id": "rolle-bildung",
+      "type": "list",
+      "phase": "Qualifizierung",
+      "message": "Welche Rolle hast du an deiner Bildungseinrichtung?",
+      "options": [
+        {
+          "id": "rb-sl",
+          "label": "Schulleitung",
+          "score": 40
+        },
+        {
+          "id": "rb-doz",
+          "label": "Dozent / Lehrkraft",
+          "score": 25
+        },
+        {
+          "id": "rb-pa",
+          "label": "Praxisanleitung",
+          "score": 30
+        },
+        {
+          "id": "rb-pp",
+          "label": "Pflegepädagoge",
+          "score": 25
+        },
+        {
+          "id": "rb-kl",
+          "label": "Kursleitung",
+          "score": 20
+        },
+        {
+          "id": "rb-verw",
+          "label": "Verwaltung",
+          "score": 15
+        },
+        {
+          "id": "rb-stud",
+          "label": "Student / Azubi",
+          "score": 5
+        }
+      ],
+      "listButtonText": "Auswählen",
+      "variableName": "rolle",
+      "transitions": [
+        {
+          "targetStepId": "typ-bildung"
+        }
+      ]
+    },
+    {
+      "id": "typ-bildung",
+      "type": "list",
+      "phase": "Qualifizierung",
+      "message": "Was für eine Einrichtung ist das?",
+      "options": [
+        {
+          "id": "tb-ps",
+          "label": "Pflegeschule",
+          "score": 20
+        },
+        {
+          "id": "tb-bfs",
+          "label": "Berufsfachschule",
+          "score": 15
+        },
+        {
+          "id": "tb-hs",
+          "label": "Hochschule / Uni",
+          "score": 10
+        },
+        {
+          "id": "tb-fwb",
+          "label": "Weiterbildung",
+          "score": 15
+        },
+        {
+          "id": "tb-vhs",
+          "label": "VHS / Erwachsene",
+          "score": 5
+        },
+        {
+          "id": "tb-sonst",
+          "label": "Sonstige",
+          "score": 5
+        }
+      ],
+      "listButtonText": "Auswählen",
+      "variableName": "einrichtungstyp",
+      "transitions": [
+        {
+          "targetStepId": "name-bildung"
+        }
+      ]
+    },
+    {
+      "id": "name-bildung",
+      "type": "free_text",
+      "phase": "Qualifizierung",
+      "message": "Wie heißt die Einrichtung?",
+      "variableName": "einrichtung",
+      "validation": "nonempty",
+      "validationMessage": "Bitte gib den Namen der Einrichtung ein.",
+      "transitions": [
+        {
+          "targetStepId": "qr-code"
+        }
+      ]
+    },
+    {
+      "id": "rolle-medizinisch",
+      "type": "list",
+      "phase": "Qualifizierung",
+      "message": "Welche Rolle hast du in deiner Einrichtung?",
+      "options": [
+        {
+          "id": "rm-kl",
+          "label": "Klinikleitung",
+          "score": 50
+        },
+        {
+          "id": "rm-al",
+          "label": "Ärztliche Leitung",
+          "score": 40
+        },
+        {
+          "id": "rm-pdl",
+          "label": "Pflegedienstleitung",
+          "score": 40
+        },
+        {
+          "id": "rm-stl",
+          "label": "Stationsleitung",
+          "score": 30
+        },
+        {
+          "id": "rm-thl",
+          "label": "Therapie-Leitung",
+          "score": 25
+        },
+        {
+          "id": "rm-sd",
+          "label": "Sozialdienst",
+          "score": 20
+        },
+        {
+          "id": "rm-fk",
+          "label": "Fachkraft",
+          "score": 10
+        },
+        {
+          "id": "rm-verw",
+          "label": "Verwaltung",
+          "score": 15
+        }
+      ],
+      "listButtonText": "Auswählen",
+      "variableName": "rolle",
+      "transitions": [
+        {
+          "targetStepId": "typ-medizinisch"
+        }
+      ]
+    },
+    {
+      "id": "typ-medizinisch",
+      "type": "list",
+      "phase": "Qualifizierung",
+      "message": "Was für eine Einrichtung ist das?",
+      "options": [
+        {
+          "id": "tm-kh",
+          "label": "Krankenhaus / Klinik",
+          "score": 20
+        },
+        {
+          "id": "tm-reha",
+          "label": "Rehaklinik",
+          "score": 15
+        },
+        {
+          "id": "tm-ger",
+          "label": "Geriatrische Klinik",
+          "score": 20
+        },
+        {
+          "id": "tm-tk",
+          "label": "Tagesklinik",
+          "score": 10
+        },
+        {
+          "id": "tm-mvz",
+          "label": "MVZ",
+          "score": 10
+        },
+        {
+          "id": "tm-hos",
+          "label": "Hospiz / Palliativ",
+          "score": 15
+        },
+        {
+          "id": "tm-sonst",
+          "label": "Sonstige",
+          "score": 5
+        }
+      ],
+      "listButtonText": "Auswählen",
+      "variableName": "einrichtungstyp",
+      "transitions": [
+        {
+          "targetStepId": "name-medizinisch"
+        }
+      ]
+    },
+    {
+      "id": "name-medizinisch",
+      "type": "free_text",
+      "phase": "Qualifizierung",
+      "message": "Wie heißt die Einrichtung?",
+      "variableName": "einrichtung",
+      "validation": "nonempty",
+      "validationMessage": "Bitte gib den Namen der Einrichtung ein.",
+      "transitions": [
+        {
+          "targetStepId": "qr-code"
+        }
+      ]
+    },
+    {
+      "id": "typ-sonstiges",
+      "type": "list",
+      "phase": "Qualifizierung",
+      "message": "Was beschreibt dich am besten?",
+      "options": [
+        {
+          "id": "so-aus",
+          "label": "Aussteller",
+          "score": 10
+        },
+        {
+          "id": "so-ber",
+          "label": "Berater / Consultant",
+          "score": 15
+        },
+        {
+          "id": "so-ver",
+          "label": "Verband",
+          "score": 10
+        },
+        {
+          "id": "so-pol",
+          "label": "Politik / Behörde",
+          "score": 5
+        },
+        {
+          "id": "so-wiss",
+          "label": "Wissenschaft",
+          "score": 10
+        },
+        {
+          "id": "so-press",
+          "label": "Presse / Medien",
+          "score": 15
+        },
+        {
+          "id": "so-inv",
+          "label": "Investor / Partner",
+          "score": 30
+        },
+        {
+          "id": "so-stud",
+          "label": "Student / Azubi",
+          "score": 5
+        },
+        {
+          "id": "so-priv",
+          "label": "Privat",
+          "score": 5
+        }
+      ],
+      "listButtonText": "Auswählen",
+      "variableName": "typ",
+      "transitions": [
+        {
+          "targetStepId": "qr-code"
+        }
+      ]
+    },
+    {
+      "id": "qr-code",
+      "type": "qr",
+      "phase": "Aktivierung",
+      "message": "Dein persönlicher QR Code wird generiert...\n\nFertig! Halte den QR Code an den Scanner an unserem Stand.\n\nDas Glücksrad dreht sich auf dem großen Screen!",
+      "qrMode": "session-data",
+      "transitions": [
+        {
+          "targetStepId": "warte-slotmachine"
+        }
+      ]
+    },
+    {
+      "id": "warte-slotmachine",
+      "type": "mqtt",
+      "phase": "Aktivierung",
+      "message": "Warte auf Signal der Slotmaschine...",
+      "mqttTopic": "hmslots",
+      "mqttMatchMode": "session",
+      "mqttSessionIdKey": "sessionId",
+      "transitions": [
+        {
+          "conditions": [
+            {
+              "field": "trophy",
+              "operator": "eq",
+              "value": "jackpot"
+            }
+          ],
+          "targetStepId": "gewinn-jackpot"
+        },
+        {
+          "conditions": [
+            {
+              "field": "trophy",
+              "operator": "eq",
+              "value": "drink"
+            }
+          ],
+          "targetStepId": "gewinn-drink"
+        },
+        {
+          "conditions": [
+            {
+              "field": "trophy",
+              "operator": "eq",
+              "value": "candy"
+            }
+          ],
+          "targetStepId": "gewinn-candy"
+        },
+        {
+          "targetStepId": "gewinn-niete"
+        }
+      ]
+    },
+    {
+      "id": "gewinn-jackpot",
+      "type": "text",
+      "phase": "Aktivierung",
+      "message": "Hauptgewinn!\n\nDu erhältst unser Goldenes Ticket: 4 Wochen Felix für einmalig 100€.",
+      "transitions": [
+        {
+          "targetStepId": "bestandsgeraet"
+        }
+      ]
+    },
+    {
+      "id": "gewinn-drink",
+      "type": "text",
+      "phase": "Aktivierung",
+      "message": "Du hast ein Getränk gewonnen!\n\nHol es dir direkt am Hellomirrors-Stand ab.",
+      "transitions": [
+        {
+          "targetStepId": "bestandsgeraet"
+        }
+      ]
+    },
+    {
+      "id": "gewinn-candy",
+      "type": "text",
+      "phase": "Aktivierung",
+      "message": "Du hast eine Süßigkeit gewonnen!\n\nGreif am Hellomirrors-Stand zu.",
+      "transitions": [
+        {
+          "targetStepId": "bestandsgeraet"
+        }
+      ]
+    },
+    {
+      "id": "gewinn-niete",
+      "type": "text",
+      "phase": "Aktivierung",
+      "message": "Knapp daneben – diesmal kein Gewinn.\n\nDanke fürs Mitspielen!",
+      "transitions": [
+        {
+          "targetStepId": "bestandsgeraet"
+        }
+      ]
+    },
+    {
+      "id": "kanal-opt-in",
+      "type": "buttons",
+      "phase": "Info-Kanal",
+      "message": "Noch kurz: Sollen wir dich auf dem Laufenden halten? Aktionen, Gewinnspiele und Infos rund um Felix, bequem per WhatsApp über unseren Hello Mirrors Channel.\nFreiwillig und jederzeit widerrufbar. Passt das?",
+      "options": [
+        {
+          "id": "kanal-ja",
+          "label": "Ja, gerne!",
+          "score": 10
+        },
+        {
+          "id": "kanal-nein",
+          "label": "Nein, danke",
+          "score": 0
+        }
+      ],
+      "variableName": "kanal_opt_in",
+      "transitions": [
+        {
+          "conditions": [
+            {
+              "field": "kanal_opt_in",
+              "operator": "eq",
+              "value": "kanal-nein"
+            }
+          ],
+          "targetStepId": "kanal-abschied"
+        },
+        {
+          "targetStepId": "kanal-info"
+        }
+      ]
+    },
+    {
+      "id": "kanal-abschied",
+      "type": "text",
+      "phase": "Info-Kanal",
+      "message": "Schade, vielleicht beim nächsten Mal!",
+      "transitions": []
+    },
+    {
+      "id": "kanal-info",
+      "type": "text",
+      "phase": "Info-Kanal",
+      "message": "Wir nehmen dich nun in unseren Info-Kanal auf.\n\nHier erhältst du ab und zu Neuigkeiten über unser Gesundheitsdisplay.",
+      "forceProvider": "gowa",
+      "transitions": [
+        {
+          "targetStepId": "kanal-pdf"
+        }
+      ]
+    },
+    {
+      "id": "kanal-pdf",
+      "type": "document",
+      "phase": "Info-Kanal",
+      "message": "Willkommen in unserem Info-Kanal! Hier unser aktueller Flyer.",
+      "documentPath": "/HelloFelix-2026-Q2.pdf",
+      "documentFilename": "HelloFelix-2026-Q2.pdf",
+      "documentMimeType": "application/pdf",
+      "forceProvider": "gowa",
+      "transitions": [
+        {
+          "targetStepId": "kanal-video"
+        }
+      ]
+    },
+    {
+      "id": "kanal-video",
+      "type": "video",
+      "phase": "Info-Kanal",
+      "message": "Schau dir auch unser kurzes Video an:",
+      "videoUrl": "https://youtube.com/shorts/YLr7RJrKvaE",
+      "forceProvider": "gowa",
+      "transitions": [
+        {
+          "targetStepId": "produkt-info"
+        }
+      ]
+    },
+    {
+      "id": "produkt-info",
+      "type": "text",
+      "phase": "Nurturing",
+      "message": "Übrigens, wusstest du schon?\n\nFelix ist das digitale Gesundheitsdisplay für stationäre Pflegeeinrichtungen.\n\n70+ Apps. 5.400+ Übungen. Sofort einsatzbereit.\n\nSprich uns am Stand an!",
+      "forceProvider": "gowa",
+      "transitions": [
+        {
+          "targetStepId": "produkt-video"
+        }
+      ]
+    },
+    {
+      "id": "produkt-video",
+      "type": "video",
+      "phase": "Nurturing",
+      "message": "Felix in Aktion: So sieht der Alltag mit Felix in einer Pflegeeinrichtung aus.",
+      "videoUrl": "https://youtu.be/ou_qajvNTCI?si=gfB-pYiDiNGDChGW",
+      "forceProvider": "gowa",
+      "transitions": [
+        {
+          "targetStepId": "abschluss"
+        }
+      ]
+    },
+    {
+      "id": "bestandsgeraet",
+      "type": "buttons",
+      "phase": "Wettbewerbs Intel",
+      "message": "Kurze Rückfrage: Habt ihr bereits ein digitales Gerät in der sozialen Betreuung eurer Einrichtung?",
+      "options": [
+        {
+          "id": "bg-ja",
+          "label": "Ja",
+          "score": 10
+        },
+        {
+          "id": "bg-nein",
+          "label": "Nein",
+          "score": 5
+        }
+      ],
+      "variableName": "bestandsgeraet",
+      "transitions": [
+        {
+          "conditions": [
+            {
+              "field": "bestandsgeraet",
+              "operator": "eq",
+              "value": "bg-ja"
+            }
+          ],
+          "targetStepId": "wettbewerber"
+        },
+        {
+          "targetStepId": "instagram"
+        }
+      ]
+    },
+    {
+      "id": "wettbewerber",
+      "type": "list",
+      "phase": "Wettbewerbs Intel",
+      "message": "Welchen Anbieter nutzt ihr bereits?",
+      "options": [
+        {
+          "id": "wb-hm",
+          "label": "Hello Mirrors ❤️"
+        },
+        {
+          "id": "wb-ct",
+          "label": "CareTable"
+        },
+        {
+          "id": "wb-bl",
+          "label": "BikeLabz"
+        },
+        {
+          "id": "wb-mb",
+          "label": "Mainboard"
+        },
+        {
+          "id": "wb-tt",
+          "label": "Tovertafel"
+        },
+        {
+          "id": "wb-sf",
+          "label": "SilverFit"
+        },
+        {
+          "id": "wb-other",
+          "label": "Etwas anderes"
+        }
+      ],
+      "listButtonText": "Auswählen",
+      "variableName": "wettbewerber",
+      "transitions": [
+        {
+          "targetStepId": "wettbewerber-antwort"
+        }
+      ]
+    },
+    {
+      "id": "wettbewerber-antwort",
+      "type": "text",
+      "phase": "Wettbewerbs Intel",
+      "message": "Danke! Ihr nutzt also {{wettbewerber_label}}.\n\nFalls ihr Felix mal testen wollt, sprecht uns gerne am Stand an!",
+      "transitions": [
+        {
+          "targetStepId": "instagram"
+        }
+      ]
+    },
+    {
+      "id": "instagram",
+      "type": "buttons",
+      "phase": "Retention",
+      "message": "Folgt ihr uns schon auf Instagram?\n\nRegelmäßig Updates, Gewinnspiele und Infos rund um Hello Mirrors.",
+      "options": [
+        {
+          "id": "ig-ja",
+          "label": "Ja, wir folgen schon"
+        },
+        {
+          "id": "ig-nein",
+          "label": "Nein, noch nicht"
+        }
+      ],
+      "variableName": "instagram",
+      "transitions": [
+        {
+          "conditions": [
+            {
+              "field": "instagram",
+              "operator": "eq",
+              "value": "ig-nein"
+            }
+          ],
+          "targetStepId": "instagram-link"
+        },
+        {
+          "targetStepId": "kanal-opt-in"
+        }
+      ]
+    },
+    {
+      "id": "instagram-link",
+      "type": "text",
+      "phase": "Retention",
+      "message": "Alles klar hier könnt ihr uns folgen: https://www.instagram.com/hellomirrors/",
+      "transitions": [
+        {
+          "targetStepId": "kanal-opt-in"
+        }
+      ]
+    },
+    {
+      "id": "abschluss",
+      "type": "text",
+      "phase": "Retention",
+      "message": "Super, dann verpasst ihr nichts!\n\nDanke fürs Mitmachen und viel Spaß auf der Messe. Bis bald!",
+      "forceProvider": "gowa",
+      "transitions": []
+    }
+  ],
+  "scoreBuckets": [
+    {
+      "id": "low",
+      "label": "Low",
+      "minScore": 0
+    },
+    {
+      "id": "medium",
+      "label": "Medium",
+      "minScore": 85
+    },
+    {
+      "id": "high",
+      "label": "High",
+      "minScore": 110
+    }
+  ],
+  "leadConsentTrigger": {
+    "variable": "teilnahme",
+    "value": "welcome-ja"
+  }
+}

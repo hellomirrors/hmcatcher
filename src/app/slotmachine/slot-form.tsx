@@ -9,9 +9,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Select,
   SelectContent,
@@ -21,7 +21,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 import type { DialogAnswerOption } from "@/domain/dialog/dialog-schema";
 import { type SlotFormResult, submitSlotmachineAction } from "./action";
 import { evaluateTransitions } from "./transitions";
@@ -63,19 +62,6 @@ function optionById(
   return options?.find((o) => o.id === id);
 }
 
-function renderFreeTextInvalid(
-  step: FormStepData,
-  value: string | undefined
-): string | null {
-  if (value === undefined || value === "") {
-    return null;
-  }
-  if (runValidation(value, step.validation)) {
-    return null;
-  }
-  return step.validationMessage ?? "Ungültige Eingabe.";
-}
-
 function buildStepMap(steps: FormStepData[]): Map<string, FormStepData> {
   const m = new Map<string, FormStepData>();
   for (const step of steps) {
@@ -87,8 +73,6 @@ function buildStepMap(steps: FormStepData[]): Map<string, FormStepData> {
 interface ChainResult {
   chain: string[];
   reachedEnd: boolean;
-  totalScore: number;
-  variables: Record<string, string>;
 }
 
 function computeChain(
@@ -106,21 +90,20 @@ function computeChain(
     safety += 1;
     const step = steps.get(currentId);
     if (!step) {
-      return { chain, reachedEnd: false, variables, totalScore };
+      return { chain, reachedEnd: false };
     }
     if (step.type === "qr" || step.type === "mqtt") {
-      return { chain, reachedEnd: true, variables, totalScore };
+      return { chain, reachedEnd: true };
     }
     if (
       step.type === "text" ||
       step.type === "video" ||
       step.type === "document"
     ) {
-      const target = evaluateTransitions(step.transitions, {
+      currentId = evaluateTransitions(step.transitions, {
         ...variables,
         _score: String(totalScore),
       });
-      currentId = target;
       continue;
     }
 
@@ -128,10 +111,10 @@ function computeChain(
 
     const answer = answers[step.id];
     if (!answer) {
-      return { chain, reachedEnd: false, variables, totalScore };
+      return { chain, reachedEnd: false };
     }
     if (!runValidation(answer.value, step.validation)) {
-      return { chain, reachedEnd: false, variables, totalScore };
+      return { chain, reachedEnd: false };
     }
 
     if (step.variableName) {
@@ -146,13 +129,36 @@ function computeChain(
     currentId = evaluateTransitions(step.transitions, variables);
   }
 
-  return { chain, reachedEnd: !currentId, variables, totalScore };
+  return { chain, reachedEnd: !currentId };
+}
+
+/**
+ * Commits one answer. Anything after this step in the previously-rendered
+ * chain is dropped, because a different answer may change the branch.
+ */
+function commitAnswerReducer(
+  definition: SlotFormDefinition,
+  prev: Record<string, AnswerEntry>,
+  stepId: string,
+  entry: AnswerEntry
+): Record<string, AnswerEntry> {
+  const { chain } = computeChain(definition, prev);
+  const idx = chain.indexOf(stepId);
+  const kept = idx === -1 ? chain : chain.slice(0, idx);
+  const next: Record<string, AnswerEntry> = {};
+  for (const id of kept) {
+    const existing = prev[id];
+    if (existing) {
+      next[id] = existing;
+    }
+  }
+  next[stepId] = entry;
+  return next;
 }
 
 export function SlotForm({ definition }: SlotFormProps) {
   const [sessionId, setSessionId] = useState("");
   const [mobile, setMobile] = useState("");
-  const [consent, setConsent] = useState(false);
   const [answers, setAnswers] = useState<Record<string, AnswerEntry>>({});
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -172,34 +178,19 @@ export function SlotForm({ definition }: SlotFormProps) {
     setSessionId(fresh);
   }, []);
 
-  const { chain, reachedEnd, variables, totalScore } = useMemo(
+  const { chain, reachedEnd } = useMemo(
     () => computeChain(definition, answers),
     [answers, definition]
   );
-
   const stepMap = useMemo(() => buildStepMap(definition.steps), [definition]);
 
   const commitAnswer = (stepId: string, entry: AnswerEntry) => {
-    setAnswers((prev) => {
-      const next: Record<string, AnswerEntry> = {};
-      const chainBefore = computeChain(definition, prev).chain;
-      const idx = chainBefore.indexOf(stepId);
-      // Drop anything after this step — the branch may change.
-      const kept = idx === -1 ? chainBefore : chainBefore.slice(0, idx);
-      for (const id of kept) {
-        const existing = prev[id];
-        if (existing) {
-          next[id] = existing;
-        }
-      }
-      next[stepId] = entry;
-      return next;
-    });
+    setAnswers((prev) => commitAnswerReducer(definition, prev, stepId, entry));
   };
 
   const mobileValid = isValidGermanMobile(mobile);
   const canSubmit =
-    reachedEnd && mobileValid && consent && !submitting && sessionId !== "";
+    reachedEnd && mobileValid && !submitting && sessionId !== "";
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -221,7 +212,7 @@ export function SlotForm({ definition }: SlotFormProps) {
       const result: SlotFormResult = await submitSlotmachineAction({
         sessionId,
         mobile: normalizeGermanMobile(mobile),
-        consent,
+        consent: true,
         answers: answerList,
       });
       if (result.success) {
@@ -300,65 +291,39 @@ export function SlotForm({ definition }: SlotFormProps) {
                 )}
               </div>
 
-              <Label
-                className="flex cursor-pointer items-start gap-3"
-                htmlFor="slot-consent"
+              {submitError && (
+                <p className="rounded-md bg-destructive/10 p-2 text-destructive text-sm">
+                  {submitError}
+                </p>
+              )}
+
+              <p className="text-center text-muted-foreground text-xs">
+                Mit dem Anfordern des QR-Codes stimmst du den{" "}
+                <a
+                  className="underline"
+                  href={definition.termsUrl ?? "https://hellomirrors.com"}
+                  rel="noopener"
+                  target="_blank"
+                >
+                  Teilnahmebedingungen &amp; Datenschutzhinweisen
+                </a>{" "}
+                zu.
+              </p>
+
+              <Button
+                className="w-full"
+                disabled={!canSubmit}
+                size="lg"
+                type="submit"
               >
-                <Checkbox
-                  checked={consent}
-                  id="slot-consent"
-                  onCheckedChange={(checked) => setConsent(checked === true)}
-                />
-                <span className="text-sm">
-                  Ich akzeptiere die{" "}
-                  <a
-                    className="underline"
-                    href={definition.termsUrl ?? "https://hellomirrors.com"}
-                    rel="noopener"
-                    target="_blank"
-                  >
-                    Teilnahmebedingungen & Datenschutzhinweise
-                  </a>
-                  .
-                </span>
-              </Label>
+                {submitting ? "Wird gesendet…" : "Code senden"}
+              </Button>
             </>
           )}
-
-          {submitError && (
-            <p className="rounded-md bg-destructive/10 p-2 text-destructive text-sm">
-              {submitError}
-            </p>
-          )}
-
-          <Button
-            className="w-full"
-            disabled={!canSubmit}
-            size="lg"
-            type="submit"
-          >
-            {submitting ? "Wird gesendet…" : "QR-Code an WhatsApp senden"}
-          </Button>
-
-          <p className="text-center text-muted-foreground text-xs">
-            Punkte: {totalScore}
-            {definition.scoreBuckets && variables._score
-              ? ` / Bucket: ${bucketFromScore(totalScore, definition.scoreBuckets)}`
-              : ""}
-          </p>
         </CardContent>
       </Card>
     </form>
   );
-}
-
-function bucketFromScore(
-  score: number,
-  buckets: NonNullable<SlotFormDefinition["scoreBuckets"]>
-): string {
-  const sorted = [...buckets].sort((a, b) => b.minScore - a.minScore);
-  const match = sorted.find((b) => score >= b.minScore);
-  return match?.label ?? "—";
 }
 
 interface StepFieldProps {
@@ -369,13 +334,19 @@ interface StepFieldProps {
 
 function StepField({ step, answer, commitAnswer }: StepFieldProps) {
   if (step.type === "free_text") {
-    return <FreeTextField {...{ step, answer, commitAnswer }} />;
+    return (
+      <FreeTextField answer={answer} commitAnswer={commitAnswer} step={step} />
+    );
   }
   if (step.type === "buttons" && step.variableName === "alreadyCustomer") {
-    return <SwitchField {...{ step, answer, commitAnswer }} />;
+    return (
+      <RadioField answer={answer} commitAnswer={commitAnswer} step={step} />
+    );
   }
   if (step.type === "buttons" || step.type === "list") {
-    return <SelectField {...{ step, answer, commitAnswer }} />;
+    return (
+      <SelectField answer={answer} commitAnswer={commitAnswer} step={step} />
+    );
   }
   return null;
 }
@@ -385,13 +356,16 @@ function FreeTextField({ step, answer, commitAnswer }: StepFieldProps) {
   useEffect(() => {
     setDraft(answer?.value ?? "");
   }, [answer?.value]);
+
   const inputId = `slot-step-${step.id}`;
-  const invalidMessage = renderFreeTextInvalid(step, draft);
-  const isCommitted = answer?.value === draft && draft !== "";
+  const trimmed = draft.trim();
+  const valid = runValidation(trimmed, step.validation);
+  const showInvalid = draft !== "" && !valid;
+  const dirty = trimmed !== (answer?.value ?? "");
+  const showConfirm = !answer || dirty;
 
   const commit = () => {
-    const trimmed = draft.trim();
-    if (!runValidation(trimmed, step.validation)) {
+    if (!valid) {
       return;
     }
     commitAnswer(step.id, { value: trimmed, score: 0 });
@@ -406,9 +380,8 @@ function FreeTextField({ step, answer, commitAnswer }: StepFieldProps) {
         </p>
       )}
       <Input
-        aria-invalid={invalidMessage !== null}
+        aria-invalid={showInvalid}
         id={inputId}
-        onBlur={commit}
         onChange={(e) => setDraft(e.target.value)}
         onKeyDown={(e) => {
           if (e.key === "Enter") {
@@ -418,25 +391,45 @@ function FreeTextField({ step, answer, commitAnswer }: StepFieldProps) {
         }}
         value={draft}
       />
-      {invalidMessage && (
-        <p className="text-destructive text-xs">{invalidMessage}</p>
+      {showInvalid && (
+        <p className="text-destructive text-xs">
+          {step.validationMessage ?? "Ungültige Eingabe."}
+        </p>
       )}
-      {isCommitted && !invalidMessage && (
-        <p className="text-muted-foreground text-xs">Übernommen.</p>
+      {showConfirm && (
+        <div className="flex justify-end">
+          <Button
+            disabled={!valid}
+            onClick={commit}
+            size="sm"
+            type="button"
+            variant={answer ? "outline" : "default"}
+          >
+            {answer ? "Übernehmen" : "Weiter"}
+          </Button>
+        </div>
       )}
     </div>
   );
 }
 
 function SelectField({ step, answer, commitAnswer }: StepFieldProps) {
-  const inputId = `slot-step-${step.id}`;
   const options = step.options ?? [];
+  const [draft, setDraft] = useState(answer?.value ?? "");
+  useEffect(() => {
+    setDraft(answer?.value ?? "");
+  }, [answer?.value]);
 
-  const onChange = (value: string | null) => {
-    if (!value) {
+  const inputId = `slot-step-${step.id}`;
+  const dirty = draft !== (answer?.value ?? "");
+  const showConfirm = !answer || dirty;
+  const selectable = draft !== "";
+
+  const commit = () => {
+    if (!selectable) {
       return;
     }
-    const opt = optionById(options, value);
+    const opt = optionById(options, draft);
     if (!opt) {
       return;
     }
@@ -457,7 +450,7 @@ function SelectField({ step, answer, commitAnswer }: StepFieldProps) {
           {stepBody(step.message)}
         </p>
       )}
-      <Select onValueChange={onChange} value={answer?.value ?? ""}>
+      <Select onValueChange={(v) => setDraft(v ?? "")} value={draft}>
         <SelectTrigger id={inputId}>
           <SelectValue placeholder="Bitte auswählen…" />
         </SelectTrigger>
@@ -486,24 +479,42 @@ function SelectField({ step, answer, commitAnswer }: StepFieldProps) {
               ))}
         </SelectContent>
       </Select>
+      {showConfirm && (
+        <div className="flex justify-end">
+          <Button
+            disabled={!selectable}
+            onClick={commit}
+            size="sm"
+            type="button"
+            variant={answer ? "outline" : "default"}
+          >
+            {answer ? "Übernehmen" : "Weiter"}
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
 
-function SwitchField({ step, answer, commitAnswer }: StepFieldProps) {
+function RadioField({ step, answer, commitAnswer }: StepFieldProps) {
   const options = step.options ?? [];
-  // Convention: option index 0 = "on", index 1 = "off".
-  const onOption = options[0];
-  const offOption = options[1];
-  if (!(onOption && offOption)) {
-    return null;
-  }
-  const current = answer?.value;
-  const checked = current === onOption.id;
-  const inputId = `slot-step-${step.id}`;
+  const defaultValue = answer?.value ?? options[0]?.id ?? "";
+  const [draft, setDraft] = useState(defaultValue);
+  useEffect(() => {
+    setDraft(answer?.value ?? options[0]?.id ?? "");
+  }, [answer?.value, options]);
 
-  const onChange = (next: boolean) => {
-    const opt = next ? onOption : offOption;
+  const inputId = `slot-step-${step.id}`;
+  const dirty = draft !== (answer?.value ?? "");
+  // Radio always has a default selected, so the "Weiter" button stays
+  // visible even if the user doesn't change anything — per user request.
+  const showConfirm = !answer || dirty;
+
+  const commit = () => {
+    const opt = optionById(options, draft);
+    if (!opt) {
+      return;
+    }
     commitAnswer(step.id, {
       value: opt.id,
       label: opt.label,
@@ -511,21 +522,45 @@ function SwitchField({ step, answer, commitAnswer }: StepFieldProps) {
     });
   };
 
+  if (options.length === 0) {
+    return null;
+  }
+
   return (
-    <div className="flex items-center justify-between gap-3 rounded-md border p-3">
-      <div className="grid gap-0.5">
-        <Label className="cursor-pointer" htmlFor={inputId}>
-          {stepTitle(step.message)}
-        </Label>
+    <div className="grid gap-2">
+      <Label htmlFor={inputId}>{stepTitle(step.message)}</Label>
+      {stepBody(step.message) && (
         <p className="text-muted-foreground text-xs">
-          {checked ? onOption.label : offOption.label}
+          {stepBody(step.message)}
         </p>
-      </div>
-      <Switch
-        checked={checked}
-        id={inputId}
-        onCheckedChange={(value) => onChange(value === true)}
-      />
+      )}
+      <RadioGroup onValueChange={(v) => setDraft(v ?? "")} value={draft}>
+        {options.map((opt) => {
+          const optionId = `${inputId}-${opt.id}`;
+          return (
+            <Label
+              className="flex cursor-pointer items-center gap-2 text-sm"
+              htmlFor={optionId}
+              key={opt.id}
+            >
+              <RadioGroupItem id={optionId} value={opt.id} />
+              <span>{opt.label}</span>
+            </Label>
+          );
+        })}
+      </RadioGroup>
+      {showConfirm && (
+        <div className="flex justify-end">
+          <Button
+            onClick={commit}
+            size="sm"
+            type="button"
+            variant={answer ? "outline" : "default"}
+          >
+            {answer ? "Übernehmen" : "Weiter"}
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

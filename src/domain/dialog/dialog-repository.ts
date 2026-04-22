@@ -378,6 +378,47 @@ export function getSession(
   }
 }
 
+interface CreateSessionWithIdInput extends CreateSessionInput {
+  score?: number;
+  sessionId: string;
+  state?: "active" | "completed" | "expired";
+  variables?: Record<string, string>;
+}
+
+/**
+ * Inserts a dialog session with a caller-supplied sessionId and optional
+ * preset variables/score. Used by the slotmachine web form, where the
+ * session UUID is generated on the client and stored in localStorage so
+ * the QR payload matches the DB row.
+ */
+export function createSessionWithId(input: CreateSessionWithIdInput): {
+  id: number;
+  sessionId: string;
+} {
+  try {
+    const result = db
+      .insert(dialogSessions)
+      .values({
+        sessionId: input.sessionId,
+        dialogId: input.dialogId,
+        provider: input.provider,
+        contact: input.contact,
+        currentStepId: input.currentStepId,
+        variables: JSON.stringify(input.variables ?? {}),
+        score: input.score ?? 0,
+        state: input.state ?? "active",
+      })
+      .run();
+    return { id: Number(result.lastInsertRowid), sessionId: input.sessionId };
+  } catch (error) {
+    log.error("Failed to create session with id", error, {
+      dialogId: input.dialogId,
+      sessionId: input.sessionId,
+    });
+    throw error;
+  }
+}
+
 export function createSession(input: CreateSessionInput): {
   id: number;
   sessionId: string;

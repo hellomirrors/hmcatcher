@@ -79,8 +79,7 @@ const tiles: Tile[] = [
     href: "/slotmachine",
     icon: Trophy,
     label: "Slotmachine",
-    description: "Standalone-Kontaktformular — noch nicht fertig",
-    badge: { text: "WIP", variant: "secondary" },
+    description: "Kontaktformular mit QR-Versand per WhatsApp",
   },
 ];
 

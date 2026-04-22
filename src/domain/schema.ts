@@ -8,16 +8,6 @@ export const exampleSchema = z.object({
 
 export type Example = z.infer<typeof exampleSchema>;
 
-export const contactDataSchema = z.object({
-  firstName: z.string().min(1, "Vorname ist erforderlich"),
-  lastName: z.string().min(1, "Nachname ist erforderlich"),
-  email: z.email("Bitte eine gültige E-Mail-Adresse eingeben"),
-  mobile: z.string().min(1, "Mobilnummer ist erforderlich"),
-  message: z.string().optional(),
-});
-
-export type ContactData = z.infer<typeof contactDataSchema>;
-
 export const sendTextInputSchema = z.object({
   to: z.string().min(1, "Empfänger ist erforderlich"),
   body: z.string().min(1, "Nachricht ist erforderlich").max(4096),

@@ -1,6 +1,6 @@
 "use client";
 
-import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import {
   Card,
   CardContent,
@@ -79,21 +79,7 @@ export function TimeSeriesCard({ data, range }: TimeSeriesCardProps) {
           className="aspect-auto h-[260px] w-full"
           config={chartConfig}
         >
-          <AreaChart data={data} margin={{ left: 4, right: 12, top: 8 }}>
-            <defs>
-              <linearGradient id="fillCount" x1="0" x2="0" y1="0" y2="1">
-                <stop
-                  offset="5%"
-                  stopColor="var(--chart-1)"
-                  stopOpacity={0.8}
-                />
-                <stop
-                  offset="95%"
-                  stopColor="var(--chart-1)"
-                  stopOpacity={0.1}
-                />
-              </linearGradient>
-            </defs>
+          <BarChart data={data} margin={{ left: 4, right: 12, top: 8 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} />
             <XAxis
               axisLine={false}
@@ -116,14 +102,8 @@ export function TimeSeriesCard({ data, range }: TimeSeriesCardProps) {
                 />
               }
             />
-            <Area
-              dataKey="count"
-              fill="url(#fillCount)"
-              stroke="var(--chart-1)"
-              strokeWidth={2}
-              type="linear"
-            />
-          </AreaChart>
+            <Bar dataKey="count" fill="var(--chart-1)" radius={[4, 4, 0, 0]} />
+          </BarChart>
         </ChartContainer>
       </CardContent>
     </Card>

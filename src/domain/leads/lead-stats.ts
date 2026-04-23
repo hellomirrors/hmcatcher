@@ -14,6 +14,8 @@ export type StatsRange =
   | "12h"
   | "16h"
   | "24h"
+  | "48h"
+  | "72h"
   | "7d"
   | "30d"
   | "all";
@@ -34,6 +36,8 @@ const RANGE_MS: Record<Exclude<StatsRange, "all">, number> = {
   "12h": 12 * HOUR_MS,
   "16h": 16 * HOUR_MS,
   "24h": 24 * HOUR_MS,
+  "48h": 48 * HOUR_MS,
+  "72h": 72 * HOUR_MS,
   "7d": 7 * DAY_MS,
   "30d": 30 * DAY_MS,
 };
@@ -47,20 +51,23 @@ function rangeStart(range: StatsRange): Date | null {
 
 type BucketUnit = "min5" | "min15" | "hour" | "day" | "week";
 
+const BUCKET_UNIT: Record<StatsRange, BucketUnit> = {
+  "1h": "min5",
+  "2h": "min5",
+  "4h": "min15",
+  "8h": "min15",
+  "12h": "hour",
+  "16h": "hour",
+  "24h": "hour",
+  "48h": "hour",
+  "72h": "hour",
+  "7d": "day",
+  "30d": "day",
+  all: "week",
+};
+
 function bucketUnit(range: StatsRange): BucketUnit {
-  if (range === "1h" || range === "2h") {
-    return "min5";
-  }
-  if (range === "4h" || range === "8h") {
-    return "min15";
-  }
-  if (range === "12h" || range === "16h" || range === "24h") {
-    return "hour";
-  }
-  if (range === "all") {
-    return "week";
-  }
-  return "day";
+  return BUCKET_UNIT[range];
 }
 
 function bucketSeconds(unit: BucketUnit): number {
@@ -219,17 +226,16 @@ export function getLeadsTimeSeries(filter: StatsFilter): TimeSeriesPoint[] {
     }
 
     const result: TimeSeriesPoint[] = [];
-    const stepSec = bucketSec;
     const startSec = Math.floor(start.getTime() / 1000);
     const nowSec = Math.floor(Date.now() / 1000);
-    let cursor = Math.floor(startSec / stepSec) * stepSec;
-    const end = Math.floor(nowSec / stepSec) * stepSec;
+    let cursor = Math.floor(startSec / bucketSec) * bucketSec;
+    const end = Math.floor(nowSec / bucketSec) * bucketSec;
     while (cursor <= end) {
       result.push({
         bucket: new Date(cursor * 1000).toISOString(),
         count: byBucket.get(cursor) ?? 0,
       });
-      cursor += stepSec;
+      cursor += bucketSec;
     }
     return result;
   } catch (error) {
@@ -521,16 +527,17 @@ export function getTopPrizeWinners(
       .limit(limit)
       .all();
 
+    const trophyByStep: Record<string, TopWinner["trophy"]> = {
+      "gewinn-jackpot": "jackpot",
+      "gewinn-drink": "drink",
+      "gewinn-candy": "candy",
+    };
+
     return rows.map((row) => {
       const completedIso =
         row.completedAt instanceof Date ? row.completedAt.toISOString() : null;
       const answeredIso =
         row.answeredAt instanceof Date ? row.answeredAt.toISOString() : null;
-      const trophyByStep: Record<string, TopWinner["trophy"]> = {
-        "gewinn-jackpot": "jackpot",
-        "gewinn-drink": "drink",
-        "gewinn-candy": "candy",
-      };
       return {
         leadId: row.leadId,
         vorname: row.vorname,

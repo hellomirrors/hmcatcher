@@ -54,6 +54,8 @@ const RANGE_LABELS: Record<StatsRange, string> = {
   "12h": "12 Stunden",
   "16h": "16 Stunden",
   "24h": "24 Stunden",
+  "48h": "48 Stunden",
+  "72h": "72 Stunden",
   "7d": "7 Tage",
   "30d": "30 Tage",
   all: "Alle",

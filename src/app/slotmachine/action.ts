@@ -33,9 +33,14 @@ export interface SlotFormAnswer {
 export interface SlotFormInput {
   answers: SlotFormAnswer[];
   consent: boolean;
+  email: string;
   mobile: string;
+  nachname: string;
   sessionId: string;
+  vorname: string;
 }
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export interface SlotFormResult {
   error?: string;
@@ -242,8 +247,20 @@ export async function submitSlotmachineAction(
         error: "Bitte eine gültige deutsche Mobilnummer angeben.",
       };
     }
-    if (input.answers.length === 0) {
-      return { success: false, error: "Keine Antworten übermittelt." };
+    const vorname = input.vorname.trim();
+    const nachname = input.nachname.trim();
+    const email = input.email.trim();
+    if (!vorname) {
+      return { success: false, error: "Bitte deinen Vornamen angeben." };
+    }
+    if (!nachname) {
+      return { success: false, error: "Bitte deinen Nachnamen angeben." };
+    }
+    if (!EMAIL_RE.test(email)) {
+      return {
+        success: false,
+        error: "Bitte eine gültige E-Mail-Adresse angeben.",
+      };
     }
 
     const dialog = getActiveDialog();
@@ -279,13 +296,22 @@ export async function submitSlotmachineAction(
     const normalizedMobile = normalizeGermanMobile(input.mobile);
     const bucket = resolveBucket(replay.score, dialog.definition.scoreBuckets);
 
+    // Web-form fields that aren't covered by a dialog step still land in the
+    // session variables so leads/reports show the captured contact data.
+    const mergedVariables: Record<string, string> = {
+      ...replay.variables,
+      vorname,
+      nachname,
+      email,
+    };
+
     const { id: sessionDbId } = createSessionWithId({
       sessionId: input.sessionId,
       dialogId: dialog.id,
       provider: "gowa",
       contact: normalizedMobile,
       currentStepId: replay.currentStepId,
-      variables: replay.variables,
+      variables: mergedVariables,
       score: replay.score,
       state: "active",
     });
@@ -305,7 +331,7 @@ export async function submitSlotmachineAction(
       dialogDbId: dialog.id,
       provider: "gowa",
       contact: normalizedMobile,
-      variables: replay.variables,
+      variables: mergedVariables,
       score: replay.score,
       state: "active",
       definition: dialog.definition,
@@ -313,16 +339,13 @@ export async function submitSlotmachineAction(
 
     const qrContent = buildSessionQrPayload(
       input.sessionId,
-      replay.variables.vorname ?? "",
+      vorname,
       bucket?.id
     );
     const qrBuffer = await generateQrPng(qrContent);
 
     const provider = await createMessagingProvider("gowa");
-    const vorname = replay.variables.vorname ?? "";
-    const caption = vorname
-      ? `Hallo ${vorname}, halte den QR-Code an den Scanner am Stand — das Glücksrad dreht gleich auf dem großen Screen!`
-      : "Halte den QR-Code an den Scanner am Stand — das Glücksrad dreht gleich auf dem großen Screen!";
+    const caption = `Hallo ${vorname}, halte den QR-Code an den Scanner am Stand — das Glücksrad dreht gleich auf dem großen Screen!`;
 
     await provider.sendImage({
       to: normalizedMobile,

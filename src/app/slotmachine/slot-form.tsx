@@ -157,8 +157,13 @@ function commitAnswerReducer(
   return next;
 }
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export function SlotForm({ definition }: SlotFormProps) {
   const [sessionId, setSessionId] = useState("");
+  const [vorname, setVorname] = useState("");
+  const [nachname, setNachname] = useState("");
+  const [email, setEmail] = useState("");
   const [mobile, setMobile] = useState("");
   const [answers, setAnswers] = useState<Record<string, AnswerEntry>>({});
   const [submitting, setSubmitting] = useState(false);
@@ -212,8 +217,17 @@ export function SlotForm({ definition }: SlotFormProps) {
   };
 
   const mobileValid = isValidGermanMobile(mobile);
+  const vornameValid = vorname.trim().length > 0;
+  const nachnameValid = nachname.trim().length > 0;
+  const emailValid = EMAIL_RE.test(email.trim());
   const canSubmit =
-    reachedEnd && mobileValid && !submitting && sessionId !== "";
+    reachedEnd &&
+    mobileValid &&
+    vornameValid &&
+    nachnameValid &&
+    emailValid &&
+    !submitting &&
+    sessionId !== "";
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -234,6 +248,9 @@ export function SlotForm({ definition }: SlotFormProps) {
     try {
       const result: SlotFormResult = await submitSlotmachineAction({
         sessionId,
+        vorname: vorname.trim(),
+        nachname: nachname.trim(),
+        email: email.trim(),
         mobile: normalizeGermanMobile(mobile),
         consent: true,
         answers: answerList,
@@ -307,16 +324,53 @@ export function SlotForm({ definition }: SlotFormProps) {
 
           {reachedEnd && (
             <>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-1.5">
+                  <Label htmlFor="slot-vorname">Vorname</Label>
+                  <Input
+                    aria-invalid={vorname !== "" && !vornameValid}
+                    autoComplete="given-name"
+                    id="slot-vorname"
+                    onChange={(e) => setVorname(e.target.value)}
+                    value={vorname}
+                  />
+                </div>
+                <div className="grid gap-1.5">
+                  <Label htmlFor="slot-nachname">Nachname</Label>
+                  <Input
+                    aria-invalid={nachname !== "" && !nachnameValid}
+                    autoComplete="family-name"
+                    id="slot-nachname"
+                    onChange={(e) => setNachname(e.target.value)}
+                    value={nachname}
+                  />
+                </div>
+              </div>
               <div className="grid gap-1.5">
-                <Label htmlFor="slot-mobile">
-                  Deine Mobilnummer (WhatsApp)
-                </Label>
+                <Label htmlFor="slot-email">E-Mail</Label>
+                <Input
+                  aria-invalid={email !== "" && !emailValid}
+                  autoComplete="email"
+                  id="slot-email"
+                  inputMode="email"
+                  onChange={(e) => setEmail(e.target.value)}
+                  type="email"
+                  value={email}
+                />
+                {email !== "" && !emailValid && (
+                  <p className="text-destructive text-xs">
+                    Bitte eine gültige E-Mail-Adresse eingeben.
+                  </p>
+                )}
+              </div>
+              <div className="grid gap-1.5">
+                <Label htmlFor="slot-mobile">Mobilnummer (WhatsApp)</Label>
                 <Input
                   aria-invalid={mobile !== "" && !mobileValid}
+                  autoComplete="tel"
                   id="slot-mobile"
                   inputMode="tel"
                   onChange={(e) => setMobile(e.target.value)}
-                  placeholder="+491701234567"
                   type="tel"
                   value={mobile}
                 />

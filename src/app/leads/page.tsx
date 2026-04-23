@@ -29,6 +29,7 @@ import {
   listLeads,
 } from "@/domain/leads/lead-repository";
 import { formatDateTime } from "@/lib/format-time";
+import { cleanupDuplicateLeadsAction } from "./[id]/action";
 
 export const dynamic = "force-dynamic";
 
@@ -142,6 +143,11 @@ export default async function LeadsPage(props: {
             >
               Dashboard
             </Link>
+            <form action={cleanupDuplicateLeadsAction}>
+              <Button size="sm" type="submit" variant="outline">
+                Duplikate bereinigen
+              </Button>
+            </form>
             <a
               className={buttonVariants({ variant: "outline", size: "sm" })}
               download

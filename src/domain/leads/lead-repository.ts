@@ -1,4 +1,15 @@
-import { and, desc, eq, gte, like, lte, or, type SQL, sql } from "drizzle-orm";
+import {
+  and,
+  desc,
+  eq,
+  gte,
+  inArray,
+  like,
+  lte,
+  or,
+  type SQL,
+  sql,
+} from "drizzle-orm";
 import type { DialogDefinition } from "@/domain/dialog/dialog-schema";
 import { resolveBucket } from "@/domain/dialog/score-buckets";
 import { db } from "@/lib/db";
@@ -259,19 +270,91 @@ export function deleteLeadById(id: number): boolean {
       return false;
     }
 
+    // FK chain: dialog_answers.session_id → dialog_sessions.id, and
+    // leads.session_id → dialog_sessions.id. Delete the two child rows
+    // first, then the session. If we remove the session while the lead
+    // still references it, SQLite raises FOREIGN KEY constraint failed.
     if (existing.sessionId !== null) {
       db.delete(dialogAnswers)
         .where(eq(dialogAnswers.sessionId, existing.sessionId))
         .run();
+    }
+    db.delete(leads).where(eq(leads.id, id)).run();
+    if (existing.sessionId !== null) {
       db.delete(dialogSessions)
         .where(eq(dialogSessions.id, existing.sessionId))
         .run();
     }
-
-    db.delete(leads).where(eq(leads.id, id)).run();
     return true;
   } catch (error) {
     log.error("Failed to delete lead", error, { id });
+    throw error;
+  }
+}
+
+/**
+ * Removes duplicate dialog_sessions with identical sessionId UUIDs — the
+ * debris from double-submits on the slotmachine form before the idempotency
+ * guard landed. Keeps the earliest session (lowest integer id) per UUID
+ * and deletes every later duplicate together with its answers and its
+ * lead row. Returns the number of removed lead rows.
+ */
+export function cleanupDuplicateFormSessions(): number {
+  try {
+    const groups = db
+      .select({
+        sessionId: dialogSessions.sessionId,
+        keepId: sql<number>`min(${dialogSessions.id})`,
+        ids: sql<string>`group_concat(${dialogSessions.id})`,
+      })
+      .from(dialogSessions)
+      .where(sql`${dialogSessions.sessionId} is not null`)
+      .groupBy(dialogSessions.sessionId)
+      .having(sql`count(*) > 1`)
+      .all();
+
+    let removed = 0;
+    for (const group of groups) {
+      const all = String(group.ids)
+        .split(",")
+        .map((s) => Number(s))
+        .filter((n) => Number.isFinite(n));
+      const duplicateIds = all.filter(
+        (sessionPk) => sessionPk !== group.keepId
+      );
+      if (duplicateIds.length === 0) {
+        continue;
+      }
+
+      // Look up lead rows that point at the duplicate sessions so we can
+      // route them through the same FK-safe delete order used manually.
+      const dupLeads = db
+        .select({ id: leads.id })
+        .from(leads)
+        .where(inArray(leads.sessionId, duplicateIds))
+        .all();
+      for (const lead of dupLeads) {
+        if (deleteLeadById(lead.id)) {
+          removed += 1;
+        }
+      }
+
+      // Any duplicate sessions that somehow didn't have a paired lead are
+      // still orphaned — clean them up directly.
+      for (const sessionPk of duplicateIds) {
+        db.delete(dialogAnswers)
+          .where(eq(dialogAnswers.sessionId, sessionPk))
+          .run();
+        db.delete(dialogSessions).where(eq(dialogSessions.id, sessionPk)).run();
+      }
+    }
+    log.info("Duplicate form sessions cleaned up", {
+      groups: groups.length,
+      removedLeads: removed,
+    });
+    return removed;
+  } catch (error) {
+    log.error("Failed to clean up duplicate form sessions", error);
     throw error;
   }
 }

@@ -4,8 +4,6 @@ import {
   getFunnelByPhase,
   getLeadsTimeSeries,
   getSummaryStats,
-  getTopPrizeWinners,
-  getTrophyDistribution,
   getVariableDistribution,
   listDialogOptions,
   type StatsFilter,
@@ -19,20 +17,19 @@ export default function LeadDashboardPage() {
   const activeDialog = getActiveDialog();
   const dialogId = activeDialog?.id ?? dialogOptions[0]?.id;
 
-  const filter: StatsFilter = { range: "24h", dialogId };
+  const filter: StatsFilter = { range: "7d", dialogId };
 
   const payload: DashboardPayload = {
-    range: "24h",
+    range: "7d",
     dialogId: dialogId ?? null,
     dialogOptions,
     summary: getSummaryStats(filter),
     timeSeries: getLeadsTimeSeries(filter),
-    trophy: getTrophyDistribution(filter),
     bucket: getBucketDistribution(filter),
+    arbeitsbereich: getVariableDistribution("arbeitsbereich_label", filter),
     rolle: getVariableDistribution("rolle_label", filter),
     einrichtungstyp: getVariableDistribution("einrichtungstyp_label", filter),
     funnel: getFunnelByPhase(filter),
-    topWinners: getTopPrizeWinners(filter, 20),
     generatedAt: new Date().toISOString(),
   };
 

@@ -121,7 +121,7 @@ export function TimeSeriesCard({ data, range }: TimeSeriesCardProps) {
               fill="url(#fillCount)"
               stroke="var(--chart-1)"
               strokeWidth={2}
-              type="monotone"
+              type="linear"
             />
           </AreaChart>
         </ChartContainer>

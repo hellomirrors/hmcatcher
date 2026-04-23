@@ -1,7 +1,7 @@
 "use client";
 
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { BellOff, BellRing, Trophy, Users } from "lucide-react";
+import { BellOff, BellRing, Users } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -20,18 +20,16 @@ import type {
   StatsRange,
   SummaryStats,
   TimeSeriesPoint,
-  TopWinner,
-  TrophyBucket,
 } from "@/domain/leads/lead-stats";
 import { DistributionPie } from "./charts/distribution-pie";
 import { FunnelCard } from "./charts/funnel-card";
 import { KpiTile } from "./charts/kpi-tile";
 import { TimeSeriesCard } from "./charts/time-series-card";
-import { TopWinsTable } from "./charts/top-wins-table";
 import { useLeadPing } from "./use-lead-ping";
 import { primeAudio } from "./win-audio";
 
 export interface DashboardPayload {
+  arbeitsbereich: DistributionBucket[];
   bucket: DistributionBucket[];
   dialogId: number | null;
   dialogOptions: DialogOption[];
@@ -42,8 +40,6 @@ export interface DashboardPayload {
   rolle: DistributionBucket[];
   summary: SummaryStats;
   timeSeries: TimeSeriesPoint[];
-  topWinners: TopWinner[];
-  trophy: TrophyBucket[];
 }
 
 interface DashboardClientProps {
@@ -61,13 +57,6 @@ const RANGE_LABELS: Record<StatsRange, string> = {
   "7d": "7 Tage",
   "30d": "30 Tage",
   all: "Alle",
-};
-
-const TROPHY_LABEL: Record<TrophyBucket["key"], string> = {
-  jackpot: "Jackpot",
-  drink: "Drink",
-  candy: "Candy",
-  niete: "Niete",
 };
 
 const BUCKET_LABEL: Record<string, string> = {
@@ -94,10 +83,6 @@ async function fetchStats(
     throw new Error(`Failed to load stats: ${res.status}`);
   }
   return (await res.json()) as DashboardPayload;
-}
-
-function formatPercent(n: number): string {
-  return `${(n * 100).toFixed(0)}%`;
 }
 
 function formatNumber(n: number): string {
@@ -164,16 +149,6 @@ export function DashboardClient({ initial }: DashboardClientProps) {
     setMuted((m) => !m);
   };
 
-  const trophyData = useMemo(
-    () =>
-      data.trophy.map((t) => ({
-        key: t.key,
-        count: t.count,
-        label: TROPHY_LABEL[t.key] ?? t.key,
-      })),
-    [data.trophy]
-  );
-
   const bucketData = useMemo(
     () =>
       data.bucket.map((b) => ({
@@ -182,6 +157,16 @@ export function DashboardClient({ initial }: DashboardClientProps) {
         label: BUCKET_LABEL[b.key] ?? b.key,
       })),
     [data.bucket]
+  );
+
+  const arbeitsbereichData = useMemo(
+    () =>
+      data.arbeitsbereich.map((a) => ({
+        key: a.key,
+        count: a.count,
+        label: a.key,
+      })),
+    [data.arbeitsbereich]
   );
 
   const rolleData = useMemo(
@@ -259,27 +244,12 @@ export function DashboardClient({ initial }: DashboardClientProps) {
         </div>
       </header>
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-4 sm:grid-cols-2">
         <KpiTile
           hint={`${formatNumber(data.summary.totalCompleted)} abgeschlossen`}
           icon={<Users className="size-5" />}
           label="Leads"
           value={formatNumber(data.summary.totalLeads)}
-        />
-        <KpiTile
-          accent="warn"
-          hint="Slotmachine-Hauptgewinn"
-          icon={<Trophy className="size-5" />}
-          label="Jackpots"
-          value={formatNumber(data.summary.highValueWins)}
-        />
-        <KpiTile
-          accent="muted"
-          hint={`${formatNumber(
-            data.summary.totalSessions
-          )} Sessions gestartet`}
-          label="Abbruchrate"
-          value={formatPercent(data.summary.abandonRate)}
         />
         <KpiTile
           accent="success"
@@ -303,9 +273,9 @@ export function DashboardClient({ initial }: DashboardClientProps) {
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <DistributionPie
-          data={trophyData}
-          description="Verteilung der ausgespielten Preise"
-          title="Gewinne"
+          data={arbeitsbereichData}
+          description="In welchem Bereich arbeiten die Leads?"
+          title="Arbeitsbereich"
         />
         <DistributionPie
           data={rolleData}
@@ -322,10 +292,6 @@ export function DashboardClient({ initial }: DashboardClientProps) {
           description="Score-Bucket-Verteilung"
           title="Score-Bucket"
         />
-      </section>
-
-      <section>
-        <TopWinsTable data={data.topWinners} />
       </section>
     </div>
   );

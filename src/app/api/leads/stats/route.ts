@@ -4,8 +4,6 @@ import {
   getFunnelByPhase,
   getLeadsTimeSeries,
   getSummaryStats,
-  getTopPrizeWinners,
-  getTrophyDistribution,
   getVariableDistribution,
   listDialogOptions,
   type StatsFilter,
@@ -31,7 +29,7 @@ function parseRange(value: string | null): StatsRange {
   if (value && VALID_RANGES.has(value as StatsRange)) {
     return value as StatsRange;
   }
-  return "24h";
+  return "7d";
 }
 
 function parseDialogId(value: string | null): number | undefined {
@@ -60,15 +58,17 @@ export function GET(request: Request): Response {
 
   const summary = getSummaryStats(filter);
   const timeSeries = getLeadsTimeSeries(filter);
-  const trophy = getTrophyDistribution(filter);
   const bucket = getBucketDistribution(filter);
+  const arbeitsbereich = getVariableDistribution(
+    "arbeitsbereich_label",
+    filter
+  );
   const rolle = getVariableDistribution("rolle_label", filter);
   const einrichtungstyp = getVariableDistribution(
     "einrichtungstyp_label",
     filter
   );
   const funnel = getFunnelByPhase(filter);
-  const topWinners = getTopPrizeWinners(filter, 20);
 
   return new Response(
     JSON.stringify({
@@ -77,12 +77,11 @@ export function GET(request: Request): Response {
       dialogOptions,
       summary,
       timeSeries,
-      trophy,
       bucket,
+      arbeitsbereich,
       rolle,
       einrichtungstyp,
       funnel,
-      topWinners,
       generatedAt: new Date().toISOString(),
     }),
     {

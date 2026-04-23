@@ -38,6 +38,8 @@ const HOUR_RANGES: ReadonlySet<StatsRange> = new Set<StatsRange>([
   "12h",
   "16h",
   "24h",
+  "48h",
+  "72h",
 ]);
 
 function formatTick(iso: string, range: StatsRange): string {

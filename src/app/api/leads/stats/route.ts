@@ -20,6 +20,8 @@ const VALID_RANGES: ReadonlySet<StatsRange> = new Set<StatsRange>([
   "12h",
   "16h",
   "24h",
+  "48h",
+  "72h",
   "7d",
   "30d",
   "all",

@@ -70,7 +70,7 @@
       "message": "Hauptgewinn!\n\nDu erhältst unser Goldenes Ticket: 4 Wochen Felix für einmalig 100€.",
       "transitions": [
         {
-          "targetStepId": "kanal-opt-in"
+          "targetStepId": "kanal-info"
         }
       ]
     },
@@ -81,7 +81,7 @@
       "message": "Du hast ein Getränk gewonnen!\n\nHol es dir direkt am Hellomirrors-Stand ab.",
       "transitions": [
         {
-          "targetStepId": "kanal-opt-in"
+          "targetStepId": "kanal-info"
         }
       ]
     },
@@ -92,7 +92,7 @@
       "message": "Du hast eine Süßigkeit gewonnen!\n\nGreif am Hellomirrors-Stand zu.",
       "transitions": [
         {
-          "targetStepId": "kanal-opt-in"
+          "targetStepId": "kanal-info"
         }
       ]
     },
@@ -103,50 +103,9 @@
       "message": "Knapp daneben – diesmal kein Gewinn.\n\nDanke fürs Mitspielen!",
       "transitions": [
         {
-          "targetStepId": "kanal-opt-in"
-        }
-      ]
-    },
-    {
-      "id": "kanal-opt-in",
-      "type": "buttons",
-      "phase": "Info-Kanal",
-      "message": "Noch kurz: Sollen wir dich auf dem Laufenden halten? Aktionen, Gewinnspiele und Infos rund um Felix, bequem per WhatsApp über unseren Hello Mirrors Channel.\nFreiwillig und jederzeit widerrufbar. Passt das?",
-      "options": [
-        {
-          "id": "kanal-ja",
-          "label": "Ja, gerne!",
-          "score": 10
-        },
-        {
-          "id": "kanal-nein",
-          "label": "Nein, danke",
-          "score": 0
-        }
-      ],
-      "variableName": "kanal_opt_in",
-      "transitions": [
-        {
-          "conditions": [
-            {
-              "field": "kanal_opt_in",
-              "operator": "eq",
-              "value": "kanal-nein"
-            }
-          ],
-          "targetStepId": "kanal-abschied"
-        },
-        {
           "targetStepId": "kanal-info"
         }
       ]
-    },
-    {
-      "id": "kanal-abschied",
-      "type": "text",
-      "phase": "Info-Kanal",
-      "message": "Schade, vielleicht beim nächsten Mal!",
-      "transitions": []
     },
     {
       "id": "kanal-info",
@@ -165,7 +124,7 @@
       "type": "timer",
       "phase": "Info-Kanal",
       "message": "⏱",
-      "delaySeconds": 2,
+      "delaySeconds": 10,
       "transitions": [
         {
           "targetStepId": "kanal-pdf"
@@ -192,7 +151,7 @@
       "type": "timer",
       "phase": "Info-Kanal",
       "message": "⏱",
-      "delaySeconds": 3,
+      "delaySeconds": 10,
       "transitions": [
         {
           "targetStepId": "kanal-video"
@@ -217,7 +176,7 @@
       "type": "timer",
       "phase": "Nurturing",
       "message": "⏱",
-      "delaySeconds": 3,
+      "delaySeconds": 10,
       "transitions": [
         {
           "targetStepId": "produkt-info"
@@ -241,7 +200,7 @@
       "type": "timer",
       "phase": "Nurturing",
       "message": "⏱",
-      "delaySeconds": 2,
+      "delaySeconds": 10,
       "transitions": [
         {
           "targetStepId": "produkt-video"
@@ -266,7 +225,7 @@
       "type": "timer",
       "phase": "Retention",
       "message": "⏱",
-      "delaySeconds": 3,
+      "delaySeconds": 10,
       "transitions": [
         {
           "targetStepId": "abschluss"

@@ -212,7 +212,50 @@ const StepTypeConfig = ({
     return <MqttStepConfig step={step} update={update} />;
   }
 
+  if (step.type === "timer") {
+    return <TimerStepConfig step={step} update={update} />;
+  }
+
   return null;
+};
+
+const TimerStepConfig = ({
+  step,
+  update,
+}: {
+  step: DialogStep;
+  update: (patch: Partial<DialogStep>) => void;
+}) => {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Timer</CardTitle>
+      </CardHeader>
+      <CardContent className="grid gap-4">
+        <div className="grid gap-1.5">
+          <Label htmlFor="step-timer-seconds">Wartezeit (Sekunden)</Label>
+          <Input
+            id="step-timer-seconds"
+            min={1}
+            onChange={(e) => {
+              const parsed = Number(e.target.value);
+              update({
+                delaySeconds:
+                  Number.isFinite(parsed) && parsed > 0 ? parsed : undefined,
+              });
+            }}
+            step={1}
+            type="number"
+            value={step.delaySeconds ?? ""}
+          />
+          <p className="text-muted-foreground text-xs">
+            Pause zwischen dieser und der nächsten Nachricht. Fallback ist 2
+            Sekunden, wenn leer.
+          </p>
+        </div>
+      </CardContent>
+    </Card>
+  );
 };
 
 const ChoiceStepConfig = ({

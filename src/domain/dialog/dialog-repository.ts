@@ -208,6 +208,19 @@ export function getActiveDialog(): DialogRow | undefined {
   }
 }
 
+export function getDialogBySlug(slug: string): DialogRow | undefined {
+  try {
+    const row = db.select().from(dialogs).where(eq(dialogs.slug, slug)).get();
+    if (!row) {
+      return;
+    }
+    return toDialogRow(row);
+  } catch (error) {
+    log.error("Failed to get dialog by slug", error, { slug });
+    return;
+  }
+}
+
 export function getDialogById(id: number): DialogRow | undefined {
   try {
     const row = db.select().from(dialogs).where(eq(dialogs.id, id)).get();

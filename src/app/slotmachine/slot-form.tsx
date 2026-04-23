@@ -51,6 +51,11 @@ export function SlotForm({ scoreBuckets, termsUrl }: SlotFormProps) {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [alreadySubmitted, setAlreadySubmitted] = useState(false);
   const lastTapRef = useRef(0);
+  // Guard against double-clicks firing handleSubmit twice before React has
+  // re-rendered the disabled state; the useState flag alone lives in the
+  // previous-render's closure and would let a fast second click slip
+  // through.
+  const submittingRef = useRef(false);
 
   const handleResetTap = () => {
     const now = Date.now();
@@ -114,9 +119,10 @@ export function SlotForm({ scoreBuckets, termsUrl }: SlotFormProps) {
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!canSubmit) {
+    if (!canSubmit || submittingRef.current) {
       return;
     }
+    submittingRef.current = true;
     setSubmitting(true);
     setSubmitError(null);
     try {
@@ -140,6 +146,7 @@ export function SlotForm({ scoreBuckets, termsUrl }: SlotFormProps) {
     } catch (error) {
       setSubmitError((error as Error).message);
     } finally {
+      submittingRef.current = false;
       setSubmitting(false);
     }
   };

@@ -3,6 +3,7 @@
 import {
   createSessionWithId,
   getActiveDialog,
+  getSessionBySessionId,
   insertAnswer,
 } from "@/domain/dialog/dialog-repository";
 import { resolveBucket } from "@/domain/dialog/score-buckets";
@@ -94,6 +95,19 @@ export async function submitSlotmachineAction(
     const validationError = validateInput(input);
     if (validationError) {
       return { success: false, error: validationError };
+    }
+
+    // Idempotency guard: double-tap on the submit button can fire the
+    // server action twice before the client disables it. Without this, we
+    // would insert a second dialog_sessions row (no UNIQUE on sid) plus a
+    // second leads row, and push a second QR message to the user.
+    const existing = getSessionBySessionId(input.sessionId);
+    if (existing) {
+      log.info("Slotmachine submission ignored — session already exists", {
+        sessionId: input.sessionId,
+        existingDbId: existing.id,
+      });
+      return { success: true };
     }
 
     const dialog = getActiveDialog();

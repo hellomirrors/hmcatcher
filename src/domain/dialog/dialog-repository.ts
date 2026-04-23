@@ -365,6 +365,25 @@ export function setDialogLocked(id: number, locked: boolean): void {
 // Session CRUD
 // ---------------------------------------------------------------------------
 
+export function getSessionBySessionId(
+  sessionId: string
+): SessionRow | undefined {
+  try {
+    const row = db
+      .select()
+      .from(dialogSessions)
+      .where(eq(dialogSessions.sessionId, sessionId))
+      .get();
+    if (!row) {
+      return;
+    }
+    return toSessionRow(row);
+  } catch (error) {
+    log.error("Failed to get session by uuid", error, { sessionId });
+    return;
+  }
+}
+
 export function getSession(
   provider: string,
   contact: string

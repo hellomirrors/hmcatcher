@@ -42,6 +42,7 @@ interface SlotFormProps {
 }
 
 const SESSION_STORAGE_KEY = "hm-slotmachine-session-id";
+const SUBMITTED_STORAGE_KEY = "hm-slotmachine-submitted-at";
 
 function stepTitle(message: string): string {
   return message.split("\n")[0] ?? message;
@@ -162,18 +163,19 @@ export function SlotForm({ definition }: SlotFormProps) {
   const [answers, setAnswers] = useState<Record<string, AnswerEntry>>({});
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [done, setDone] = useState(false);
+  const [alreadySubmitted, setAlreadySubmitted] = useState(false);
   const lastTapRef = useRef(0);
 
   const handleResetTap = () => {
     const now = Date.now();
-    // Two taps / clicks within 600 ms → reset the stored session and reload.
-    // Single taps are ignored so the hidden hit area can't accidentally
-    // wipe state if someone grazes the corner.
+    // Two taps / clicks within 600 ms → wipe the stored session and the
+    // submitted-flag, then reload so the form is fresh. Single taps are
+    // ignored so a stray finger on the corner doesn't reset state.
     if (now - lastTapRef.current < 600) {
       lastTapRef.current = 0;
       if (typeof window !== "undefined") {
         window.localStorage.removeItem(SESSION_STORAGE_KEY);
+        window.localStorage.removeItem(SUBMITTED_STORAGE_KEY);
         window.location.reload();
       }
       return;
@@ -183,6 +185,10 @@ export function SlotForm({ definition }: SlotFormProps) {
 
   useEffect(() => {
     if (typeof window === "undefined") {
+      return;
+    }
+    if (window.localStorage.getItem(SUBMITTED_STORAGE_KEY)) {
+      setAlreadySubmitted(true);
       return;
     }
     const stored = window.localStorage.getItem(SESSION_STORAGE_KEY);
@@ -233,8 +239,12 @@ export function SlotForm({ definition }: SlotFormProps) {
         answers: answerList,
       });
       if (result.success) {
+        window.localStorage.setItem(
+          SUBMITTED_STORAGE_KEY,
+          new Date().toISOString()
+        );
         window.localStorage.removeItem(SESSION_STORAGE_KEY);
-        setDone(true);
+        setAlreadySubmitted(true);
       } else {
         setSubmitError(result.error ?? "Unbekannter Fehler beim Senden.");
       }
@@ -257,20 +267,13 @@ export function SlotForm({ definition }: SlotFormProps) {
     />
   );
 
-  if (done) {
+  if (alreadySubmitted) {
     return (
       <>
         {resetHotspot}
-        <Card className="w-full max-w-lg">
-          <CardHeader>
-            <CardTitle>Fertig!</CardTitle>
-            <CardDescription>
-              Dein persönlicher QR-Code wurde dir per WhatsApp geschickt. Halte
-              ihn am Stand an den Scanner — das Glücksrad dreht sich gleich auf
-              dem großen Screen.
-            </CardDescription>
-          </CardHeader>
-        </Card>
+        <p className="px-6 text-center text-lg text-muted-foreground">
+          Du hast das Formular bereits abgesendet. Danke für deine Teilnahme!
+        </p>
       </>
     );
   }

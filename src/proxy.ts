@@ -3,7 +3,13 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { AUTH_MODE, isAdmin } from "@/lib/auth-mode";
 
-const PUBLIC_PATHS = ["/", "/competition", "/comparison", "/login"];
+const PUBLIC_PATHS = [
+  "/",
+  "/competition",
+  "/comparison",
+  "/login",
+  "/slotmachine",
+];
 const STATIC_FILE_RE = /\.[\w]+$/;
 
 function isPublicPath(pathname: string): boolean {

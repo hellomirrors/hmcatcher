@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -163,6 +163,23 @@ export function SlotForm({ definition }: SlotFormProps) {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+  const lastTapRef = useRef(0);
+
+  const handleResetTap = () => {
+    const now = Date.now();
+    // Two taps / clicks within 600 ms → reset the stored session and reload.
+    // Single taps are ignored so the hidden hit area can't accidentally
+    // wipe state if someone grazes the corner.
+    if (now - lastTapRef.current < 600) {
+      lastTapRef.current = 0;
+      if (typeof window !== "undefined") {
+        window.localStorage.removeItem(SESSION_STORAGE_KEY);
+        window.location.reload();
+      }
+      return;
+    }
+    lastTapRef.current = now;
+  };
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -228,23 +245,39 @@ export function SlotForm({ definition }: SlotFormProps) {
     }
   };
 
+  // Hidden double-tap hotspot in the top-right corner. Lets us wipe the
+  // stored session UUID on a phone without opening devtools — useful for
+  // iterating on the flow at the booth.
+  const resetHotspot = (
+    <button
+      aria-label="Session zurücksetzen (zweimal tippen)"
+      className="fixed top-0 right-0 z-50 h-14 w-14 cursor-default bg-transparent"
+      onClick={handleResetTap}
+      type="button"
+    />
+  );
+
   if (done) {
     return (
-      <Card className="w-full max-w-lg">
-        <CardHeader>
-          <CardTitle>Fertig!</CardTitle>
-          <CardDescription>
-            Dein persönlicher QR-Code wurde dir per WhatsApp geschickt. Halte
-            ihn am Stand an den Scanner — das Glücksrad dreht sich gleich auf
-            dem großen Screen.
-          </CardDescription>
-        </CardHeader>
-      </Card>
+      <>
+        {resetHotspot}
+        <Card className="w-full max-w-lg">
+          <CardHeader>
+            <CardTitle>Fertig!</CardTitle>
+            <CardDescription>
+              Dein persönlicher QR-Code wurde dir per WhatsApp geschickt. Halte
+              ihn am Stand an den Scanner — das Glücksrad dreht sich gleich auf
+              dem großen Screen.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </>
     );
   }
 
   return (
     <form className="w-full max-w-lg" onSubmit={handleSubmit}>
+      {resetHotspot}
       <Card>
         <CardHeader>
           <CardTitle>Felix Jackpot</CardTitle>

@@ -5,7 +5,14 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 // Pages where the back-to-Admin link should NOT appear.
-const HIDDEN_PREFIXES = ["/admin", "/login", "/competition", "/c/", "/api/"];
+const HIDDEN_PREFIXES = [
+  "/admin",
+  "/login",
+  "/competition",
+  "/c/",
+  "/api/",
+  "/slotmachine",
+];
 
 function shouldHide(pathname: string | null): boolean {
   if (!pathname || pathname === "/") {

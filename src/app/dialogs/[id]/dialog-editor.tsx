@@ -128,30 +128,36 @@ export const DialogEditor = ({ dialog }: DialogEditorProps) => {
   };
 
   const handleDeleteStep = (stepId: string) => {
-    updateDefinition({
-      steps: definition.steps.filter((s) => s.id !== stepId),
-    });
+    setDefinition((prev) => ({
+      ...prev,
+      steps: prev.steps.filter((s) => s.id !== stepId),
+    }));
+    setDirty(true);
+    setFeedback(null);
     if (selectedStepId === stepId) {
       setSelectedStepId(null);
     }
   };
 
   const handleMoveStep = (stepId: string, direction: "up" | "down") => {
-    const index = definition.steps.findIndex((s) => s.id === stepId);
-    if (index === -1) {
-      return;
-    }
-
-    const targetIndex = direction === "up" ? index - 1 : index + 1;
-    if (targetIndex < 0 || targetIndex >= definition.steps.length) {
-      return;
-    }
-
-    const newSteps = [...definition.steps];
-    const temp = newSteps[index];
-    newSteps[index] = newSteps[targetIndex];
-    newSteps[targetIndex] = temp;
-    updateDefinition({ steps: newSteps });
+    setDefinition((prev) => {
+      const index = prev.steps.findIndex((s) => s.id === stepId);
+      if (index === -1) {
+        return prev;
+      }
+      const targetIndex = direction === "up" ? index - 1 : index + 1;
+      if (targetIndex < 0 || targetIndex >= prev.steps.length) {
+        return prev;
+      }
+      const newSteps = [...prev.steps];
+      [newSteps[index], newSteps[targetIndex]] = [
+        newSteps[targetIndex],
+        newSteps[index],
+      ];
+      return { ...prev, steps: newSteps };
+    });
+    setDirty(true);
+    setFeedback(null);
   };
 
   const handleStepChange = (updated: DialogStep) => {

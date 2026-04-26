@@ -84,8 +84,8 @@ export const StepList = ({
       </div>
       <Separator />
       <div className="grid gap-1">
-        {groups.map((group) => {
-          const phaseKey = group.phase ?? "__none__";
+        {groups.map((group, groupIndex) => {
+          const phaseKey = `${group.phase ?? "__none__"}-${groupIndex}`;
           return (
             <div className="grid gap-1" key={phaseKey}>
               {group.phase && (

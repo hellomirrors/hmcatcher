@@ -16,6 +16,7 @@ import { dialogDefinitionSchema } from "@/domain/dialog/dialog-schema";
 import {
   resetDefaultDialog,
   resetFormDialog,
+  resetStuttgartDialog,
 } from "@/domain/dialog/seed-default-dialog";
 
 const BLANK_DEFINITION: DialogDefinition = {
@@ -284,6 +285,12 @@ export async function loadDefaultDialogAction(): Promise<void> {
 export async function loadFormDialogAction(): Promise<void> {
   await Promise.resolve();
   resetFormDialog();
+  revalidatePath("/dialogs");
+}
+
+export async function loadStuttgartDialogAction(): Promise<void> {
+  await Promise.resolve();
+  resetStuttgartDialog();
   revalidatePath("/dialogs");
 }
 

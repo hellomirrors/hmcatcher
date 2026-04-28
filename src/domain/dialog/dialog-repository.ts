@@ -417,16 +417,35 @@ interface CreateSessionWithIdInput extends CreateSessionInput {
   variables?: Record<string, string>;
 }
 
+function isUniqueViolation(error: unknown): boolean {
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+  const code = (error as { code?: string }).code;
+  return code === "SQLITE_CONSTRAINT_UNIQUE";
+}
+
+export interface CreateSessionResult {
+  alreadyExisted: boolean;
+  id: number;
+  sessionId: string;
+}
+
 /**
  * Inserts a dialog session with a caller-supplied sessionId and optional
  * preset variables/score. Used by the slotmachine web form, where the
  * session UUID is generated on the client and stored in localStorage so
  * the QR payload matches the DB row.
+ *
+ * Concurrent submits with the same sid race the read-then-insert guard in
+ * the slotmachine action, so we rely on the partial UNIQUE index on
+ * `sid` as the actual lock: if the INSERT fails with UNIQUE, the winning
+ * row already wrote its lead/answers — we return its id so the caller
+ * can short-circuit without doing it again.
  */
-export function createSessionWithId(input: CreateSessionWithIdInput): {
-  id: number;
-  sessionId: string;
-} {
+export function createSessionWithId(
+  input: CreateSessionWithIdInput
+): CreateSessionResult {
   try {
     const result = db
       .insert(dialogSessions)
@@ -441,8 +460,26 @@ export function createSessionWithId(input: CreateSessionWithIdInput): {
         state: input.state ?? "active",
       })
       .run();
-    return { id: Number(result.lastInsertRowid), sessionId: input.sessionId };
+    return {
+      id: Number(result.lastInsertRowid),
+      sessionId: input.sessionId,
+      alreadyExisted: false,
+    };
   } catch (error) {
+    if (isUniqueViolation(error)) {
+      const existing = getSessionBySessionId(input.sessionId);
+      if (existing) {
+        log.info("createSessionWithId hit UNIQUE — returning winner", {
+          sessionId: input.sessionId,
+          existingDbId: existing.id,
+        });
+        return {
+          id: existing.id,
+          sessionId: existing.sessionId,
+          alreadyExisted: true,
+        };
+      }
+    }
     log.error("Failed to create session with id", error, {
       dialogId: input.dialogId,
       sessionId: input.sessionId,
@@ -451,10 +488,14 @@ export function createSessionWithId(input: CreateSessionWithIdInput): {
   }
 }
 
-export function createSession(input: CreateSessionInput): {
-  id: number;
-  sessionId: string;
-} {
+/**
+ * Inserts a dialog session for an inbound webhook flow. The partial UNIQUE
+ * index on (provider, contact) WHERE state='active' acts as a per-user
+ * lock — if a second webhook races with the first, the second INSERT
+ * fails with UNIQUE and we return the winning row instead of creating a
+ * duplicate active session.
+ */
+export function createSession(input: CreateSessionInput): CreateSessionResult {
   try {
     const sessionId = randomUUID();
     const result = db
@@ -468,8 +509,27 @@ export function createSession(input: CreateSessionInput): {
         state: "active",
       })
       .run();
-    return { id: Number(result.lastInsertRowid), sessionId };
+    return {
+      id: Number(result.lastInsertRowid),
+      sessionId,
+      alreadyExisted: false,
+    };
   } catch (error) {
+    if (isUniqueViolation(error)) {
+      const existing = getSession(input.provider, input.contact);
+      if (existing) {
+        log.info("createSession hit UNIQUE — returning active winner", {
+          provider: input.provider,
+          contact: input.contact,
+          existingDbId: existing.id,
+        });
+        return {
+          id: existing.id,
+          sessionId: existing.sessionId,
+          alreadyExisted: true,
+        };
+      }
+    }
     log.error("Failed to create session", error, {
       dialogId: input.dialogId,
       provider: input.provider,

@@ -1,0 +1,261 @@
+{
+  "version": 1,
+  "triggerKeywords": ["start", "hallo", "hi", "hello"],
+  "timeoutMinutes": 60,
+  "reminderAfterMinutes": 30,
+  "reminderMessage": "Hey! Du bist noch mittendrin im Gewinnspiel. Schreib einfach weiter, um teilzunehmen!",
+  "timeoutMessage": "Deine Gewinnspiel-Session ist leider abgelaufen. Schreib 'start' um neu zu beginnen!",
+  "unmatchedInputMode": "error",
+  "errorMessage": "Bitte wähle eine der angebotenen Optionen.",
+  "steps": [
+    {
+      "id": "welcome",
+      "type": "text",
+      "phase": "Onboarding",
+      "message": "Willkommen beim Felix Glücksrad, benutze den Link um deinen Glücksrad Code zu bekommen. https://altenpflege2026.hellomirrors.com/slotmachine",
+      "transitions": [
+        {
+          "targetStepId": "warte-slotmachine"
+        }
+      ]
+    },
+    {
+      "id": "warte-slotmachine",
+      "type": "mqtt",
+      "phase": "Aktivierung",
+      "message": "Warte auf Signal der Slotmaschine...",
+      "mqttTopic": "hmslots",
+      "mqttMatchMode": "session",
+      "mqttSessionIdKey": "sessionId",
+      "transitions": [
+        {
+          "conditions": [
+            {
+              "field": "trophy",
+              "operator": "eq",
+              "value": "jackpot"
+            }
+          ],
+          "targetStepId": "gewinn-jackpot"
+        },
+        {
+          "conditions": [
+            {
+              "field": "trophy",
+              "operator": "eq",
+              "value": "drink"
+            }
+          ],
+          "targetStepId": "gewinn-drink"
+        },
+        {
+          "conditions": [
+            {
+              "field": "trophy",
+              "operator": "eq",
+              "value": "candy"
+            }
+          ],
+          "targetStepId": "gewinn-candy"
+        },
+        {
+          "targetStepId": "gewinn-niete"
+        }
+      ]
+    },
+    {
+      "id": "gewinn-jackpot",
+      "type": "text",
+      "phase": "Aktivierung",
+      "message": "Hauptgewinn!\n\nDu erhältst unser Goldenes Ticket: 4 Wochen Felix für einmalig 100€.",
+      "transitions": [
+        {
+          "targetStepId": "kanal-info"
+        }
+      ]
+    },
+    {
+      "id": "gewinn-drink",
+      "type": "text",
+      "phase": "Aktivierung",
+      "message": "Du hast ein Getränk gewonnen!\n\nHol es dir direkt am Hellomirrors-Stand ab.",
+      "transitions": [
+        {
+          "targetStepId": "kanal-info"
+        }
+      ]
+    },
+    {
+      "id": "gewinn-candy",
+      "type": "text",
+      "phase": "Aktivierung",
+      "message": "Du hast eine Süßigkeit gewonnen!\n\nGreif am Hellomirrors-Stand zu.",
+      "transitions": [
+        {
+          "targetStepId": "kanal-info"
+        }
+      ]
+    },
+    {
+      "id": "gewinn-niete",
+      "type": "text",
+      "phase": "Aktivierung",
+      "message": "Knapp daneben – diesmal kein Gewinn.\n\nDanke fürs Mitspielen!",
+      "transitions": [
+        {
+          "targetStepId": "kanal-info"
+        }
+      ]
+    },
+    {
+      "id": "kanal-info",
+      "type": "text",
+      "phase": "Info-Kanal",
+      "message": "Wir nehmen dich nun in unseren Info-Kanal auf.\n\nHier erhältst du ab und zu Neuigkeiten über unser Gesundheitsdisplay.",
+      "forceProvider": "gowa",
+      "transitions": [
+        {
+          "targetStepId": "timer-kanal-pdf"
+        }
+      ]
+    },
+    {
+      "id": "timer-kanal-pdf",
+      "type": "timer",
+      "phase": "Info-Kanal",
+      "message": "⏱",
+      "delaySeconds": 10,
+      "transitions": [
+        {
+          "targetStepId": "kanal-pdf"
+        }
+      ]
+    },
+    {
+      "id": "kanal-pdf",
+      "type": "document",
+      "phase": "Info-Kanal",
+      "message": "Willkommen in unserem Info-Kanal! Hier unser aktueller Flyer.",
+      "documentPath": "/HelloFelix-2026-Q2.pdf",
+      "documentFilename": "HelloFelix-2026-Q2.pdf",
+      "documentMimeType": "application/pdf",
+      "forceProvider": "gowa",
+      "transitions": [
+        {
+          "targetStepId": "timer-kanal-video"
+        }
+      ]
+    },
+    {
+      "id": "timer-kanal-video",
+      "type": "timer",
+      "phase": "Info-Kanal",
+      "message": "⏱",
+      "delaySeconds": 10,
+      "transitions": [
+        {
+          "targetStepId": "kanal-video"
+        }
+      ]
+    },
+    {
+      "id": "kanal-video",
+      "type": "video",
+      "phase": "Info-Kanal",
+      "message": "Schau dir auch unser kurzes Video an:",
+      "videoUrl": "https://youtube.com/shorts/YLr7RJrKvaE",
+      "forceProvider": "gowa",
+      "transitions": [
+        {
+          "targetStepId": "timer-produkt-info"
+        }
+      ]
+    },
+    {
+      "id": "timer-produkt-info",
+      "type": "timer",
+      "phase": "Nurturing",
+      "message": "⏱",
+      "delaySeconds": 10,
+      "transitions": [
+        {
+          "targetStepId": "produkt-info"
+        }
+      ]
+    },
+    {
+      "id": "produkt-info",
+      "type": "text",
+      "phase": "Nurturing",
+      "message": "Übrigens, wusstest du schon?\n\nFelix ist das digitale Gesundheitsdisplay für stationäre Pflegeeinrichtungen.\n\n70+ Apps. 5.400+ Übungen. Sofort einsatzbereit.\n\nSprich uns am Stand an!",
+      "forceProvider": "gowa",
+      "transitions": [
+        {
+          "targetStepId": "timer-produkt-video"
+        }
+      ]
+    },
+    {
+      "id": "timer-produkt-video",
+      "type": "timer",
+      "phase": "Nurturing",
+      "message": "⏱",
+      "delaySeconds": 10,
+      "transitions": [
+        {
+          "targetStepId": "produkt-video"
+        }
+      ]
+    },
+    {
+      "id": "produkt-video",
+      "type": "video",
+      "phase": "Nurturing",
+      "message": "Felix in Aktion: So sieht der Alltag mit Felix in einer Pflegeeinrichtung aus.",
+      "videoUrl": "https://youtu.be/ou_qajvNTCI?si=gfB-pYiDiNGDChGW",
+      "forceProvider": "gowa",
+      "transitions": [
+        {
+          "targetStepId": "timer-abschluss"
+        }
+      ]
+    },
+    {
+      "id": "timer-abschluss",
+      "type": "timer",
+      "phase": "Retention",
+      "message": "⏱",
+      "delaySeconds": 10,
+      "transitions": [
+        {
+          "targetStepId": "abschluss"
+        }
+      ]
+    },
+    {
+      "id": "abschluss",
+      "type": "text",
+      "phase": "Retention",
+      "message": "Super, dann verpasst du nichts!\n\nDanke fürs Mitmachen und viel Spaß auf der Messe. Bis bald!",
+      "forceProvider": "gowa",
+      "transitions": []
+    }
+  ],
+  "scoreBuckets": [
+    {
+      "id": "low",
+      "label": "Low",
+      "minScore": 0
+    },
+    {
+      "id": "medium",
+      "label": "Medium",
+      "minScore": 85
+    },
+    {
+      "id": "high",
+      "label": "High",
+      "minScore": 110
+    }
+  ]
+}

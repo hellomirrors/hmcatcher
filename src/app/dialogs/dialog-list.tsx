@@ -18,8 +18,7 @@ import {
   deactivateDialogFormAction,
   deleteDialogFormAction,
   duplicateDialogFormAction,
-  loadDefaultDialogAction,
-  loadFormDialogAction,
+  loadStuttgartDialogAction,
   toggleDialogLockFormAction,
 } from "./action";
 
@@ -46,14 +45,9 @@ export function DialogList({ dialogs }: { dialogs: DialogListItem[] }) {
             </CardDescription>
           </div>
           <div className="flex gap-2">
-            <form action={loadDefaultDialogAction}>
+            <form action={loadStuttgartDialogAction}>
               <Button size="sm" type="submit" variant="secondary">
-                Default laden
-              </Button>
-            </form>
-            <form action={loadFormDialogAction}>
-              <Button size="sm" type="submit" variant="secondary">
-                Form-Dialog laden
+                PFLEGE PLUS Stuttgart 2026 laden
               </Button>
             </form>
             <form action={createNewDialogAction}>

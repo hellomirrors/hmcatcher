@@ -8,6 +8,9 @@ import {
 } from "./dialog-repository";
 import { dialogDefinitionSchema } from "./dialog-schema";
 import formDialogJson from "./form-dialog.json" with { type: "json" };
+import formDialogStuttgartJson from "./form-dialog-stuttgart-2026.json" with {
+  type: "json",
+};
 
 const log = createLogger("dialog-seed");
 
@@ -21,8 +24,16 @@ const FORM_DIALOG_NAME = "Felix Jackpot — Web-Formular";
 const FORM_DIALOG_DESCRIPTION =
   "Dialog-Variante für das /slotmachine Web-Formular";
 
+const STUTTGART_DIALOG_SLUG = "pflege-plus-stuttgart-2026";
+const STUTTGART_DIALOG_NAME = "PFLEGE PLUS Stuttgart 2026";
+const STUTTGART_DIALOG_DESCRIPTION =
+  "Felix Gewinnspiel — PFLEGE PLUS Stuttgart 2026";
+
 const defaultDefinition = dialogDefinitionSchema.parse(defaultDialogJson);
 const formDefinition = dialogDefinitionSchema.parse(formDialogJson);
+const stuttgartDefinition = dialogDefinitionSchema.parse(
+  formDialogStuttgartJson
+);
 
 /**
  * Seeds the default trade-fair dialog by slug if it does not yet exist.
@@ -120,5 +131,31 @@ export const resetFormDialog = (): number => {
     slug: FORM_DIALOG_SLUG,
     description: FORM_DIALOG_DESCRIPTION,
     definition: formDefinition,
+  });
+};
+
+/**
+ * Loads or reloads the bundled form-dialog-stuttgart-2026.json under its
+ * own slug. Mirrors `resetFormDialog` — does NOT auto-activate.
+ */
+export const resetStuttgartDialog = (): number => {
+  const existing = listDialogs().find((d) => d.slug === STUTTGART_DIALOG_SLUG);
+  if (existing) {
+    log.info("Resetting Stuttgart 2026 dialog to bundled seed", {
+      dialogId: existing.id,
+    });
+    updateDialog(existing.id, {
+      name: STUTTGART_DIALOG_NAME,
+      description: STUTTGART_DIALOG_DESCRIPTION,
+      definition: stuttgartDefinition,
+    });
+    return existing.id;
+  }
+  log.info("Seeding Stuttgart 2026 dialog");
+  return createDialog({
+    name: STUTTGART_DIALOG_NAME,
+    slug: STUTTGART_DIALOG_SLUG,
+    description: STUTTGART_DIALOG_DESCRIPTION,
+    definition: stuttgartDefinition,
   });
 };

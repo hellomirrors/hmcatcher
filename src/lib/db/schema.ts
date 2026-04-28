@@ -1,4 +1,10 @@
-import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { sql } from "drizzle-orm";
+import {
+  integer,
+  sqliteTable,
+  text,
+  uniqueIndex,
+} from "drizzle-orm/sqlite-core";
 
 export const leads = sqliteTable("leads", {
   id: integer("id").primaryKey({ autoIncrement: true }),
@@ -58,26 +64,37 @@ export const dialogs = sqliteTable("dialogs", {
     .$defaultFn(() => new Date()),
 });
 
-export const dialogSessions = sqliteTable("dialog_sessions", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
-  sessionId: text("sid"),
-  dialogId: integer("dialog_id")
-    .notNull()
-    .references(() => dialogs.id),
-  provider: text("provider").notNull(),
-  contact: text("contact").notNull(),
-  currentStepId: text("current_step_id").notNull(),
-  variables: text("variables").notNull().default("{}"),
-  score: integer("score").notNull().default(0),
-  state: text("state").notNull().default("active"), // active | completed | expired
-  reminderSentAt: integer("reminder_sent_at", { mode: "timestamp" }),
-  createdAt: integer("created_at", { mode: "timestamp" })
-    .notNull()
-    .$defaultFn(() => new Date()),
-  updatedAt: integer("updated_at", { mode: "timestamp" })
-    .notNull()
-    .$defaultFn(() => new Date()),
-});
+export const dialogSessions = sqliteTable(
+  "dialog_sessions",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    sessionId: text("sid"),
+    dialogId: integer("dialog_id")
+      .notNull()
+      .references(() => dialogs.id),
+    provider: text("provider").notNull(),
+    contact: text("contact").notNull(),
+    currentStepId: text("current_step_id").notNull(),
+    variables: text("variables").notNull().default("{}"),
+    score: integer("score").notNull().default(0),
+    state: text("state").notNull().default("active"), // active | completed | expired
+    reminderSentAt: integer("reminder_sent_at", { mode: "timestamp" }),
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .notNull()
+      .$defaultFn(() => new Date()),
+    updatedAt: integer("updated_at", { mode: "timestamp" })
+      .notNull()
+      .$defaultFn(() => new Date()),
+  },
+  (table) => [
+    uniqueIndex("dialog_sessions_sid_unique")
+      .on(table.sessionId)
+      .where(sql`${table.sessionId} IS NOT NULL`),
+    uniqueIndex("dialog_sessions_active_provider_contact_unique")
+      .on(table.provider, table.contact)
+      .where(sql`${table.state} = 'active'`),
+  ]
+);
 
 export const dialogAnswers = sqliteTable("dialog_answers", {
   id: integer("id").primaryKey({ autoIncrement: true }),

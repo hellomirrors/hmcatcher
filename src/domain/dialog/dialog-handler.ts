@@ -176,6 +176,18 @@ export async function handleDialogConversation(
     });
     sessionId = created.sessionId;
     sessionDbId = created.id;
+    // A concurrent webhook (Telegram retries on 5xx, GoWa double-emits)
+    // raced us and won the partial UNIQUE on (provider, contact, active).
+    // The other request is already running the engine for this turn —
+    // bail out so we don't deliver the same opening message twice.
+    if (created.alreadyExisted) {
+      log.info("Inbound message lost UNIQUE race — skipping duplicate open", {
+        provider,
+        userId,
+        existingDbId: sessionDbId,
+      });
+      return;
+    }
   }
 
   const sendErrors = await deliverResponses({

@@ -136,7 +136,7 @@ export async function submitSlotmachineAction(
       _score: String(input.score),
     };
 
-    const { id: sessionDbId } = createSessionWithId({
+    const created = createSessionWithId({
       sessionId: input.sessionId,
       dialogId: dialog.id,
       provider: "gowa",
@@ -146,6 +146,22 @@ export async function submitSlotmachineAction(
       score: input.score,
       state: "active",
     });
+
+    // The UNIQUE index on `sid` raced us — another submit already wrote
+    // the lead, answers and QR. Return success without re-running the
+    // side effects so the user sees the same outcome.
+    if (created.alreadyExisted) {
+      log.info(
+        "Slotmachine submission lost UNIQUE race — treating as success",
+        {
+          sessionId: input.sessionId,
+          existingDbId: created.id,
+        }
+      );
+      return { success: true };
+    }
+
+    const sessionDbId = created.id;
 
     // Persist the form answers as dialog_answers rows so the lead-detail
     // timeline shows what the user filled in on the web form. Step IDs here

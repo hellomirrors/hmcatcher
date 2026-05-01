@@ -24,6 +24,6 @@ curl "https://api.telegram.org/bot<TELEGRAM_BOT_TOKEN>/deleteWebhook"
 
 ### Current deployment
 
-- Domain: `altenpflege2026.hellomirrors.com`
+- Domain: `messe.hellomirrors.com`
 - Bot: `@hmcatcher_bot`
-- Webhook: `https://altenpflege2026.hellomirrors.com/api/webhooks/telegram`
+- Webhook: `https://messe.hellomirrors.com/api/webhooks/telegram`

@@ -12,7 +12,7 @@
       "id": "welcome",
       "type": "text",
       "phase": "Onboarding",
-      "message": "Willkommen beim Felix Glücksrad, benutze den Link um deinen Glücksrad Code zu bekommen. https://altenpflege2026.hellomirrors.com/slotmachine",
+      "message": "Willkommen beim Felix Glücksrad, benutze den Link um deinen Glücksrad Code zu bekommen. https://messe.hellomirrors.com/slotmachine",
       "transitions": [
         {
           "targetStepId": "warte-slotmachine"
